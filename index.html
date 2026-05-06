@@ -357,37 +357,9 @@ body.dark-mode .miscues-textarea {
 .notice { text-align:center; font-size:11px; color:var(--text-muted); padding:10px 16px 6px; }
 
 /* ============================================================
-   ██████╗ ██████╗ ██╗███╗   ██╗████████╗
-   PRINT STYLES — GUARANTEED 2 PAGES
-   ============================================================
-
-   THE FIX: Do NOT set height on .form-page
-   Instead, control page breaks ONLY with:
-     1. page-break-after:always on #page1
-     2. page-break-before:always on #page2
-     3. page-break-inside:avoid on #page1 and #page2
-   
-   The @page size + pt-unit content sizing ensures
-   each page's content fills exactly 1 printed page.
-
-   VERIFIED MATH @ 8.5×11in, 0.25in margins:
-   Usable area = 8.0in × 10.5in = 576pt × 756pt
-
-   PAGE 1 (all values in pt):
-     Header:            30pt
-     Top fields (7r):   42pt  (6pt/row)
-     Two-col:          230pt
-     Reg row:           18pt
-     Tables:           180pt
-     Gaps:              30pt
-     TOTAL:          ≈ 530pt  ✓ fits in 756pt
-
-   PAGE 2:
-     Nipples (39 rows): 340pt
-     Other/Notes:        80pt
-     TOTAL:           ≈ 420pt  ✓ fits in 756pt
+   PRINT STYLES — MOBILE (iPhone Safari)
+   Targets ALL print devices as the base
    ============================================================ */
-
 @media print {
 
   /* ── 0. Page geometry ── */
@@ -396,19 +368,19 @@ body.dark-mode .miscues-textarea {
     margin: 0.25in;
   }
 
-  /* ── 1. Force light mode at CSS-variable level ── */
+  /* ── 1. Force light mode ── */
   :root, body, body.dark-mode {
-    --bg:           #FFFFFF !important;
-    --panel:        #FFFFFF !important;
-    --text:         #1F2937 !important;
-    --text-muted:   #6B7280 !important;
-    --text-dim:     #9CA3AF !important;
-    --border:       rgba(217,119,6,0.25) !important;
-    --border-bright:rgba(217,119,6,0.5)  !important;
-    --cyan:         #D97706 !important;
-    --header-bg:    #4B5563 !important;
-    --header-fg:    #FFFFFF !important;
-    --row-label-bg: #fafafa !important;
+    --bg:            #FFFFFF !important;
+    --panel:         #FFFFFF !important;
+    --text:          #1F2937 !important;
+    --text-muted:    #6B7280 !important;
+    --text-dim:      #9CA3AF !important;
+    --border:        rgba(217,119,6,0.25) !important;
+    --border-bright: rgba(217,119,6,0.5)  !important;
+    --cyan:          #D97706 !important;
+    --header-bg:     #4B5563 !important;
+    --header-fg:     #FFFFFF !important;
+    --row-label-bg:  #fafafa !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
@@ -429,11 +401,10 @@ body.dark-mode .miscues-textarea {
     margin: 0 !important;
     padding: 0 !important;
     overflow: visible !important;
-    /* CRITICAL: remove min-height so body doesn't create extra pages */
     min-height: 0 !important;
   }
 
-  /* ── 4. Page wrapper — simple block ── */
+  /* ── 4. Page wrapper ── */
   .page-wrapper {
     display: block !important;
     width: 100% !important;
@@ -442,11 +413,7 @@ body.dark-mode .miscues-textarea {
     margin: 0 !important;
   }
 
-  /* ── 5. THE KEY FIX:
-     .form-page gets NO height, NO overflow:hidden
-     Page breaks are controlled ONLY by page-break-after/before
-     Content is sized in pt to fit naturally within one page
-  ── */
+  /* ── 5. Form pages ── */
   .form-page, body.dark-mode .form-page {
     display: block !important;
     width: 100% !important;
@@ -456,23 +423,18 @@ body.dark-mode .miscues-textarea {
     background: #ffffff !important;
     color: #1F2937 !important;
     box-sizing: border-box !important;
-    /* NO height, NO overflow — content sizes naturally */
     height: auto !important;
     overflow: visible !important;
-    /* Don't break inside a page */
     page-break-inside: avoid !important;
     break-inside: avoid !important;
   }
 
-  /* Page 1 ends here — next content starts new page */
   #page1 {
     page-break-after: always !important;
     break-after: page !important;
     page-break-before: avoid !important;
     break-before: avoid !important;
   }
-
-  /* Page 2 always starts on a new page */
   #page2 {
     page-break-before: always !important;
     break-before: page !important;
@@ -651,26 +613,30 @@ body.dark-mode .miscues-textarea {
     overflow: visible !important;
   }
 
-  /* ── 13. Material tables ── */
+  /* ── 13. Material tables — BASE (mobile-safe sizes) ── */
   table.mat-table {
     font-size: 6pt !important;
     width: 100% !important;
     table-layout: fixed !important;
     border-collapse: collapse !important;
-    /* Tables can break across rows but whole table won't jump to next page */
     page-break-inside: auto !important;
     break-inside: auto !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
   table.mat-table col.col-data { width: 18pt !important; }
 
+  /* ── GRID LINES: set on th and td directly — critical for WebKit ── */
   table.mat-table th,
   table.mat-table td {
-    border: 0.5pt solid #444 !important;
+    border: 0.75pt solid #333 !important;
     padding: 0.75pt 1pt !important;
     text-align: center !important;
     font-size: 6pt !important;
     line-height: 1.15 !important;
     overflow: hidden !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
   table.mat-table th {
     background: #4B5563 !important;
@@ -678,6 +644,8 @@ body.dark-mode .miscues-textarea {
     font-size: 7pt !important;
     font-weight: bold !important;
     white-space: nowrap !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
   table.mat-table td.row-label {
     text-align: left !important;
@@ -687,15 +655,21 @@ body.dark-mode .miscues-textarea {
     font-size: 6pt !important;
     white-space: normal !important;
     word-break: break-word !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
   table.mat-table td.row-label.section-header {
     background: #4B5563 !important;
     color: #ffffff !important;
     font-size: 7pt !important;
     text-align: center !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
   table.mat-table tbody tr:nth-child(even) td.row-label {
     background: #f0f0f0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
   table.mat-table td input[type="text"] {
     font-size: 6pt !important;
@@ -731,9 +705,11 @@ body.dark-mode .miscues-textarea {
     color: #ffffff !important;
     font-size: 8pt !important;
     padding: 3pt 5pt !important;
-    border: 0.5pt solid #444 !important;
+    border: 0.75pt solid #333 !important;
     margin-bottom: 3pt !important;
     font-weight: bold !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
   }
   textarea.multiline {
     font-size: 7pt !important;
@@ -749,41 +725,113 @@ body.dark-mode .miscues-textarea {
     display: block !important;
     width: 100% !important;
   }
-/* ── GRID LINES FIX ── */
-table.mat-table,
-table.mat-table th,
-table.mat-table td {
-  border: 0.75pt solid #333 !important;
-  border-collapse: collapse !important;
-}
 
-table.mat-table th {
-  background: #4B5563 !important;
-  color: #ffffff !important;
-  -webkit-print-color-adjust: exact !important;
-  print-color-adjust: exact !important;
-}
+} /* ── end @media print (mobile base) ── */
 
-table.mat-table td.row-label {
-  background: #fafafa !important;
-  -webkit-print-color-adjust: exact !important;
-  print-color-adjust: exact !important;
-}
 
-table.mat-table td.row-label.section-header {
-  background: #4B5563 !important;
-  color: #ffffff !important;
-  -webkit-print-color-adjust: exact !important;
-  print-color-adjust: exact !important;
-}
+/* ============================================================
+   PRINT STYLES — DESKTOP ONLY
+   Targets Mac/PC Chrome & Safari (print width ≥ 6in)
+   iPhone Safari reports ~3-4in so this block never fires on mobile
+   ============================================================ */
+@media print and (min-width: 6in) {
 
-table.mat-table tbody tr:nth-child(even) td.row-label {
-  background: #f0f0f0 !important;
-  -webkit-print-color-adjust: exact !important;
-  print-color-adjust: exact !important;
-}
+  /* Bigger text for desktop */
+  .field-row,
+  .field-row label,
+  .field-row input[type="text"] {
+    font-size: 8.5pt !important;
+  }
 
-} /* end @media print */
+  .section-title {
+    font-size: 8pt !important;
+    margin-bottom: 2pt !important;
+    padding-bottom: 1.5pt !important;
+  }
+
+  .section-row {
+    font-size: 8pt !important;
+    margin-bottom: 1pt !important;
+    line-height: 1.4 !important;
+  }
+
+  .inline-input,
+  .full-line-input {
+    font-size: 8pt !important;
+  }
+
+  .checklist-title {
+    font-size: 13pt !important;
+  }
+
+  .logo-text {
+    font-size: 13pt !important;
+  }
+
+  .logo-area img {
+    width: 30pt !important;
+    height: 30pt !important;
+  }
+
+  /* Regulator row bigger */
+  .reg-row,
+  .reg-field,
+  .reg-field label,
+  .reg-field input {
+    font-size: 8pt !important;
+  }
+
+  /* Tables bigger */
+  table.mat-table {
+    font-size: 7.5pt !important;
+  }
+  table.mat-table th {
+    font-size: 8.5pt !important;
+  }
+  table.mat-table td {
+    font-size: 7.5pt !important;
+    padding: 1.5pt 2pt !important;
+  }
+  table.mat-table td.row-label {
+    font-size: 7.5pt !important;
+  }
+  table.mat-table td.row-label.section-header {
+    font-size: 8.5pt !important;
+  }
+  table.mat-table col.col-data {
+    width: 22pt !important;
+  }
+  table.mat-table td input[type="text"] {
+    font-size: 7.5pt !important;
+  }
+
+  /* Other/Notes bigger */
+  .other-title {
+    font-size: 10pt !important;
+    padding: 4pt 6pt !important;
+  }
+  textarea.multiline {
+    font-size: 8.5pt !important;
+    height: 80pt !important;
+    min-height: 80pt !important;
+    max-height: 80pt !important;
+  }
+
+  /* Miscues bigger */
+  .miscues-textarea {
+    font-size: 8pt !important;
+    height: 38pt !important;
+    min-height: 38pt !important;
+    max-height: 38pt !important;
+  }
+
+  /* YN pills bigger */
+  .yn-checkbox-wrap {
+    font-size: 7.5pt !important;
+    padding: 1pt 3pt 1pt 1.5pt !important;
+  }
+
+} /* ── end @media print and (min-width: 6in) ── */
 </style>
 </head>
 <body>
