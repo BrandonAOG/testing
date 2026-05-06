@@ -749,6 +749,39 @@ body.dark-mode .miscues-textarea {
     display: block !important;
     width: 100% !important;
   }
+/* ── GRID LINES FIX ── */
+table.mat-table,
+table.mat-table th,
+table.mat-table td {
+  border: 0.75pt solid #333 !important;
+  border-collapse: collapse !important;
+}
+
+table.mat-table th {
+  background: #4B5563 !important;
+  color: #ffffff !important;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+
+table.mat-table td.row-label {
+  background: #fafafa !important;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+
+table.mat-table td.row-label.section-header {
+  background: #4B5563 !important;
+  color: #ffffff !important;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+
+table.mat-table tbody tr:nth-child(even) td.row-label {
+  background: #f0f0f0 !important;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
 
 } /* end @media print */
 </style>
