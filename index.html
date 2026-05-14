@@ -613,6 +613,24 @@ body.mobile-safari { -webkit-print-color-adjust: exact; }
 
 <script src="https://cdn.jsdelivr.net/npm/eruda"></script>
 <script>eruda.init();</script>
+<script>
+(function() {
+  var box = document.createElement('div');
+  box.id = '_dbg';
+  box.style.cssText = 'position:fixed;bottom:60px;left:0;right:0;z-index:99999;background:rgba(0,0,0,0.85);color:#0f0;font-size:11px;font-family:monospace;max-height:40vh;overflow-y:auto;padding:6px;pointer-events:none;';
+  document.addEventListener('DOMContentLoaded', function() { document.body.appendChild(box); });
+  window._log = function() {
+    var msg = Array.from(arguments).join(' ');
+    console.log(msg);
+    var line = document.createElement('div');
+    line.style.borderBottom = '1px solid #333';
+    line.style.padding = '2px 0';
+    line.textContent = new Date().toLocaleTimeString() + ' ' + msg;
+    box.appendChild(line);
+    box.scrollTop = box.scrollHeight;
+  };
+})();
+</script>
 
 <script>
 (function () {
@@ -1185,9 +1203,9 @@ function getEstimateFilename(ext) {
 
 // ── PRINT ──
 function printForm() {
-  console.log('[1] printForm start - body classes:', document.body.className);
+  window._log('[1] printForm start - body classes:', document.body.className);
   if (!validateForm()) return;
-  console.log('[2] validation passed');
+  window._log('[2] validation passed');
 
   var isMobileSafari = document.body.classList.contains('mobile-safari');
   var wasDark = document.body.classList.contains('dark-mode');
@@ -1196,14 +1214,14 @@ function printForm() {
   document.title = getEstimateFilename('pdf').replace(/\.pdf$/, '');
 
   document.body.classList.remove('dark-mode');
-  console.log('[3] dark-mode removed - body classes:', document.body.className);
+  window._log('[3] dark-mode removed - body classes:', document.body.className);
   // Strip seasonal classes so they don't bleed through on iOS reflow
   var _printSeasonalClasses = [];
   document.body.classList.forEach(function(c) { if (c.indexOf('seasonal-') === 0) _printSeasonalClasses.push(c); });
   _printSeasonalClasses.forEach(function(c) { document.body.classList.remove(c); });
   var _printSeasonalCanvas = document.getElementById('seasonal-canvas');
   if (_printSeasonalCanvas) _printSeasonalCanvas.style.display = 'none';
-  console.log('[4] seasonal stripped - body classes:', document.body.className);
+  window._log('[4] seasonal stripped - body classes:', document.body.className);
 
   var docTitle   = document.querySelector('.doc-title');
   var compName   = document.querySelector('.company-name');
@@ -1236,17 +1254,17 @@ function printForm() {
     '}'
   ].join('\n');
   document.head.appendChild(printStyle);
-  console.log('[5] printStyle injected');
+  window._log('[5] printStyle injected');
 
   var vp = document.querySelector('meta[name="viewport"]');
   var origViewport = vp ? vp.getAttribute('content') : null;
 
   if (isMobileSafari && vp) {
-    console.log('[6] iOS - changing viewport');
+    window._log('[6] iOS - changing viewport');
     vp.setAttribute('content', 'width=1050, initial-scale=1.0');
 
     setTimeout(function() {
-      console.log('[6b] iOS setTimeout fired - body classes:', document.body.className);
+      window._log('[6b] iOS setTimeout fired - body classes:', document.body.className);
       if (docTitle)   docTitle.setAttribute('style',   'color:#D97706!important;text-shadow:none!important;letter-spacing:4px!important;');
       if (compName)   compName.setAttribute('style',   'color:#D97706!important;text-shadow:none!important;');
       if (footerText) footerText.setAttribute('style', 'color:#9CA3AF!important;text-shadow:none!important;');
@@ -1275,38 +1293,38 @@ function printForm() {
       '  #install_days { height:29.7px!important;min-height:29.7px!important; }',
       '}'
     ].join('\n');
-    console.log('[6c] safariPageFix injected');
+    window._log('[6c] safariPageFix injected');
     document.head.appendChild(safariPageFix);
   }
 
   function restore() {
-    console.log('[9] restore() called - body classes before restore:', document.body.className);
+    window._log('[9] restore() called - body classes before restore:', document.body.className);
     window.removeEventListener('afterprint', restore);
     document.removeEventListener('visibilitychange', onVis);
-    var el = document.getElementById('force-print-light'); if (el) { el.remove(); console.log('[9a] force-print-light removed'); }
-    var fix = document.getElementById('safari-page-fix');  if (fix) { fix.remove(); console.log('[9b] safari-page-fix removed'); }
-    if (wasDark) { document.body.classList.add('dark-mode'); console.log('[9c] dark-mode restored'); }
+    var el = document.getElementById('force-print-light'); if (el) { el.remove(); window._log('[9a] force-print-light removed'); }
+    var fix = document.getElementById('safari-page-fix');  if (fix) { fix.remove(); window._log('[9b] safari-page-fix removed'); }
+    if (wasDark) { document.body.classList.add('dark-mode'); window._log('[9c] dark-mode restored'); }
     _printSeasonalClasses.forEach(function(c) { document.body.classList.add(c); });
     if (_printSeasonalCanvas) _printSeasonalCanvas.style.display = '';
-    console.log('[10] restore done - body classes:', document.body.className);
+    window._log('[10] restore done - body classes:', document.body.className);
     if (docTitle)   docTitle.removeAttribute('style');
     if (compName)   compName.removeAttribute('style');
     if (footerText) footerText.removeAttribute('style');
     if (verSpan)    verSpan.removeAttribute('style');
-    if (isMobileSafari && vp && origViewport) { vp.setAttribute('content', origViewport); console.log('[9d] viewport restored to:', origViewport); }
+    if (isMobileSafari && vp && origViewport) { vp.setAttribute('content', origViewport); window._log('[9d] viewport restored to:', origViewport); }
     document.title = prevTitle;
-    console.log('[9e] title restored - final body classes:', document.body.className);
+    window._log('[9e] title restored - final body classes:', document.body.className);
   }
-  function onVis() { console.log('[visibilitychange] hidden:', document.hidden, 'body classes:', document.body.className); if (!document.hidden) restore(); }
+  function onVis() { window._log('[visibilitychange] hidden:', document.hidden, 'body classes:', document.body.className); if (!document.hidden) restore(); }
   // On iOS afterprint fires before print dialog opens, so we use visibilitychange + focus + polling fallback
   if (isMobileSafari) {
-    console.log('[afterprint-setup] iOS: visibilitychange + focus + polling fallback');
+    window._log('[afterprint-setup] iOS: visibilitychange + focus + polling fallback');
     document.addEventListener('visibilitychange', onVis);
     window.addEventListener('focus', restore);
     // Polling fallback in case visibilitychange and focus both miss
     var _restorePoller = setInterval(function() {
       if (!document.hidden) {
-        console.log('[poller] page visible - restoring');
+        window._log('[poller] page visible - restoring');
         clearInterval(_restorePoller);
         restore();
       }
@@ -1320,10 +1338,10 @@ function printForm() {
   // Force browser to flush layout/styles before printing, stays within gesture
   document.body.getBoundingClientRect();
   document.getElementById('page').getBoundingClientRect();
-  console.log('[7] about to print - final body classes:', document.body.className);
-  console.log('[7] seasonal canvas hidden:', _printSeasonalCanvas ? _printSeasonalCanvas.style.display : 'no canvas');
+  window._log('[7] about to print - final body classes:', document.body.className);
+  window._log('[7] seasonal canvas hidden:', _printSeasonalCanvas ? _printSeasonalCanvas.style.display : 'no canvas');
   window.print();
-  console.log('[8] print() called');
+  window._log('[8] print() called');
 }
 
 // ── CANVAS CAPTURE ──
