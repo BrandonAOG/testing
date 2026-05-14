@@ -1298,10 +1298,12 @@ function printForm() {
     console.log('[9e] title restored - final body classes:', document.body.className);
   }
   function onVis() { console.log('[visibilitychange] hidden:', document.hidden, 'body classes:', document.body.className); if (!document.hidden) restore(); }
-  window.addEventListener('afterprint', restore);
-  window.addEventListener('afterprint', function() { console.log('[afterprint] fired - body classes:', document.body.className); });
+  // On iOS afterprint fires immediately before print dialog opens - use visibilitychange only
   if (isMobileSafari) {
+    console.log('[afterprint-setup] iOS: using visibilitychange only, skipping afterprint');
     document.addEventListener('visibilitychange', onVis);
+  } else {
+    window.addEventListener('afterprint', restore);
   }
 
   // Force browser to flush layout/styles before printing, stays within gesture
