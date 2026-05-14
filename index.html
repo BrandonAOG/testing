@@ -1183,7 +1183,12 @@ function getEstimateFilename(ext) {
 
 // ── PRINT ──
 function printForm() {
+  console.log('[PRINT] printForm called');
+  console.log('[PRINT] isMobileSafari:', document.body.classList.contains('mobile-safari'));
+  console.log('[PRINT] seasonal classes:', Array.from(document.body.classList).filter(c => c.startsWith('seasonal-')));
+  console.log('[PRINT] dark mode:', document.body.classList.contains('dark-mode'));
   if (!validateForm()) return;
+  console.log('[PRINT] validation passed');
 
   var isMobileSafari = document.body.classList.contains('mobile-safari');
   var wasDark = document.body.classList.contains('dark-mode');
@@ -1293,7 +1298,10 @@ function printForm() {
   // Force browser to flush layout/styles before printing, stays within gesture
   document.body.getBoundingClientRect();
   document.getElementById('page').getBoundingClientRect();
+  console.log('[PRINT] about to call window.print()');
+  console.log('[PRINT] body classes at print time:', document.body.className);
   window.print();
+  console.log('[PRINT] window.print() called');
 }
 
 // ── CANVAS CAPTURE ──
