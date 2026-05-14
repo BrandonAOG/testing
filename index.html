@@ -1298,10 +1298,21 @@ function printForm() {
     console.log('[9e] title restored - final body classes:', document.body.className);
   }
   function onVis() { console.log('[visibilitychange] hidden:', document.hidden, 'body classes:', document.body.className); if (!document.hidden) restore(); }
-  // On iOS afterprint fires immediately before print dialog opens - use visibilitychange only
+  // On iOS afterprint fires before print dialog opens, so we use visibilitychange + focus + polling fallback
   if (isMobileSafari) {
-    console.log('[afterprint-setup] iOS: using visibilitychange only, skipping afterprint');
+    console.log('[afterprint-setup] iOS: visibilitychange + focus + polling fallback');
     document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('focus', restore);
+    // Polling fallback in case visibilitychange and focus both miss
+    var _restorePoller = setInterval(function() {
+      if (!document.hidden) {
+        console.log('[poller] page visible - restoring');
+        clearInterval(_restorePoller);
+        restore();
+      }
+    }, 500);
+    // Safety timeout - always restore after 30s max
+    setTimeout(function() { clearInterval(_restorePoller); restore(); }, 30000);
   } else {
     window.addEventListener('afterprint', restore);
   }
