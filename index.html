@@ -619,7 +619,22 @@ body.mobile-safari { -webkit-print-color-adjust: exact; }
   box.id = '_dbg';
   box.style.cssText = 'position:fixed;bottom:60px;left:0;right:0;z-index:99999;background:rgba(0,0,0,0.85);color:#0f0;font-size:11px;font-family:monospace;max-height:40vh;overflow-y:auto;padding:6px;pointer-events:none;';
   document.addEventListener('DOMContentLoaded', function() { document.body.appendChild(box); });
-  window._log = function() {
+  window.addEventListener('resize', function() {
+  window._log('[resize] innerWidth:' + window.innerWidth + ' innerHeight:' + window.innerHeight + ' body:' + document.body.className);
+});
+window.addEventListener('scroll', function() {
+  window._log('[scroll] scrollY:' + window.scrollY);
+});
+document.addEventListener('visibilitychange', function() {
+  window._log('[visibilitychange-GLOBAL] hidden:' + document.hidden + ' body:' + document.body.className);
+});
+window.addEventListener('focus', function() {
+  window._log('[focus-GLOBAL] body:' + document.body.className);
+});
+window.addEventListener('blur', function() {
+  window._log('[blur-GLOBAL] body:' + document.body.className);
+});
+window._log = function() {
     var msg = Array.from(arguments).join(' ');
     console.log(msg);
     var line = document.createElement('div');
@@ -1221,6 +1236,10 @@ function printForm() {
   _printSeasonalClasses.forEach(function(c) { document.body.classList.remove(c); });
   var _printSeasonalCanvas = document.getElementById('seasonal-canvas');
   if (_printSeasonalCanvas) _printSeasonalCanvas.style.display = 'none';
+  // Disable seasonal + dark mode stylesheets entirely so print preview can't re-apply them
+  var _seasonalSheet = document.getElementById('seasonal-styles');
+  if (_seasonalSheet) _seasonalSheet.disabled = true;
+  var _printOptSheet = document.getElementById('print-optimization-styles');
   window._log('[4] seasonal stripped - body classes:', document.body.className);
 
   var docTitle   = document.querySelector('.doc-title');
@@ -1306,6 +1325,8 @@ function printForm() {
     if (wasDark) { document.body.classList.add('dark-mode'); window._log('[9c] dark-mode restored'); }
     _printSeasonalClasses.forEach(function(c) { document.body.classList.add(c); });
     if (_printSeasonalCanvas) _printSeasonalCanvas.style.display = '';
+    // Re-enable seasonal stylesheet
+    if (_seasonalSheet) _seasonalSheet.disabled = false;
     window._log('[10] restore done - body classes:', document.body.className);
     if (docTitle)   docTitle.removeAttribute('style');
     if (compName)   compName.removeAttribute('style');
