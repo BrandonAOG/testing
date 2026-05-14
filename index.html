@@ -1238,7 +1238,9 @@ function printForm() {
   if (_printSeasonalCanvas) _printSeasonalCanvas.style.display = 'none';
   // Disable seasonal + dark mode stylesheets entirely so print preview can't re-apply them
   var _seasonalSheet = document.getElementById('seasonal-styles');
-  if (_seasonalSheet) _seasonalSheet.disabled = true;
+  if (_seasonalSheet) _seasonalSheet.parentNode.removeChild(_seasonalSheet);
+  var _darkModeSheet = document.getElementById('print-optimization-styles');
+  if (_darkModeSheet) _darkModeSheet.disabled = true;
   var _printOptSheet = document.getElementById('print-optimization-styles');
   window._log('[4] seasonal stripped - body classes:', document.body.className);
 
@@ -1325,8 +1327,9 @@ function printForm() {
     if (wasDark) { document.body.classList.add('dark-mode'); window._log('[9c] dark-mode restored'); }
     _printSeasonalClasses.forEach(function(c) { document.body.classList.add(c); });
     if (_printSeasonalCanvas) _printSeasonalCanvas.style.display = '';
-    // Re-enable seasonal stylesheet
-    if (_seasonalSheet) _seasonalSheet.disabled = false;
+    // Re-inject seasonal stylesheet
+    if (_seasonalSheet) document.head.appendChild(_seasonalSheet);
+    if (_darkModeSheet) _darkModeSheet.disabled = false;
     window._log('[10] restore done - body classes:', document.body.className);
     if (docTitle)   docTitle.removeAttribute('style');
     if (compName)   compName.removeAttribute('style');
@@ -1369,8 +1372,18 @@ function printForm() {
   document.getElementById('page').getBoundingClientRect();
   window._log('[7] about to print - final body classes:', document.body.className);
   window._log('[7] seasonal canvas hidden:', _printSeasonalCanvas ? _printSeasonalCanvas.style.display : 'no canvas');
-  window.print();
-  window._log('[8] print() called');
+  if (isMobileSafari) {
+    // Delay lets viewport reflow settle to 1050px before print preview opens
+    window._log('[7b] iOS: delaying print 800ms for viewport reflow');
+    setTimeout(function() {
+      document.body.getBoundingClientRect();
+      window._log('[8] print() called after delay');
+      window.print();
+    }, 800);
+  } else {
+    window.print();
+    window._log('[8] print() called');
+  }
 }
 
 // ── CANVAS CAPTURE ──
