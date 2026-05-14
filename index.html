@@ -1316,21 +1316,29 @@ function printForm() {
     window._log('[9e] title restored - final body classes:', document.body.className);
   }
   function onVis() { window._log('[visibilitychange] hidden:', document.hidden, 'body classes:', document.body.className); if (!document.hidden) restore(); }
-  // On iOS afterprint fires before print dialog opens, so we use visibilitychange + focus + polling fallback
+  // On iOS: wait for page to go hidden (print sheet opens), then restore when visible again
   if (isMobileSafari) {
-    window._log('[afterprint-setup] iOS: visibilitychange + focus + polling fallback');
-    document.addEventListener('visibilitychange', onVis);
-    window.addEventListener('focus', restore);
-    // Polling fallback in case visibilitychange and focus both miss
-    var _restorePoller = setInterval(function() {
-      if (!document.hidden) {
-        window._log('[poller] page visible - restoring');
-        clearInterval(_restorePoller);
+    window._log('[afterprint-setup] iOS: waiting for hide then restore');
+    var _wentHidden = false;
+    var _restorePoller = null;
+    document.addEventListener('visibilitychange', function _iosVis() {
+      if (document.hidden) {
+        window._log('[iosVis] page hidden - print sheet open');
+        _wentHidden = true;
+      } else if (_wentHidden) {
+        window._log('[iosVis] page visible - restoring');
+        document.removeEventListener('visibilitychange', _iosVis);
+        if (_restorePoller) clearInterval(_restorePoller);
         restore();
       }
-    }, 500);
-    // Safety timeout - always restore after 30s max
-    setTimeout(function() { clearInterval(_restorePoller); restore(); }, 30000);
+    });
+    // Fallback: if page never hides (Safari blocked print), restore after 3s
+    setTimeout(function() {
+      if (!_wentHidden) {
+        window._log('[fallback] page never hid - restoring now');
+        restore();
+      }
+    }, 3000);
   } else {
     window.addEventListener('afterprint', restore);
   }
