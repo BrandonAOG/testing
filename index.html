@@ -1510,6 +1510,17 @@ const MISC_ROWS = [
   MISC_ROWS.forEach(r => addRow(b, r.label, 5, r.isHeader || false));
 })();
 
+// Safari border repaint — must run after all table rows are injected
+requestAnimationFrame(function() {
+  requestAnimationFrame(function() {
+    document.querySelectorAll('table.mat-table').forEach(function(t) {
+      t.style.borderCollapse = 'separate';
+      void t.offsetHeight;
+      t.style.borderCollapse = '';
+    });
+  });
+});
+
 /* ================================================================
    YES / NO PILL BUTTONS
 ================================================================ */
@@ -1539,23 +1550,6 @@ function applyYNColors() {
 }
 document.addEventListener('DOMContentLoaded', applyYNColors);
 if (document.readyState !== 'loading') setTimeout(applyYNColors, 50);
-
-// Force Safari to repaint tables — without this, borders don't render until a reflow
-(function safariTableReflow() {
-  function reflow() {
-    document.querySelectorAll('table.mat-table').forEach(t => {
-      t.style.display = 'none';
-      // reading offsetHeight forces layout
-      void t.offsetHeight;
-      t.style.display = '';
-    });
-  }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => setTimeout(reflow, 100));
-  } else {
-    setTimeout(reflow, 100);
-  }
-})();
 
 /* ================================================================
    AUTO-SAVE
