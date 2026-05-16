@@ -1510,13 +1510,14 @@ const MISC_ROWS = [
   MISC_ROWS.forEach(r => addRow(b, r.label, 5, r.isHeader || false));
 })();
 
-// Safari border repaint — must run after all table rows are injected
+// Safari border repaint — tables are JS-populated so Safari skips initial border paint.
+// Toggling visibility forces a full repaint after rows are injected.
 requestAnimationFrame(function() {
   requestAnimationFrame(function() {
     document.querySelectorAll('table.mat-table').forEach(function(t) {
-      t.style.borderCollapse = 'separate';
-      void t.offsetHeight;
-      t.style.borderCollapse = '';
+      t.style.visibility = 'hidden';
+      void t.getBoundingClientRect();
+      t.style.visibility = '';
     });
   });
 });
