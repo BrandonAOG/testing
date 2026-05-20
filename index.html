@@ -33,6 +33,7 @@
 
 <style>
 :root {
+  color-scheme: light;
   --cyan: #D97706;
   --cyan-dim: #B45309;
   --cyan-dark: #92400E;
@@ -62,6 +63,7 @@
 }
 
 body.dark-mode {
+  color-scheme: dark;
   --bg: #0A0E27;
   --bg2: #0F1535;
   --bg3: #1A2847;
@@ -220,12 +222,15 @@ body.dark-mode .form-page {
 
 input[type="text"], input[type="email"], input[type="tel"],
 input[type="date"], input[type="number"], textarea, select {
-  font-family: Arial, sans-serif; font-size: 11px; color: var(--text);
-  background: var(--panel); border: none;
+  font-family: Arial, sans-serif; font-size: 11px; color: #1F2937;
+  background: #ffffff; border: none;
   border-bottom: 1px solid rgba(217,119,6,0.25);
   padding: 2px 4px; outline: none; width: 100%;
   transition: all 0.2s; -webkit-appearance: none; appearance: none;
+  -webkit-text-fill-color: #1F2937;
   caret-color: var(--cyan); max-width: 100%;
+  /* Prevent Safari from applying system dark/grey appearance to form fields */
+  color-scheme: light;
 }
 @media (max-width: 480px) {
   input[type="text"], input[type="email"], input[type="tel"],
@@ -237,7 +242,9 @@ body.dark-mode input[type="text"], body.dark-mode input[type="email"],
 body.dark-mode input[type="tel"], body.dark-mode input[type="date"],
 body.dark-mode input[type="number"], body.dark-mode textarea, body.dark-mode select {
   background: rgba(10,14,39,0.6); border-bottom-color: rgba(0,255,200,0.2);
-  color: #E0F7FF; caret-color: #00FFC8; box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+  color: #E0F7FF; -webkit-text-fill-color: #E0F7FF;
+  caret-color: #00FFC8; box-shadow: inset 0 1px 3px rgba(0,0,0,0.5);
+  color-scheme: dark;
 }
 input::placeholder, textarea::placeholder { color: var(--text-dim) !important; opacity: 1; }
 body.dark-mode input::placeholder, body.dark-mode textarea::placeholder {
@@ -327,6 +334,12 @@ table.mat-table th, table.mat-table td {
   border: 1px solid #555; padding: 3px 3px; text-align: center;
   height: auto; min-height: 20px; word-break: break-word; font-family: Arial, sans-serif;
 }
+table.mat-table td {
+  background: #ffffff;
+  color: #1F2937;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
 @media (max-width: 480px) {
   table.mat-table th, table.mat-table td { padding: 2px 2px; min-height: 18px; }
 }
@@ -370,11 +383,12 @@ body.dark-mode #polaris-table  td.row-label {
 table.mat-table td input[type="text"] {
   width: 100%; height: 18px; border: none; border-bottom: none;
   text-align: center; font-size: 10px; padding: 0;
-  line-height: 18px; background: transparent; color: var(--text); font-family: Arial, sans-serif;
+  line-height: 18px; background: #ffffff; color: #1F2937;
+  -webkit-text-fill-color: #1F2937; font-family: Arial, sans-serif;
   display: block; box-sizing: border-box; overflow: visible;
 }
 @media (max-width: 480px) { table.mat-table td input[type="text"] { font-size: 9px; } }
-body.dark-mode table.mat-table td input[type="text"] { color: #E0F7FF; }
+body.dark-mode table.mat-table td input[type="text"] { color: #E0F7FF; -webkit-text-fill-color: #E0F7FF; background: transparent; }
 
 /* ===== FOOTER FIELDS ===== */
 .footer-fields {
@@ -497,11 +511,13 @@ body.dark-mode .permit-row label { color: #E0F7FF; }
 
 .permit-input {
   display: inline-block; border: none;
-  border-bottom: 1px solid var(--text); outline: none;
+  border-bottom: 1px solid #1F2937; outline: none;
   font-size: 12px; font-family: Arial, sans-serif;
-  background: transparent; padding: 2px 4px;
-  color: var(--text); flex-shrink: 0; max-width: 100%; transition: all 0.2s;
+  background: #ffffff; padding: 2px 4px;
+  color: #1F2937; -webkit-text-fill-color: #1F2937;
+  flex-shrink: 0; max-width: 100%; transition: all 0.2s;
   height: 22px; line-height: 22px; box-sizing: border-box; overflow: visible;
+  color-scheme: light;
 }
 @media (max-width: 480px) { .permit-input { font-size: 11px; } }
 .permit-input.flex-grow { flex: 1 1 200px; min-width: 100px; }
@@ -514,7 +530,7 @@ body.dark-mode .permit-row label { color: #E0F7FF; }
 @media (max-width: 480px) { .permit-input.medium { width: 100px; } }
 .permit-input.long      { width: 220px; }
 @media (max-width: 480px) { .permit-input.long { width: 160px; } }
-body.dark-mode .permit-input { border-bottom-color: rgba(0,255,200,0.4); color: #E0F7FF; }
+body.dark-mode .permit-input { border-bottom-color: rgba(0,255,200,0.4); color: #E0F7FF; -webkit-text-fill-color: #E0F7FF; background: rgba(10,14,39,0.6); }
 .permit-input:focus {
   border-bottom-color: var(--cyan); background: rgba(217,119,6,0.04);
   box-shadow: 0 2px 0 0 rgba(217,119,6,0.2);
@@ -528,13 +544,14 @@ body.dark-mode .permit-input:focus {
   width: 100%; border: 1px solid rgba(217,119,6,0.25);
   resize: vertical; font-family: Arial, sans-serif; font-size: 12px;
   padding: 6px 8px; min-height: 50px; outline: none;
-  background: var(--panel); color: var(--text); transition: all 0.3s ease;
-  max-width: 100%; border-radius: 2px;
+  background: #ffffff; color: #1F2937; -webkit-text-fill-color: #1F2937;
+  transition: all 0.3s ease; max-width: 100%; border-radius: 2px;
+  color-scheme: light;
 }
 @media (max-width: 480px) { .permit-textarea { font-size: 11px; padding: 4px 6px 1px; } }
 @media (max-width: 767px) { .other-special-notes { padding-bottom: 1px !important; } }
 body.dark-mode .permit-textarea {
-  border-color: rgba(0,255,200,0.2); background: rgba(10,14,39,0.6); color: #E0F7FF;
+  border-color: rgba(0,255,200,0.2); background: rgba(10,14,39,0.6); color: #E0F7FF; -webkit-text-fill-color: #E0F7FF;
 }
 .permit-textarea:focus { border-color: var(--cyan); box-shadow: 0 0 8px rgba(217,119,6,0.15); }
 body.dark-mode .permit-textarea:focus {
@@ -582,6 +599,7 @@ body.dark-mode .notice { color: #7DD3FC; }
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
     color-adjust: exact !important;
+    color-scheme: light !important;
   }
 
   /* Force light-mode CSS variables — Safari fires the print renderer before JS
