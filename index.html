@@ -22,7 +22,6 @@
   var isIphone  = /iPhone/.test(ua);
   var isAndroid = /Android/.test(ua);
   var isWindows = /Windows/.test(ua);
-  // macOS Safari: Macintosh in UA, not touch-based iPad masquerading as desktop
   var isMacOS   = /Macintosh/.test(ua) && !isIpad;
 
   if (isIpad || isIphone) html.classList.add('ios');
@@ -533,7 +532,6 @@ body.dark-mode .permit-input:focus {
   max-width: 100%; border-radius: 2px;
 }
 @media (max-width: 480px) { .permit-textarea { font-size: 11px; padding: 4px 6px; } }
-@media (max-width: 767px) { .other-special-notes { padding: 2px 3px !important; } }
 body.dark-mode .permit-textarea {
   border-color: rgba(0,255,200,0.2); background: rgba(10,14,39,0.6); color: #E0F7FF;
 }
@@ -947,7 +945,7 @@ body.dark-mode .notice { color: #7DD3FC; }
 /* ===== MOBILE PRINT — Safari honors @media print + max-width natively.
    This block (copied from the proven-working sibling page) tightens page 2
    so it fits on phones. No body.mobile-print class, no JS injection. ===== */
-@page { size: 8.5in 11in; margin: 0.05in 0.15in 0.05in 0.15in; }
+@page { size: 8.5in 11in; margin: 0.15in; }
 
 @media print and (max-width: 767px), body.printing.mobile-printing {
 
@@ -1013,8 +1011,8 @@ body.dark-mode .notice { color: #7DD3FC; }
 @media print and (min-width: 768px) {
 
   /* Top padding — match iPhone Safari spacing on both pages */
-  #page1 { padding-top: 0.05in !important; }
-  #page2 { padding-top: 0.05in !important; box-sizing: border-box !important; }
+  #page1 { padding-top: 0.15in !important; }
+  #page2 { padding-top: 0.15in !important; box-sizing: border-box !important; }
 
   /* PAGE 1 — tighten to match mobile Safari output */
   #page1 .checklist-title          { font-size: 12px !important; padding-top: 3.75px !important; margin-bottom: 3.75px !important; }
@@ -1078,20 +1076,56 @@ body.printing:not(.mobile-printing) #page2 .footer-field input.short { width: 32
 body.printing:not(.mobile-printing) #page2 .footer-field input.wide  { width: 65px !important; }
 /* end desktop print tightening */
 
-/* ===== WINDOWS — body.printing font-size overrides =====
-   body.printing:not(.mobile-printing) tightening rules above use !important,
-   so these Windows overrides must also use !important + higher specificity
-   to win during the pre-capture snapshot. ===== */
-html.windows body.printing:not(.mobile-printing) #page1 .logo-text            { font-size: 14px !important; }
-html.windows body.printing:not(.mobile-printing) #page1 .checklist-title      { font-size: 14px !important; }
-html.windows body.printing:not(.mobile-printing) #page1 .permit-section-header { font-size: 13px !important; }
-html.windows body.printing:not(.mobile-printing) #page1 .permit-row           { font-size: 12px !important; }
-html.windows body.printing:not(.mobile-printing) #page1 .permit-row label     { font-size: 12px !important; }
-html.windows body.printing:not(.mobile-printing) #page1 .permit-input         { font-size: 12px !important; }
-html.windows body.printing:not(.mobile-printing) #page1 .permit-textarea:not(.other-special-notes) { font-size: 12px !important; }
-html.windows body.printing:not(.mobile-printing) #page1 .other-special-notes  { font-size: 14px !important; }
-html.windows body.printing:not(.mobile-printing) #page1 .permit-note          { font-size: 11px !important; }
-html.windows body.printing:not(.mobile-printing) #page1 .yn-checkbox-wrap     { font-size: 10px !important; }
+/* ===== macOS SAFARI — force light mode in inputs & tables during pre-capture =====
+   macOS Safari takes its print snapshot while body.printing is set. The @media print
+   dark-mode overrides don't always fire in time on macOS, so these body.printing
+   selectors force white backgrounds and dark text directly. The
+   -webkit-text-fill-color property is required because macOS Safari uses it
+   for actual text rendering and ignores color alone in some contexts. ===== */
+body.printing input[type="text"],
+body.printing input[type="email"],
+body.printing input[type="tel"],
+body.printing input[type="date"],
+body.printing input[type="number"],
+body.printing textarea,
+body.printing select {
+  background: #ffffff !important;
+  color: #1F2937 !important;
+  -webkit-text-fill-color: #1F2937 !important;
+  border-color: #333 !important;
+  box-shadow: none !important;
+}
+body.printing table.mat-table td {
+  background: #ffffff !important;
+  color: #1F2937 !important;
+  -webkit-text-fill-color: #1F2937 !important;
+  border-color: #333 !important;
+}
+body.printing table.mat-table th {
+  background: #4B5563 !important;
+  color: #ffffff !important;
+  -webkit-text-fill-color: #ffffff !important;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+body.printing table.mat-table td.row-label {
+  background: #f0f0f0 !important;
+  color: #1F2937 !important;
+  -webkit-text-fill-color: #1F2937 !important;
+  -webkit-print-color-adjust: exact !important;
+  print-color-adjust: exact !important;
+}
+body.printing table.mat-table td input[type="text"] {
+  background: transparent !important;
+  color: #1F2937 !important;
+  -webkit-text-fill-color: #1F2937 !important;
+}
+body.printing .permit-input {
+  background: #ffffff !important;
+  color: #1F2937 !important;
+  -webkit-text-fill-color: #1F2937 !important;
+  border-bottom-color: #333 !important;
+}
 
 
 
@@ -1242,36 +1276,7 @@ body.dark-mode .ft-label { color: #7DD3FC; }
 /* Keep debug overlay out of any print output */
 @media print { #debug-overlay { display: none !important; } }
 
-/* ===== PLATFORM-SPECIFIC PRINT FIXES ===== */
-
-/* UNIVERSAL — kill all animations/transitions before the print renderer snapshots */
-@media print {
-  * {
-    animation: none !important;
-    transition: none !important;
-  }
-}
-
-/* iOS — transforms can shift elements off-page; text-size-adjust prevents Safari
-   from bumping font sizes when it recalculates layout for paper */
-@media print {
-  html.ios * {
-    transform: none !important;
-    -webkit-text-size-adjust: 100% !important;
-  }
-}
-
-/* macOS Safari — zoom resets prevent double-scaling when the page already
-   uses a CSS zoom for layout; Safari on macOS respects this on .page */
-@media print {
-  html.macos .page {
-    zoom: 1 !important;
-  }
-}
-
-/* Windows Desktop — explicit break rules stop Chrome/Edge from splitting a
-   .page card across two sheets; top margin offsets Chrome's default header
-   band so Page 1 content doesn't start behind it */
+/* ===== WINDOWS — @media print rules ===== */
 @media print {
   html.windows .page {
     break-inside: avoid;
@@ -1286,9 +1291,8 @@ body.dark-mode .ft-label { color: #7DD3FC; }
   html.windows #page1 .permit-section {
     margin-bottom: 12px; /* base 10px + 2px */
   }
-
-  /* +3.5px total font-size bump across all Page 1 text elements (1.5 + 2)
-     Requires !important to beat the desktop-tightening block at line ~1019 */
+  /* +2px font-size bump across all Page 1 text elements
+     Requires !important to beat the desktop-tightening block */
   html.windows #page1 .logo-text               { font-size: 14px !important; }  /* 12 + 2 */
   html.windows #page1 .checklist-title          { font-size: 14px !important; }  /* 12 + 2 */
   html.windows #page1 .permit-section-header    { font-size: 13px !important; }  /* 11 + 2 */
@@ -1301,13 +1305,19 @@ body.dark-mode .ft-label { color: #7DD3FC; }
   html.windows #page1 .yn-checkbox-wrap         { font-size: 10px !important; }  /*  8 + 2 */
 }
 
-/* Android — forces the WebView print renderer to output actual background
-   colors/images rather than stripping them for "ink saving" */
-@media print {
-  html.android * {
-    -webkit-print-color-adjust: exact !important;
-  }
-}
+/* ===== WINDOWS — body.printing font-size overrides =====
+   body.printing:not(.mobile-printing) tightening rules use !important,
+   so these must also use !important + higher specificity to win. ===== */
+html.windows body.printing:not(.mobile-printing) #page1 .logo-text             { font-size: 14px !important; }
+html.windows body.printing:not(.mobile-printing) #page1 .checklist-title       { font-size: 14px !important; }
+html.windows body.printing:not(.mobile-printing) #page1 .permit-section-header { font-size: 13px !important; }
+html.windows body.printing:not(.mobile-printing) #page1 .permit-row            { font-size: 12px !important; }
+html.windows body.printing:not(.mobile-printing) #page1 .permit-row label      { font-size: 12px !important; }
+html.windows body.printing:not(.mobile-printing) #page1 .permit-input          { font-size: 12px !important; }
+html.windows body.printing:not(.mobile-printing) #page1 .permit-textarea:not(.other-special-notes) { font-size: 12px !important; }
+html.windows body.printing:not(.mobile-printing) #page1 .other-special-notes   { font-size: 14px !important; }
+html.windows body.printing:not(.mobile-printing) #page1 .permit-note           { font-size: 11px !important; }
+html.windows body.printing:not(.mobile-printing) #page1 .yn-checkbox-wrap      { font-size: 10px !important; }
 
 
 </style>
@@ -2050,23 +2060,14 @@ function openPrintPreview() {
 
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      // Mobile Safari has a rendering issue on first print pop-up —
-      // a 2-second delay gives the layout time to fully settle before
-      // the print sheet appears.
-      const ua = navigator.userAgent;
-      const isMobileSafari = /iPhone|iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
-      const printDelay = isMobileSafari ? 900 : 0;
-
-      setTimeout(() => {
-        window.print();
-        // Mobile Safari blocks on window.print() so the class is already active
-        // the whole time the dialog is open — safe to remove immediately after return.
-        // Desktop browsers render asynchronously, so we leave the class on and let
-        // restore() (afterprint) remove it once the dialog actually closes.
-        if (isMobilePrint) document.body.classList.remove('printing', 'mobile-printing');
-        document.body.style.maxWidth = origMaxWidth;
-        document.body.style.width    = origWidth;
-      }, printDelay);
+      window.print();
+      // Mobile Safari blocks on window.print() so the class is already active
+      // the whole time the dialog is open — safe to remove immediately after return.
+      // Desktop browsers render asynchronously, so we leave the class on and let
+      // restore() (afterprint) remove it once the dialog actually closes.
+      if (isMobilePrint) document.body.classList.remove('printing', 'mobile-printing');
+      document.body.style.maxWidth = origMaxWidth;
+      document.body.style.width    = origWidth;
     });
   });
 }
