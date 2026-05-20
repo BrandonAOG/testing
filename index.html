@@ -2054,6 +2054,7 @@ function openPrintPreview() {
     if (status) status.style.display = '';
     if (wasDark) document.body.classList.add('dark-mode');
     document.body.classList.remove('printing', 'mobile-printing');
+    restoreInlineStyles();
     document.documentElement.style.background = origHtmlBg;
     document.body.style.background = origBodyBg;
     // Restore the wrapper's top padding that we cleared before printing.
@@ -2102,14 +2103,106 @@ function openPrintPreview() {
   const origWrapperPaddingTop = wrapper ? wrapper.style.paddingTop : '';
   if (wrapper && !isMobilePrint) wrapper.style.paddingTop = '0';
 
+  // ── SAFARI INLINE-STYLE NUKE ──────────────────────────────────────────────
+  // Safari ignores @media print and body.printing stylesheet rules for
+  // background-color on form elements and table cells — it re-applies its own
+  // system appearance layer. The ONLY reliable fix is inline style="" attributes
+  // set directly on each element immediately before window.print() fires.
+  // We collect every original inline style so we can restore them on afterprint.
+  const _printOverrides = [];
+
+  function forceWhiteInline() {
+    // All inputs, textareas, selects
+    document.querySelectorAll(
+      'input[type="text"], input[type="email"], input[type="tel"], ' +
+      'input[type="date"], input[type="number"], textarea, select'
+    ).forEach(el => {
+      _printOverrides.push([el, el.getAttribute('style') || '']);
+      el.style.setProperty('background', '#ffffff', 'important');
+      el.style.setProperty('background-color', '#ffffff', 'important');
+      el.style.setProperty('color', '#1F2937', 'important');
+      el.style.setProperty('-webkit-text-fill-color', '#1F2937', 'important');
+      el.style.setProperty('box-shadow', 'none', 'important');
+      el.style.setProperty('-webkit-appearance', 'none', 'important');
+      el.style.setProperty('color-scheme', 'light', 'important');
+    });
+
+    // Checkboxes
+    document.querySelectorAll('input[type="checkbox"]').forEach(el => {
+      _printOverrides.push([el, el.getAttribute('style') || '']);
+      el.style.setProperty('background', el.checked ? '#D97706' : '#ffffff', 'important');
+      el.style.setProperty('background-color', el.checked ? '#D97706' : '#ffffff', 'important');
+      el.style.setProperty('-webkit-appearance', 'none', 'important');
+      el.style.setProperty('color-scheme', 'light', 'important');
+    });
+
+    // Table cells — data cells white, header cells grey, row-label cells off-white
+    document.querySelectorAll('table.mat-table td').forEach(el => {
+      _printOverrides.push([el, el.getAttribute('style') || '']);
+      const isLabel = el.classList.contains('row-label');
+      el.style.setProperty('background', isLabel ? '#f0f0f0' : '#ffffff', 'important');
+      el.style.setProperty('background-color', isLabel ? '#f0f0f0' : '#ffffff', 'important');
+      el.style.setProperty('color', '#1F2937', 'important');
+      el.style.setProperty('-webkit-text-fill-color', '#1F2937', 'important');
+      el.style.setProperty('color-scheme', 'light', 'important');
+    });
+    document.querySelectorAll('table.mat-table th').forEach(el => {
+      _printOverrides.push([el, el.getAttribute('style') || '']);
+      el.style.setProperty('background', '#4B5563', 'important');
+      el.style.setProperty('background-color', '#4B5563', 'important');
+      el.style.setProperty('color', '#ffffff', 'important');
+      el.style.setProperty('-webkit-text-fill-color', '#ffffff', 'important');
+      el.style.setProperty('color-scheme', 'light', 'important');
+    });
+
+    // Form pages, sections, wrappers
+    document.querySelectorAll(
+      '.form-page, .permit-section, .permit-row, .permit-note, ' +
+      '.footer-fields, .footer-row, .footer-field, ' +
+      '.grid-section, #page1, #page2, #page2-inner, .page-wrapper'
+    ).forEach(el => {
+      _printOverrides.push([el, el.getAttribute('style') || '']);
+      el.style.setProperty('background', '#ffffff', 'important');
+      el.style.setProperty('background-color', '#ffffff', 'important');
+      el.style.setProperty('color-scheme', 'light', 'important');
+    });
+
+    // html and body
+    _printOverrides.push([document.documentElement, document.documentElement.getAttribute('style') || '']);
+    _printOverrides.push([document.body, document.body.getAttribute('style') || '']);
+    document.documentElement.style.setProperty('background', '#ffffff', 'important');
+    document.documentElement.style.setProperty('background-color', '#ffffff', 'important');
+    document.documentElement.style.setProperty('color-scheme', 'light', 'important');
+    document.body.style.setProperty('background', '#ffffff', 'important');
+    document.body.style.setProperty('background-color', '#ffffff', 'important');
+    document.body.style.setProperty('color-scheme', 'light', 'important');
+  }
+
+  function restoreInlineStyles() {
+    _printOverrides.forEach(([el, orig]) => {
+      if (orig) {
+        el.setAttribute('style', orig);
+      } else {
+        el.removeAttribute('style');
+      }
+    });
+    _printOverrides.length = 0;
+  }
+  // ── END SAFARI INLINE-STYLE NUKE ───────────────────────────────────────────
+
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
+      forceWhiteInline();
+      void document.body.offsetHeight; // force reflow after inline styles
       window.print();
       // Mobile Safari blocks on window.print() so the class is already active
       // the whole time the dialog is open — safe to remove immediately after return.
       // Desktop browsers render asynchronously, so we leave the class on and let
       // restore() (afterprint) remove it once the dialog actually closes.
-      if (isMobilePrint) document.body.classList.remove('printing', 'mobile-printing');
+      if (isMobilePrint) {
+        document.body.classList.remove('printing', 'mobile-printing');
+        restoreInlineStyles();
+      }
       document.body.style.maxWidth = origMaxWidth;
       document.body.style.width    = origWidth;
     });
