@@ -947,7 +947,7 @@ body.dark-mode .notice { color: #7DD3FC; }
 /* ===== MOBILE PRINT — Safari honors @media print + max-width natively.
    This block (copied from the proven-working sibling page) tightens page 2
    so it fits on phones. No body.mobile-print class, no JS injection. ===== */
-@page { size: 8.5in 11in; margin: 0.15in 0.15in 0.05in 0.15in; }
+@page { size: 8.5in 11in; margin: 0.05in 0.15in 0.05in 0.15in; }
 
 @media print and (max-width: 767px), body.printing.mobile-printing {
 
@@ -2055,7 +2055,7 @@ function openPrintPreview() {
       // the print sheet appears.
       const ua = navigator.userAgent;
       const isMobileSafari = /iPhone|iPad/.test(ua) || (/Macintosh/.test(ua) && navigator.maxTouchPoints > 1);
-      const printDelay = isMobileSafari ? 2000 : 0;
+      const printDelay = isMobileSafari ? 900 : 0;
 
       setTimeout(() => {
         window.print();
