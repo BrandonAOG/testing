@@ -2161,7 +2161,10 @@ function openPrintPreview() {
 
       setTimeout(() => {
         window.print();
-        if (isMobilePrint) restore(); // mobile Safari blocks on print(); restore immediately
+        // Do NOT restore here — even on mobile Safari window.print() returns
+        // while the preview is still open. afterprint fires when the user
+        // actually closes/cancels the dialog, which is the correct moment
+        // to flip back to dark mode.
       }, 1500); // page visibly stays in light mode for 1.5 s before dialog opens
     });
   });
