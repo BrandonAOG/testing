@@ -2027,189 +2027,142 @@ const MOBILE_PRINT_CSS = `
 const IPAD_PRINT_CSS = ``;
 
 function openPrintPreview() {
-  // Native browser print on all devices. iOS Safari opens its own print preview
-  // and honors the @media print + @media print and (max-width:767px) rules
-  // (the same proven approach as the sibling page that prints correctly).
-  const bar  = document.querySelector('.action-bar');
-  const note = document.querySelector('.notice');
+  const bar    = document.querySelector('.action-bar');
+  const note   = document.querySelector('.notice');
   const status = document.getElementById('save-status');
   const wasDark = document.body.classList.contains('dark-mode');
+
+  // ── STEP 1: flip to light mode visibly on screen ────────────────────────
   if (wasDark) document.body.classList.remove('dark-mode');
-  // Belt-and-suspenders for Safari: force inline white background on both html and
-  // body so the print renderer never inherits a dark computed background-color.
-  const origHtmlBg = document.documentElement.style.background;
-  const origBodyBg = document.body.style.background;
-  document.documentElement.style.background = '#ffffff';
-  document.body.style.background = '#ffffff';
+  document.documentElement.style.setProperty('background', '#ffffff', 'important');
+  document.body.style.setProperty('background', '#ffffff', 'important');
+  document.documentElement.style.setProperty('color-scheme', 'light', 'important');
+  document.body.style.setProperty('color-scheme', 'light', 'important');
+
   if (bar)    bar.style.display    = 'none';
   if (note)   note.style.display   = 'none';
   if (status) status.style.display = 'none';
 
-  let restored = false;
-  function restore() {
-    if (restored) return;
-    restored = true;
-    if (bar)    bar.style.display    = '';
-    if (note)   note.style.display   = '';
-    if (status) status.style.display = '';
-    if (wasDark) document.body.classList.add('dark-mode');
-    document.body.classList.remove('printing', 'mobile-printing');
-    restoreInlineStyles();
-    document.documentElement.style.background = origHtmlBg;
-    document.body.style.background = origBodyBg;
-    // Restore the wrapper's top padding that we cleared before printing.
-    if (wrapper) wrapper.style.paddingTop = origWrapperPaddingTop;
-    window.removeEventListener('afterprint', restore);
-    if (mql && mql.removeEventListener) mql.removeEventListener('change', onMqlChange);
-  }
+  const isMobilePrint = window.matchMedia && window.matchMedia('screen and (max-width: 767px)').matches;
+  document.body.classList.add('printing');
+  if (isMobilePrint) document.body.classList.add('mobile-printing');
 
-  // Only restore the dark background once the print preview/dialog actually
-  // CLOSES — not on a timer — so it stays white the entire time the preview is
-  // open. afterprint fires when the user exits the dialog.
-  window.addEventListener('afterprint', restore);
-  // Backup signal: the print media query flips back to non-matching on close.
-  const mql = window.matchMedia ? window.matchMedia('print') : null;
-  function onMqlChange(e) { if (!e.matches) restore(); }
-  if (mql && mql.addEventListener) mql.addEventListener('change', onMqlChange);
+  const wrapper = document.querySelector('.page-wrapper');
+  const origWrapperPaddingTop = wrapper ? wrapper.style.paddingTop : '';
+  if (wrapper && !isMobilePrint) wrapper.style.paddingTop = '0';
 
-  // iOS Safari measures page count BEFORE the above layout changes have reflowed,
-  // so it shows a stale (too-tall) count like 3 pages until a pinch-zoom forces a
-  // recalc. Force a synchronous reflow now, then wait two animation frames so the
-  // layout is fully settled before opening the print dialog.
-  //
-  // Additionally: Safari on iOS uses the *screen* layout width (body max-width:1050px)
-  // as the print canvas, making the preview appear tiny/zoomed-out. Temporarily
-  // clear max-width so the @page paper width is the sole layout reference.
   const origMaxWidth = document.body.style.maxWidth;
   const origWidth    = document.body.style.width;
   document.body.style.maxWidth = '100%';
   document.body.style.width    = '100%';
 
-  // Apply print styles directly to the DOM so Safari's preview renderer sees
-  // the correct layout — not the screen layout. body.printing triggers the same
-  // rules as @media print; body.printing.mobile-printing adds the mobile overrides.
-  const isMobilePrint = window.matchMedia && window.matchMedia('screen and (max-width: 767px)').matches;
-  document.body.classList.add('printing');
-  if (isMobilePrint) document.body.classList.add('mobile-printing');
+  // ── STEP 2: save & stamp inline styles on every element ─────────────────
+  // Safari's system-appearance layer overrides all stylesheet rules — even
+  // !important ones — for form elements and table cells. Inline style=""
+  // attributes are the only thing that beats it. We save originals so we can
+  // restore them perfectly after print closes.
+  const _saved = [];
 
-  void document.body.offsetHeight;            // force reflow
-  const wrapper = document.querySelector('.page-wrapper');
-  if (wrapper) void wrapper.offsetHeight;     // force reflow of the printed content
+  function stamp(el, props) {
+    _saved.push([el, el.getAttribute('style') || null]);
+    for (const [k, v] of Object.entries(props)) {
+      el.style.setProperty(k, v, 'important');
+    }
+  }
 
-  // On desktop the wrapper has a JS-set inline paddingTop equal to the action-bar
-  // height. Inline styles beat @media print rules without !important, so it shows
-  // up as a blank gap at the top of every printed page. Clear it before printing
-  // and restore it once the dialog closes (via afterprint → restore()).
-  const origWrapperPaddingTop = wrapper ? wrapper.style.paddingTop : '';
-  if (wrapper && !isMobilePrint) wrapper.style.paddingTop = '0';
+  function forceLightMode() {
+    // html + body
+    stamp(document.documentElement, { background: '#ffffff', 'background-color': '#ffffff', 'color-scheme': 'light' });
+    stamp(document.body,            { background: '#ffffff', 'background-color': '#ffffff', 'color-scheme': 'light' });
 
-  // ── SAFARI INLINE-STYLE NUKE ──────────────────────────────────────────────
-  // Safari ignores @media print and body.printing stylesheet rules for
-  // background-color on form elements and table cells — it re-applies its own
-  // system appearance layer. The ONLY reliable fix is inline style="" attributes
-  // set directly on each element immediately before window.print() fires.
-  // We collect every original inline style so we can restore them on afterprint.
-  const _printOverrides = [];
+    // Page containers
+    document.querySelectorAll(
+      '.form-page, .page-wrapper, .permit-section, .permit-row, .permit-note, ' +
+      '.footer-fields, .footer-row, .footer-field, .grid-section, ' +
+      '#page1, #page2, #page2-inner'
+    ).forEach(el => stamp(el, { background: '#ffffff', 'background-color': '#ffffff', 'color-scheme': 'light' }));
 
-  function forceWhiteInline() {
-    // All inputs, textareas, selects
+    // Text inputs / textarea / select
     document.querySelectorAll(
       'input[type="text"], input[type="email"], input[type="tel"], ' +
       'input[type="date"], input[type="number"], textarea, select'
-    ).forEach(el => {
-      _printOverrides.push([el, el.getAttribute('style') || '']);
-      el.style.setProperty('background', '#ffffff', 'important');
-      el.style.setProperty('background-color', '#ffffff', 'important');
-      el.style.setProperty('color', '#1F2937', 'important');
-      el.style.setProperty('-webkit-text-fill-color', '#1F2937', 'important');
-      el.style.setProperty('box-shadow', 'none', 'important');
-      el.style.setProperty('-webkit-appearance', 'none', 'important');
-      el.style.setProperty('color-scheme', 'light', 'important');
-    });
+    ).forEach(el => stamp(el, {
+      background: '#ffffff', 'background-color': '#ffffff',
+      color: '#1F2937', '-webkit-text-fill-color': '#1F2937',
+      'box-shadow': 'none', '-webkit-appearance': 'none', 'color-scheme': 'light'
+    }));
+
+    // Inputs inside table cells — keep transparent so td bg shows through
+    document.querySelectorAll('table.mat-table td input[type="text"]').forEach(el => stamp(el, {
+      background: 'transparent', 'background-color': 'transparent',
+      color: '#1F2937', '-webkit-text-fill-color': '#1F2937',
+      'box-shadow': 'none', '-webkit-appearance': 'none', 'color-scheme': 'light'
+    }));
 
     // Checkboxes
-    document.querySelectorAll('input[type="checkbox"]').forEach(el => {
-      _printOverrides.push([el, el.getAttribute('style') || '']);
-      el.style.setProperty('background', el.checked ? '#D97706' : '#ffffff', 'important');
-      el.style.setProperty('background-color', el.checked ? '#D97706' : '#ffffff', 'important');
-      el.style.setProperty('-webkit-appearance', 'none', 'important');
-      el.style.setProperty('color-scheme', 'light', 'important');
-    });
+    document.querySelectorAll('input[type="checkbox"]').forEach(el => stamp(el, {
+      background: el.checked ? '#D97706' : '#ffffff',
+      'background-color': el.checked ? '#D97706' : '#ffffff',
+      '-webkit-appearance': 'none', 'color-scheme': 'light'
+    }));
 
-    // Table cells — data cells white, header cells grey, row-label cells off-white
+    // Table th — dark header
+    document.querySelectorAll('table.mat-table th').forEach(el => stamp(el, {
+      background: '#4B5563', 'background-color': '#4B5563',
+      color: '#ffffff', '-webkit-text-fill-color': '#ffffff', 'color-scheme': 'light'
+    }));
+
+    // Table td — white body, off-white for row-label
     document.querySelectorAll('table.mat-table td').forEach(el => {
-      _printOverrides.push([el, el.getAttribute('style') || '']);
-      const isLabel = el.classList.contains('row-label');
-      el.style.setProperty('background', isLabel ? '#f0f0f0' : '#ffffff', 'important');
-      el.style.setProperty('background-color', isLabel ? '#f0f0f0' : '#ffffff', 'important');
-      el.style.setProperty('color', '#1F2937', 'important');
-      el.style.setProperty('-webkit-text-fill-color', '#1F2937', 'important');
-      el.style.setProperty('color-scheme', 'light', 'important');
+      const bg = el.classList.contains('row-label') ? '#f0f0f0' : '#ffffff';
+      stamp(el, {
+        background: bg, 'background-color': bg,
+        color: '#1F2937', '-webkit-text-fill-color': '#1F2937', 'color-scheme': 'light'
+      });
     });
-    document.querySelectorAll('table.mat-table th').forEach(el => {
-      _printOverrides.push([el, el.getAttribute('style') || '']);
-      el.style.setProperty('background', '#4B5563', 'important');
-      el.style.setProperty('background-color', '#4B5563', 'important');
-      el.style.setProperty('color', '#ffffff', 'important');
-      el.style.setProperty('-webkit-text-fill-color', '#ffffff', 'important');
-      el.style.setProperty('color-scheme', 'light', 'important');
-    });
-
-    // Form pages, sections, wrappers
-    document.querySelectorAll(
-      '.form-page, .permit-section, .permit-row, .permit-note, ' +
-      '.footer-fields, .footer-row, .footer-field, ' +
-      '.grid-section, #page1, #page2, #page2-inner, .page-wrapper'
-    ).forEach(el => {
-      _printOverrides.push([el, el.getAttribute('style') || '']);
-      el.style.setProperty('background', '#ffffff', 'important');
-      el.style.setProperty('background-color', '#ffffff', 'important');
-      el.style.setProperty('color-scheme', 'light', 'important');
-    });
-
-    // html and body
-    _printOverrides.push([document.documentElement, document.documentElement.getAttribute('style') || '']);
-    _printOverrides.push([document.body, document.body.getAttribute('style') || '']);
-    document.documentElement.style.setProperty('background', '#ffffff', 'important');
-    document.documentElement.style.setProperty('background-color', '#ffffff', 'important');
-    document.documentElement.style.setProperty('color-scheme', 'light', 'important');
-    document.body.style.setProperty('background', '#ffffff', 'important');
-    document.body.style.setProperty('background-color', '#ffffff', 'important');
-    document.body.style.setProperty('color-scheme', 'light', 'important');
   }
 
-  function restoreInlineStyles() {
-    _printOverrides.forEach(([el, orig]) => {
-      if (orig) {
-        el.setAttribute('style', orig);
-      } else {
-        el.removeAttribute('style');
-      }
+  function restoreAll() {
+    _saved.forEach(([el, orig]) => {
+      if (orig !== null) { el.setAttribute('style', orig); }
+      else               { el.removeAttribute('style'); }
     });
-    _printOverrides.length = 0;
+    _saved.length = 0;
   }
-  // ── END SAFARI INLINE-STYLE NUKE ───────────────────────────────────────────
 
-  // Switch to light mode now (visible on screen), wait 1.5 s so Safari's
-  // renderer fully paints the white layout, then open the print dialog.
+  // ── STEP 3: restore everything when print dialog closes ──────────────────
+  let restored = false;
+  function restore() {
+    if (restored) return;
+    restored = true;
+    restoreAll();
+    if (bar)    bar.style.display = '';
+    if (note)   note.style.display = '';
+    if (status) status.style.display = '';
+    if (wasDark) document.body.classList.add('dark-mode');
+    document.body.classList.remove('printing', 'mobile-printing');
+    if (wrapper) wrapper.style.paddingTop = origWrapperPaddingTop;
+    document.body.style.maxWidth = origMaxWidth;
+    document.body.style.width    = origWidth;
+    window.removeEventListener('afterprint', restore);
+    if (mql && mql.removeEventListener) mql.removeEventListener('change', onMqlChange);
+  }
+  window.addEventListener('afterprint', restore);
+  const mql = window.matchMedia ? window.matchMedia('print') : null;
+  function onMqlChange(e) { if (!e.matches) restore(); }
+  if (mql && mql.addEventListener) mql.addEventListener('change', onMqlChange);
+
+  // ── STEP 4: wait 1.5 s in light mode so Safari fully repaints, then print ─
+  void document.body.offsetHeight; // force synchronous reflow before rAF
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
-      forceWhiteInline();
-      void document.body.offsetHeight; // force reflow — Safari paints light mode here
+      forceLightMode();
+      void document.body.offsetHeight; // reflow again after inline stamps
 
       setTimeout(() => {
         window.print();
-        // Mobile Safari blocks on window.print() so the class is already active
-        // the whole time the dialog is open — safe to remove immediately after return.
-        // Desktop browsers render asynchronously, so we leave the class on and let
-        // restore() (afterprint) remove it once the dialog actually closes.
-        if (isMobilePrint) {
-          document.body.classList.remove('printing', 'mobile-printing');
-          restoreInlineStyles();
-        }
-        document.body.style.maxWidth = origMaxWidth;
-        document.body.style.width    = origWidth;
-      }, 1500); // 1.5 s in light mode before print dialog opens
+        if (isMobilePrint) restore(); // mobile Safari blocks on print(); restore immediately
+      }, 1500); // page visibly stays in light mode for 1.5 s before dialog opens
     });
   });
 }
