@@ -2190,21 +2190,26 @@ function openPrintPreview() {
   }
   // ── END SAFARI INLINE-STYLE NUKE ───────────────────────────────────────────
 
+  // Switch to light mode now (visible on screen), wait 1.5 s so Safari's
+  // renderer fully paints the white layout, then open the print dialog.
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
       forceWhiteInline();
-      void document.body.offsetHeight; // force reflow after inline styles
-      window.print();
-      // Mobile Safari blocks on window.print() so the class is already active
-      // the whole time the dialog is open — safe to remove immediately after return.
-      // Desktop browsers render asynchronously, so we leave the class on and let
-      // restore() (afterprint) remove it once the dialog actually closes.
-      if (isMobilePrint) {
-        document.body.classList.remove('printing', 'mobile-printing');
-        restoreInlineStyles();
-      }
-      document.body.style.maxWidth = origMaxWidth;
-      document.body.style.width    = origWidth;
+      void document.body.offsetHeight; // force reflow — Safari paints light mode here
+
+      setTimeout(() => {
+        window.print();
+        // Mobile Safari blocks on window.print() so the class is already active
+        // the whole time the dialog is open — safe to remove immediately after return.
+        // Desktop browsers render asynchronously, so we leave the class on and let
+        // restore() (afterprint) remove it once the dialog actually closes.
+        if (isMobilePrint) {
+          document.body.classList.remove('printing', 'mobile-printing');
+          restoreInlineStyles();
+        }
+        document.body.style.maxWidth = origMaxWidth;
+        document.body.style.width    = origWidth;
+      }, 1500); // 1.5 s in light mode before print dialog opens
     });
   });
 }
