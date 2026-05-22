@@ -456,6 +456,8 @@ body {
 @media screen and (max-width: 500px) {
   .info-grid { grid-template-columns: 1fr; }
   .info-row { grid-column: 1 / -1; }
+  #name-date-row { flex-wrap: wrap; gap: 2px; }
+  #name-date-row input[type="date"] { max-width: 100% !important; }
   #tech-crew-row { flex-wrap: wrap; gap: 2px; }
   #tech-crew-row .info-input { min-width: 80px; }
 }
@@ -622,6 +624,7 @@ body {
   .info-label    { font-size: var(--fs-print-desktop-info-label) !important; }
   .info-input    { font-size: var(--fs-print-desktop-info-input) !important; min-height: var(--h-print-desktop-info-input) !important; }
   .info-grid    { grid-template-columns: 1fr !important; gap: 2px 6px !important; margin-top: 3px !important; }
+  #name-date-row { flex-wrap: nowrap !important; }
   #tech-crew-row { flex-wrap: nowrap !important; }
   .section       { margin-bottom: var(--gap-print-desktop-sections) !important; }
   .section-header{ font-size: var(--fs-print-desktop-section) !important; padding: var(--pd-print-desktop-section) !important; margin-bottom: 1px !important; }
@@ -722,13 +725,11 @@ body.mobile-safari { -webkit-print-color-adjust: exact; }
         <div class="company-name">Always On Generators</div>
         <div class="doc-title">Quality Control Checklist</div>
         <div class="info-grid">
-          <div class="info-row full">
+          <div class="info-row full" id="name-date-row">
             <span class="info-label">Customer Name:</span>
             <input class="info-input" type="text" id="cust_name" autocomplete="off">
-          </div>
-          <div class="info-row full">
-            <span class="info-label">Date:</span>
-            <input class="info-input" type="date" id="cust_date" style="max-width:160px;">
+            <span class="info-label" style="margin-left:8px;flex-shrink:0;">Date:</span>
+            <input class="info-input" type="date" id="cust_date" style="max-width:160px;flex-shrink:0;">
           </div>
           <div class="info-row full">
             <span class="info-label">Address:</span>
