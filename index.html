@@ -237,6 +237,8 @@
   --gap-print-desktop-sections:12px; /* — desktop PDF                                   */
 }
 
+</style>
+<style id="dark-mode-style">
 @media screen {
 body.dark-mode,
 html.dark-mode-pending body {
@@ -309,6 +311,8 @@ body.dark-mode .theme-toggle-btn { background: rgba(0,255,200,0.08) !important; 
 body.dark-mode .theme-icon { opacity: 0; transform: rotate(-180deg); }
 body.dark-mode .theme-icon.theme-icon-moon { opacity: 1; transform: rotate(0deg); }
 
+</style>
+<style>
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
 body {
@@ -1137,8 +1141,32 @@ function printForm() {
   var cName = (document.getElementById('cust_name').value||'').trim();
   document.title = (cName ? cName + ' - ' : '') + 'QC Checklist';
 
-  // Strip dark mode before print
+  // Strip dark mode before print — exactly as estimate does
   document.body.classList.remove('dark-mode');
+  document.documentElement.classList.remove('dark-mode-pending');
+
+  // Disable the dark mode @media screen block entirely so it can't bleed into print
+  // This is the key step — just removing the class isn't enough for Safari
+  var _darkStyleEl = document.getElementById('dark-mode-style');
+  if (_darkStyleEl) _darkStyleEl.disabled = true;
+
+  // Also force all CSS variables back to light on :root via a style element
+  var lightVars = document.createElement('style');
+  lightVars.id = 'force-light-vars';
+  lightVars.textContent = [
+    ':root, body {',
+    '  --cyan: #D97706 !important;',
+    '  --bg:   #FFFFFF !important;',
+    '  --bg3:  #F8F8F8 !important;',
+    '  --panel:#FFFFFF !important;',
+    '  --text: #1F2937 !important;',
+    '  --text-muted: #6B7280 !important;',
+    '  --text-dim:   #9CA3AF !important;',
+    '  --border: rgba(217,119,6,0.25) !important;',
+    '  --border-bright: rgba(217,119,6,0.5) !important;',
+    '}'
+  ].join('\n');
+  document.head.appendChild(lightVars);
 
   // Inline-style key elements to force light colors
   var compName   = document.querySelector('.company-name');
@@ -1219,7 +1247,9 @@ function printForm() {
     if (isMobileSafari && vp && origVP) vp.setAttribute('content', origVP);
     var f  = document.getElementById('safari-print-fix');  if(f)  f.remove();
     var pl = document.getElementById('force-print-light'); if(pl) pl.remove();
-    if (wasDark) document.body.classList.add('dark-mode');
+    var lv = document.getElementById('force-light-vars');  if(lv) lv.remove();
+    if (_darkStyleEl) _darkStyleEl.disabled = false;
+    if (wasDark) { document.body.classList.add('dark-mode'); document.documentElement.setAttribute('data-theme','dark'); }
     // Restore inline styles
     if (compName)  compName.removeAttribute('style');
     if (docTitle)  docTitle.removeAttribute('style');
