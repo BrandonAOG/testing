@@ -305,17 +305,6 @@ body.dark-mode .action-bar {
   border-bottom-color: rgba(0,255,200,0.25) !important;
 }
 body.dark-mode .ab-btn { color: #00FFC8 !important; border-color: rgba(0,255,200,0.25) !important; background: rgba(0,255,200,0.05) !important; }
-@media (max-width: 400px) {
-  .section-header,
-  .doc-title,
-  .page-header h1,
-  .page-header h2 {
-    white-space: normal !important;
-    word-break: break-all !important;     /* aggressive but effective */
-    overflow-wrap: anywhere !important;
-    line-height: 1.3 !important;
-    padding-right: 10px !important;
-  }
 }
 /* ── Dark mode theme toggle ── */
 .theme-toggle-btn {
@@ -391,7 +380,40 @@ body {
   min-height: 100vh;
   -webkit-text-size-adjust: 100%;
 }
+/* ── MOBILE HEADER WRAPPING FIX ── */
+@media screen and (max-width: 768px) {
+  
+  .page-header,
+  .section-header {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+  }
 
+  .doc-title,
+  .section-header,
+  .company-name {
+    white-space: normal !important;
+    word-break: break-word !important;
+    overflow-wrap: break-word !important;
+    hyphens: auto !important;
+    line-height: 1.25 !important;
+  }
+
+  .section-header {
+    padding: 6px 8px !important;   /* give it more breathing room */
+    font-size: 0.52rem !important; /* slight reduction if needed */
+  }
+
+  /* Prevent horizontal scroll */
+  .page {
+    overflow-x: hidden !important;
+  }
+
+  .item-label {
+    white-space: normal !important;
+    word-break: break-word !important;
+  }
+}
 /* ── ACTION BAR ── */
 .action-bar {
   position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
