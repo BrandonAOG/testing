@@ -294,7 +294,7 @@ body.dark-mode .opt input[value="bad"],
 body.dark-mode .opt input[value="no"],
 body.dark-mode .opt input[value="removed"],
 body.dark-mode .opt input[value="not_done"]  { accent-color: #F43F5E !important; }
-body.dark-mode .notes-line { border-bottom-color: rgba(0,255,200,0.25) !important; }
+body.dark-mode .notes-line { border-bottom-color: rgba(0,255,200,0.25) !important; color: #E0F7FF !important; background: transparent !important; }
 
 body.dark-mode .page-footer { border-top-color: rgba(0,255,200,0.25) !important; }
 body.dark-mode .footer-text { color: #38BDF8 !important; }
@@ -899,6 +899,15 @@ body.mobile-safari { -webkit-print-color-adjust: exact; }
           <label class="opt"><input type="checkbox" name="cp_bond" value="installed"><span>Installed</span></label>
           <label class="opt"><input type="checkbox" name="cp_bond" value="removed"><span>Removed</span></label>
           
+        </div>
+        <input class="notes-line" type="text" placeholder="" autocomplete="off">
+      </div>
+      <div class="check-item">
+        <span class="item-num">4.</span>
+        <span class="item-label">Placards Installed</span>
+        <div class="options">
+          <label class="opt"><input type="checkbox" name="cp_placards" value="yes"><span>Yes</span></label>
+          <label class="opt"><input type="checkbox" name="cp_placards" value="no"><span>No</span></label>
         </div>
         <input class="notes-line" type="text" placeholder="" autocomplete="off">
       </div>
