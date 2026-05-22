@@ -455,14 +455,9 @@ body {
 /* On small phones — stack name/date and tech/crew each on their own rows */
 @media screen and (max-width: 500px) {
   .info-grid { grid-template-columns: 1fr; }
-  .info-row-name-date {
-    display: flex; flex-direction: column; gap: 4px; grid-column: 1 / -1;
-  }
-  .info-row-name-date .name-row,
-  .info-row-name-date .date-row {
-    display: flex; align-items: flex-end; gap: 4px;
-  }
   .info-row { grid-column: 1 / -1; }
+  #tech-crew-row { flex-wrap: wrap; gap: 2px; }
+  #tech-crew-row .info-input { min-width: 80px; }
 }
 
 /* ── SECTION ── */
@@ -626,13 +621,8 @@ body {
   .doc-title     { font-size: var(--fs-print-desktop-title) !important; }
   .info-label    { font-size: var(--fs-print-desktop-info-label) !important; }
   .info-input    { font-size: var(--fs-print-desktop-info-input) !important; min-height: var(--h-print-desktop-info-input) !important; }
-  /* Condense header to one name+date row in print */
-  .info-grid    { grid-template-columns: 1fr auto !important; gap: 2px 6px !important; margin-top: 3px !important; }
-  .info-row.full:first-child  { grid-column: 1 !important; }
-  .info-row.full:nth-child(2) { grid-column: 2 !important; grid-row: 1 !important; }
-  .info-row.full:nth-child(3),
-  .info-row.full:nth-child(4),
-  .info-row.full:nth-child(5) { grid-column: 1 / -1 !important; }
+  .info-grid    { grid-template-columns: 1fr !important; gap: 2px 6px !important; margin-top: 3px !important; }
+  #tech-crew-row { flex-wrap: nowrap !important; }
   .section       { margin-bottom: var(--gap-print-desktop-sections) !important; }
   .section-header{ font-size: var(--fs-print-desktop-section) !important; padding: var(--pd-print-desktop-section) !important; margin-bottom: 1px !important; }
   .check-item    { min-height: var(--h-print-desktop-item) !important; padding: var(--pd-print-desktop-item) !important; border-bottom-color: rgba(217,119,6,0.1) !important; flex-wrap: nowrap !important; }
@@ -744,12 +734,10 @@ body.mobile-safari { -webkit-print-color-adjust: exact; }
             <span class="info-label">Address:</span>
             <input class="info-input" type="text" id="cust_addr" autocomplete="off">
           </div>
-          <div class="info-row full">
+          <div class="info-row full" id="tech-crew-row">
             <span class="info-label">Technician:</span>
             <input class="info-input" type="text" id="tech_name" autocomplete="off">
-          </div>
-          <div class="info-row full">
-            <span class="info-label">Install Crew:</span>
+            <span class="info-label" style="margin-left:8px;flex-shrink:0;">Install Crew:</span>
             <input class="info-input" type="text" id="crew_name" autocomplete="off">
           </div>
         </div>
