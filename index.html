@@ -452,6 +452,19 @@ body {
 }
 .info-row.full { grid-column: 1 / -1; }
 
+/* On small phones — stack name/date and tech/crew each on their own rows */
+@media screen and (max-width: 500px) {
+  .info-grid { grid-template-columns: 1fr; }
+  .info-row-name-date {
+    display: flex; flex-direction: column; gap: 4px; grid-column: 1 / -1;
+  }
+  .info-row-name-date .name-row,
+  .info-row-name-date .date-row {
+    display: flex; align-items: flex-end; gap: 4px;
+  }
+  .info-row { grid-column: 1 / -1; }
+}
+
 /* ── SECTION ── */
 .section { margin-bottom: var(--gap-phone-sections); }
 .section-header {
@@ -613,7 +626,13 @@ body {
   .doc-title     { font-size: var(--fs-print-desktop-title) !important; }
   .info-label    { font-size: var(--fs-print-desktop-info-label) !important; }
   .info-input    { font-size: var(--fs-print-desktop-info-input) !important; min-height: var(--h-print-desktop-info-input) !important; }
-  .info-grid     { gap: 2px 6px !important; margin-top: 3px !important; }
+  /* Condense header to one name+date row in print */
+  .info-grid    { grid-template-columns: 1fr auto !important; gap: 2px 6px !important; margin-top: 3px !important; }
+  .info-row.full:first-child  { grid-column: 1 !important; }
+  .info-row.full:nth-child(2) { grid-column: 2 !important; grid-row: 1 !important; }
+  .info-row.full:nth-child(3),
+  .info-row.full:nth-child(4),
+  .info-row.full:nth-child(5) { grid-column: 1 / -1 !important; }
   .section       { margin-bottom: var(--gap-print-desktop-sections) !important; }
   .section-header{ font-size: var(--fs-print-desktop-section) !important; padding: var(--pd-print-desktop-section) !important; margin-bottom: 1px !important; }
   .check-item    { min-height: var(--h-print-desktop-item) !important; padding: var(--pd-print-desktop-item) !important; border-bottom-color: rgba(217,119,6,0.1) !important; flex-wrap: nowrap !important; }
@@ -716,18 +735,20 @@ body.mobile-safari { -webkit-print-color-adjust: exact; }
           <div class="info-row full">
             <span class="info-label">Customer Name:</span>
             <input class="info-input" type="text" id="cust_name" autocomplete="off">
-            <span class="info-label" style="margin-left:10px;">Date:</span>
-            <input class="info-input" type="date" id="cust_date" style="max-width:120px;">
+          </div>
+          <div class="info-row full">
+            <span class="info-label">Date:</span>
+            <input class="info-input" type="date" id="cust_date" style="max-width:160px;">
           </div>
           <div class="info-row full">
             <span class="info-label">Address:</span>
             <input class="info-input" type="text" id="cust_addr" autocomplete="off">
           </div>
-          <div class="info-row">
+          <div class="info-row full">
             <span class="info-label">Technician:</span>
             <input class="info-input" type="text" id="tech_name" autocomplete="off">
           </div>
-          <div class="info-row">
+          <div class="info-row full">
             <span class="info-label">Install Crew:</span>
             <input class="info-input" type="text" id="crew_name" autocomplete="off">
           </div>
