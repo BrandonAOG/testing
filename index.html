@@ -125,7 +125,7 @@
   --fs-print-phone-section:   0.6rem;   /* Transfer Switch / Meter / Generator… section bars in PDF */
   --fs-print-phone-item:      0.58rem;  /* Check All Wire Connections, Vacuumed… item text in PDF */
   --fs-print-phone-option:    0.52rem;  /* Good / Bad / Yes / No / Installed / Removed in PDF */
-  --fs-print-phone-footer:    0.38rem;  /* "Quality Control Checklist · Always On Generators · Confidential" in PDF */
+  --fs-print-phone-footer:    0.42rem;  /* "Quality Control Checklist · Always On Generators · Confidential" in PDF */
   --fs-print-phone-summary:   8px;      /* Overall Job Status / Pass / Fail / Items Requiring Follow-Up in PDF */
 
   /* ── 1e. PDF — iPad ── */
@@ -170,46 +170,90 @@
      ╚══════════════════════════════════════════════╝ */
 
   /* ── 2a. Screen — Phone ── */
-  --pd-phone-page:       10px 14px;  /* space between page edge and all form content — phone */
-  --pd-phone-section:    3px 8px;    /* space inside Transfer Switch / Meter / Generator… title bars */
-  --pd-phone-item:       2px 6px;    /* space inside each Check All Wire / Vacuumed… row */
+  --pd-phone-page:         10px 14px;  /* space between page edge and all form content — phone */
+  --pd-phone-header:       6px 12px;   /* space inside the logo / title / info header area */
+  --pd-phone-section:      3px 8px;    /* space inside Transfer Switch / Meter / Generator… title bars */
+  --pd-phone-item:         2px 6px;    /* space inside each Check All Wire / Vacuumed… row */
+  --pd-phone-option:       0 4px;      /* space around Good / Bad / Yes / No label text   */
+  --pd-phone-info-input:   0 2px;      /* space inside Customer Name / Address / Date… text fields */
+  --pd-phone-footer:       4px 0;      /* space above/below the footer bar                */
+  --pd-phone-summary:      8px 10px;   /* space inside the Summary section body           */
 
   /* ── 2b. Screen — iPad ── */
-  --pd-ipad-page:        10px 14px;  /* space between page edge and all form content — iPad */
-  --pd-ipad-section:     3px 8px;    /* space inside section title bars — iPad          */
-  --pd-ipad-item:        2px 6px;    /* space inside each checklist item row — iPad     */
+  --pd-ipad-page:          10px 14px;  /* space between page edge and all form content — iPad */
+  --pd-ipad-header:        6px 12px;   /* space inside the logo / title / info header area — iPad */
+  --pd-ipad-section:       3px 8px;    /* space inside section title bars — iPad          */
+  --pd-ipad-item:          2px 6px;    /* space inside each checklist item row — iPad     */
+  --pd-ipad-option:        0 4px;      /* space around Good / Bad / Yes / No labels — iPad */
+  --pd-ipad-info-input:    0 2px;      /* space inside Customer Name / Address / Date… fields — iPad */
+  --pd-ipad-footer:        4px 0;      /* space above/below the footer bar — iPad         */
+  --pd-ipad-summary:       8px 10px;   /* space inside the Summary section body — iPad    */
 
   /* ── 2c. Screen — Desktop ── */
-  --pd-desktop-page:     10px 14px;  /* space between page edge and all form content — desktop */
-  --pd-desktop-section:  3px 8px;    /* space inside section title bars — desktop       */
-  --pd-desktop-item:     2px 6px;    /* space inside each checklist item row — desktop  */
+  --pd-desktop-page:       10px 14px;  /* space between page edge and all form content — desktop */
+  --pd-desktop-header:     6px 12px;   /* space inside the logo / title / info header area — desktop */
+  --pd-desktop-section:    3px 8px;    /* space inside section title bars — desktop       */
+  --pd-desktop-item:       2px 6px;    /* space inside each checklist item row — desktop  */
+  --pd-desktop-option:     0 4px;      /* space around Good / Bad / Yes / No labels — desktop */
+  --pd-desktop-info-input: 0 2px;      /* space inside Customer Name / Address / Date… fields — desktop */
+  --pd-desktop-footer:     4px 0;      /* space above/below the footer bar — desktop      */
+  --pd-desktop-summary:    8px 10px;   /* space inside the Summary section body — desktop */
 
   /* ── 2d. PDF — Phone ── */
-  --pd-print-phone-page:     8px 12px;  /* space between page edge and all content in PDF */
-  --pd-print-phone-section:  4px 8px;   /* space inside Transfer Switch / Meter… title bars in PDF */
-  --pd-print-phone-item:     5px 6px;   /* space inside each Check All Wire / Vacuumed… row in PDF */
+  --pd-print-phone-page:        8px 12px;   /* space between page edge and all content in PDF */
+  --pd-print-phone-header:      4px 10px;   /* space inside the header area in PDF         */
+  --pd-print-phone-section:     4px 8px;    /* space inside Transfer Switch / Meter… title bars in PDF */
+  --pd-print-phone-item:        5px 6px;    /* space inside each Check All Wire / Vacuumed… row in PDF */
+  --pd-print-phone-option:      0 3px;      /* space around Good / Bad / Yes / No labels in PDF */
+  --pd-print-phone-info-input:  0 2px;      /* space inside Customer Name / Address… fields in PDF */
+  --pd-print-phone-footer:      2px 0;      /* space above/below footer bar in PDF         */
+  --pd-print-phone-summary:     4px 8px;    /* space inside Summary section body in PDF    */
 
   /* ── 2e. PDF — iPad ── */
-  --pd-print-ipad-page:      8px 12px;  /* space between page edge and all content in iPad PDF */
-  --pd-print-ipad-section:   4px 8px;   /* space inside section title bars in iPad PDF  */
-  --pd-print-ipad-item:      5px 6px;   /* space inside each checklist item row in iPad PDF */
+  --pd-print-ipad-page:         8px 12px;   /* space between page edge and all content in iPad PDF */
+  --pd-print-ipad-header:       4px 10px;   /* space inside the header area in iPad PDF    */
+  --pd-print-ipad-section:      4px 8px;    /* space inside section title bars in iPad PDF */
+  --pd-print-ipad-item:         5px 6px;    /* space inside each checklist item row in iPad PDF */
+  --pd-print-ipad-option:       0 3px;      /* space around Good / Bad / Yes / No labels in iPad PDF */
+  --pd-print-ipad-info-input:   0 2px;      /* space inside Customer Name / Address… fields in iPad PDF */
+  --pd-print-ipad-footer:       2px 0;      /* space above/below footer bar in iPad PDF    */
+  --pd-print-ipad-summary:      4px 8px;    /* space inside Summary section body in iPad PDF */
 
   /* ── 2f. PDF — macOS ── */
-  --pd-print-macos-page:     8px 12px;  /* space between page edge and all content in macOS PDF */
-  --pd-print-macos-section:  4px 8px;   /* space inside section title bars in macOS PDF */
-  --pd-print-macos-item:     5px 6px;   /* space inside each checklist item row in macOS PDF */
+  --pd-print-macos-page:        8px 12px;   /* space between page edge and all content in macOS PDF */
+  --pd-print-macos-header:      4px 10px;   /* space inside the header area in macOS PDF   */
+  --pd-print-macos-section:     4px 8px;    /* space inside section title bars in macOS PDF */
+  --pd-print-macos-item:        5px 6px;    /* space inside each checklist item row in macOS PDF */
+  --pd-print-macos-option:      0 3px;      /* space around Good / Bad / Yes / No labels in macOS PDF */
+  --pd-print-macos-info-input:  0 2px;      /* space inside Customer Name / Address… fields in macOS PDF */
+  --pd-print-macos-footer:      2px 0;      /* space above/below footer bar in macOS PDF   */
+  --pd-print-macos-summary:     4px 8px;    /* space inside Summary section body in macOS PDF */
 
   /* ── 2g. PDF — Desktop ── */
-  --pd-print-desktop-page:   8px 12px;  /* space between page edge and all content in desktop PDF */
-  --pd-print-desktop-section:4px 8px;   /* space inside section title bars in desktop PDF */
-  --pd-print-desktop-item:   5px 6px;   /* space inside each checklist item row in desktop PDF */
+  --pd-print-desktop-page:      8px 12px;   /* space between page edge and all content in desktop PDF */
+  --pd-print-desktop-header:    4px 10px;   /* space inside the header area in desktop PDF */
+  --pd-print-desktop-section:   4px 8px;    /* space inside section title bars in desktop PDF */
+  --pd-print-desktop-item:      5px 6px;    /* space inside each checklist item row in desktop PDF */
+  --pd-print-desktop-option:    0 3px;      /* space around Good / Bad / Yes / No labels in desktop PDF */
+  --pd-print-desktop-info-input:0 2px;      /* space inside Customer Name / Address… fields in desktop PDF */
+  --pd-print-desktop-footer:    2px 0;      /* space above/below footer bar in desktop PDF */
+  --pd-print-desktop-summary:   4px 8px;    /* space inside Summary section body in desktop PDF */
+
+  /* ── SUMMARY TEXTAREA → FOOTER GAP ── */
+  --gap-phone-summary-footer:     2px;   /* space between Additional Comments box and footer — phone  */
+  --gap-ipad-summary-footer:      2px;   /* space between Additional Comments box and footer — iPad   */
+  --gap-desktop-summary-footer:   2px;   /* space between Additional Comments box and footer — desktop */
+  --gap-print-phone-summary-footer:   2px;   /* space between Additional Comments box and footer — phone PDF  */
+  --gap-print-ipad-summary-footer:    2px;   /* space between Additional Comments box and footer — iPad PDF   */
+  --gap-print-macos-summary-footer:   2px;   /* space between Additional Comments box and footer — macOS PDF  */
+  --gap-print-desktop-summary-footer: 2px;   /* space between Additional Comments box and footer — desktop PDF */
 
   /* ╔══════════════════════════════════════════════╗
      ║  SECTION 3 — ELEMENT HEIGHTS                ║
      ╚══════════════════════════════════════════════╝ */
 
   /* ── 3a. Screen ── */
-  --h-phone-info-input:   20px;   /* Customer Name / Address / Date / Technician… field height — phone */
+  --h-phone-info-input:   18px;   /* Customer Name / Address / Date / Technician… field height — phone */
   --h-ipad-info-input:    18px;   /* Customer Name / Address / Date / Technician… field height — iPad  */
   --h-desktop-info-input: 18px;   /* Customer Name / Address / Date / Technician… field height — desktop */
   --h-phone-item:         20px;   /* Check All Wire / Vacuumed / Bonding Jumper… row height — phone */
@@ -243,7 +287,7 @@
      ║  SECTION 4 — SPACING GAPS                   ║
      ╚══════════════════════════════════════════════╝ */
 
-  --gap-phone-sections:         4px;   /* space between Transfer Switch / Meter / Generator… sections — phone */
+  --gap-phone-sections:         5px;   /* space between Transfer Switch / Meter / Generator… sections — phone */
   --gap-ipad-sections:          5px;   /* space between sections — iPad                  */
   --gap-desktop-sections:       5px;   /* space between sections — desktop               */
   --gap-print-phone-sections:  12px;   /* space between Transfer Switch / Meter / Generator… sections in PDF */
@@ -446,7 +490,7 @@ body.offline { padding-top: 50px; }
 .page-header {
   display: flex; align-items: flex-start; gap: 12px;
   border-bottom: 1.5px solid var(--cyan);
-  padding-bottom: 6px; margin-bottom: 8px;
+  padding: var(--pd-phone-header); margin-bottom: 8px;
 }
 .logo-img { width: 52px; height: 52px; object-fit: contain; flex-shrink: 0; }
 .header-right { flex: 1; }
@@ -471,7 +515,7 @@ body.offline { padding-top: 50px; }
   flex: 1; border: none; border-bottom: 1.5px solid rgba(217,119,6,0.4);
   font-family: var(--font-mono); font-size: var(--fs-phone-info-input);
   color: var(--text); background: transparent; outline: none;
-  min-height: var(--h-phone-info-input); padding: 0 2px;
+  min-height: var(--h-phone-info-input); padding: var(--pd-phone-info-input);
 }
 .info-row.full { grid-column: 1 / -1; }
 
@@ -524,7 +568,7 @@ body.offline { padding-top: 50px; }
   display: flex; align-items: center; gap: 2px;
   font-family: var(--font-display); font-size: var(--fs-phone-option);
   color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;
-  white-space: nowrap;
+  white-space: nowrap; padding: var(--pd-phone-option);
 }
 .opt input[type="checkbox"] {
   width: var(--h-phone-checkbox); height: var(--h-phone-checkbox);
@@ -560,7 +604,7 @@ body.offline { padding-top: 50px; }
 
 /* ── SUMMARY SECTION ── */
 .summary-body {
-  padding: 8px 10px 10px;
+  padding: var(--pd-phone-summary);
 }
 .summary-label {
   font-family: var(--font-display); font-size: var(--fs-phone-summary);
@@ -615,6 +659,13 @@ body.dark-mode .summary-sig-line { border-bottom-color: rgba(0,255,200,0.3) !imp
 /* Print overrides for summary */
 @media print {
   .summary-body { padding: 4px 8px 6px !important; }
+  .page-header   { padding: var(--pd-print-desktop-header) !important; }
+  .info-input    { padding: var(--pd-print-desktop-info-input) !important; }
+  .opt           { padding: var(--pd-print-desktop-option) !important; }
+  .page-footer   { padding: var(--pd-print-desktop-footer) !important; }
+  .summary-body  { padding: var(--pd-print-desktop-summary) !important; }
+  #additional_comments { margin-bottom: var(--gap-print-desktop-summary-footer) !important; }
+  #page2 .page-footer  { margin-top: var(--gap-print-desktop-summary-footer) !important; }
   .summary-label { font-size: var(--fs-print-desktop-summary) !important; margin-bottom: 3px !important; color: #6B7280 !important; }
   .summary-status-row { gap: 5px !important; margin-bottom: 3px !important; }
   .status-btn { min-height: var(--h-print-desktop-item) !important; padding: var(--pd-print-desktop-item) !important; font-size: var(--fs-print-desktop-summary) !important; border-radius: 12px !important; color: #6B7280 !important; border-color: rgba(217,119,6,0.4) !important; background: #ffffff !important; }
@@ -629,8 +680,8 @@ body.dark-mode .summary-sig-line { border-bottom-color: rgba(0,255,200,0.3) !imp
 
 /* ── PAGE FOOTER ── */
 .page-footer {
-  margin-top: 3px; border-top: 1px solid var(--border-bright);
-  padding-top: 4px; display: flex; justify-content: space-between; align-items: center;
+  margin-top: var(--gap-phone-summary-footer); border-top: 1px solid var(--border-bright);
+  padding: var(--pd-phone-footer); display: flex; justify-content: space-between; align-items: center;
 }
 .footer-text {
   font-family: var(--font-display); font-size: var(--fs-phone-footer);
@@ -659,6 +710,11 @@ body.dark-mode .summary-sig-line { border-bottom-color: rgba(0,255,200,0.3) !imp
   body.mobile-safari .page-num      { font-size: var(--fs-ipad-pagenum) !important; }
   body.mobile-safari .section       { margin-bottom: var(--gap-ipad-sections) !important; }
   body.mobile-safari .page          { padding: var(--pd-ipad-page) !important; }
+  body.mobile-safari .page-header    { padding: var(--pd-ipad-header) !important; }
+  body.mobile-safari .info-input     { padding: var(--pd-ipad-info-input) !important; }
+  body.mobile-safari .opt            { padding: var(--pd-ipad-option) !important; }
+  body.mobile-safari .page-footer    { padding: var(--pd-ipad-footer) !important; margin-top: var(--gap-ipad-summary-footer) !important; }
+  body.mobile-safari .summary-body   { padding: var(--pd-ipad-summary) !important; }
   body.mobile-safari .summary-label  { font-size: var(--fs-ipad-summary) !important; }
   body.mobile-safari .status-btn     { font-size: var(--fs-ipad-summary) !important; min-height: var(--h-ipad-item) !important; padding: var(--pd-ipad-item) !important; }
   body.mobile-safari .summary-textarea { font-size: var(--fs-ipad-summary) !important; }
@@ -677,6 +733,11 @@ body.dark-mode .summary-sig-line { border-bottom-color: rgba(0,255,200,0.3) !imp
   .footer-text    { font-size: var(--fs-ipad-footer) !important; }
   .section        { margin-bottom: var(--gap-ipad-sections) !important; }
   .page           { padding: var(--pd-ipad-page) !important; }
+  .page-header    { padding: var(--pd-ipad-header) !important; }
+  .info-input     { padding: var(--pd-ipad-info-input) !important; }
+  .opt            { padding: var(--pd-ipad-option) !important; }
+  .page-footer    { padding: var(--pd-ipad-footer) !important; }
+  .summary-body   { padding: var(--pd-ipad-summary) !important; }
   .summary-label   { font-size: var(--fs-ipad-summary) !important; }
   .status-btn      { font-size: var(--fs-ipad-summary) !important; min-height: var(--h-ipad-item) !important; padding: var(--pd-ipad-item) !important; }
   .summary-textarea{ font-size: var(--fs-ipad-summary) !important; }
@@ -698,6 +759,11 @@ body.dark-mode .summary-sig-line { border-bottom-color: rgba(0,255,200,0.3) !imp
   .footer-text    { font-size: var(--fs-desktop-footer) !important; }
   .section        { margin-bottom: var(--gap-desktop-sections) !important; }
   .page           { padding: var(--pd-desktop-page) !important; }
+  .page-header    { padding: var(--pd-desktop-header) !important; }
+  .info-input     { padding: var(--pd-desktop-info-input) !important; }
+  .opt            { padding: var(--pd-desktop-option) !important; }
+  .page-footer    { padding: var(--pd-desktop-footer) !important; margin-top: var(--gap-desktop-summary-footer) !important; }
+  .summary-body   { padding: var(--pd-desktop-summary) !important; }
   .summary-label   { font-size: var(--fs-desktop-summary) !important; }
   .status-btn      { font-size: var(--fs-desktop-summary) !important; min-height: var(--h-desktop-item) !important; padding: var(--pd-desktop-item) !important; }
   .summary-textarea{ font-size: var(--fs-desktop-summary) !important; }
@@ -758,6 +824,11 @@ body.dark-mode .summary-sig-line { border-bottom-color: rgba(0,255,200,0.3) !imp
   .footer-text    { font-size: var(--fs-print-ipad-footer) !important; }
   .section        { margin-bottom: var(--gap-print-ipad-sections) !important; }
   .page           { padding: var(--pd-print-ipad-page) !important; }
+  .page-header   { padding: var(--pd-print-ipad-header) !important; }
+  .info-input    { padding: var(--pd-print-ipad-info-input) !important; }
+  .opt           { padding: var(--pd-print-ipad-option) !important; }
+  .page-footer   { padding: var(--pd-print-ipad-footer) !important; }
+  .summary-body  { padding: var(--pd-print-ipad-summary) !important; }
   .summary-label   { font-size: var(--fs-print-ipad-summary) !important; color: #6B7280 !important; }
   .status-btn      { font-size: var(--fs-print-ipad-summary) !important; min-height: var(--h-print-ipad-item) !important; padding: var(--pd-print-ipad-item) !important; }
   .status-btn span { font-size: var(--fs-print-ipad-summary) !important; }
@@ -779,6 +850,17 @@ body.dark-mode .summary-sig-line { border-bottom-color: rgba(0,255,200,0.3) !imp
   html.macos .footer-text    { font-size: var(--fs-print-macos-footer) !important; }
   html.macos .section        { margin-bottom: var(--gap-print-macos-sections) !important; }
   html.macos .page           { padding: var(--pd-print-macos-page) !important; }
+  /* iPad PDF summary→footer gap */
+  #additional_comments { margin-bottom: var(--gap-print-ipad-summary-footer) !important; }
+  #page2 .page-footer { margin-top: var(--gap-print-ipad-summary-footer) !important; }
+
+  html.macos .page-header   { padding: var(--pd-print-macos-header) !important; }
+  html.macos .info-input    { padding: var(--pd-print-macos-info-input) !important; }
+  html.macos .opt           { padding: var(--pd-print-macos-option) !important; }
+  html.macos .page-footer   { padding: var(--pd-print-macos-footer) !important; }
+  html.macos .summary-body  { padding: var(--pd-print-macos-summary) !important; }
+  html.macos #additional_comments { margin-bottom: var(--gap-print-macos-summary-footer) !important; }
+  html.macos #page2 .page-footer  { margin-top: var(--gap-print-macos-summary-footer) !important; }
   html.macos .summary-label    { font-size: var(--fs-print-macos-summary) !important; color: #6B7280 !important; }
   html.macos .status-btn       { font-size: var(--fs-print-macos-summary) !important; min-height: var(--h-print-macos-item) !important; padding: var(--pd-print-macos-item) !important; }
   html.macos .status-btn span  { font-size: var(--fs-print-macos-summary) !important; }
@@ -1534,6 +1616,9 @@ function printForm() {
       '  .opt input[type="checkbox"] { width:var(--h-print-ipad-checkbox)!important; height:var(--h-print-ipad-checkbox)!important; min-width:var(--h-print-ipad-checkbox)!important; min-height:var(--h-print-ipad-checkbox)!important; }',
       '  .footer-text    { font-size:var(--fs-print-ipad-footer)!important; }',
       '  #doc-title-continued { display:none!important; }',
+      '  #additional_comments { margin-bottom:var(--gap-print-ipad-summary-footer)!important; }',
+      '  #page2 .page-footer { margin-top:var(--gap-print-ipad-summary-footer)!important; }',
+      '  #page2 .summary-body { padding-bottom:0!important; }',
       '}'
     ].join('\n');
     document.head.appendChild(fix);
