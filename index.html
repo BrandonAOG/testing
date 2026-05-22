@@ -285,6 +285,14 @@ body.dark-mode .item-label { color: #E0F7FF !important; }
 body.dark-mode .item-num { color: #7DD3FC !important; }
 body.dark-mode .opt { color: #7DD3FC !important; }
 body.dark-mode .opt input[type="checkbox"] { accent-color: #00FFC8 !important; }
+body.dark-mode .opt input[value="good"],
+body.dark-mode .opt input[value="yes"],
+body.dark-mode .opt input[value="installed"],
+body.dark-mode .opt input[value="complete"]  { accent-color: #10B981 !important; }
+body.dark-mode .opt input[value="bad"],
+body.dark-mode .opt input[value="no"],
+body.dark-mode .opt input[value="removed"],
+body.dark-mode .opt input[value="not_done"]  { accent-color: #F43F5E !important; }
 body.dark-mode .notes-line { border-bottom-color: rgba(0,255,200,0.25) !important; }
 
 body.dark-mode .page-footer { border-top-color: rgba(0,255,200,0.25) !important; }
@@ -310,6 +318,55 @@ body.dark-mode .theme-toggle-btn { background: rgba(0,255,200,0.08) !important; 
 .theme-icon.theme-icon-moon { opacity: 0; }
 body.dark-mode .theme-icon { opacity: 0; transform: rotate(-180deg); }
 body.dark-mode .theme-icon.theme-icon-moon { opacity: 1; transform: rotate(0deg); }
+
+/* ── CRITICAL: Force light mode in print for Chrome ── */
+@media print {
+  html, body,
+  body.dark-mode,
+  html.dark-mode-pending body {
+    background: #ffffff !important;
+    color: #1F2937 !important;
+    color-scheme: light !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+  body.dark-mode *,
+  html.dark-mode-pending body * {
+    background: #ffffff !important;
+    color: #1F2937 !important;
+    border-color: rgba(217,119,6,0.4) !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+  body.dark-mode .page,
+  html.dark-mode-pending .page {
+    background: #ffffff !important;
+    border: 1.5pt solid #D97706 !important;
+  }
+  body.dark-mode .section-header,
+  html.dark-mode-pending .section-header {
+    background: #f5f5f5 !important;
+    color: #D97706 !important;
+  }
+  body.dark-mode .section-header::before,
+  html.dark-mode-pending .section-header::before {
+    background: #D97706 !important;
+  }
+  body.dark-mode .company-name,
+  html.dark-mode-pending .company-name {
+    color: #D97706 !important;
+  }
+  body.dark-mode .footer-text,
+  body.dark-mode .page-num,
+  html.dark-mode-pending .footer-text,
+  html.dark-mode-pending .page-num {
+    color: #9CA3AF !important;
+  }
+  body.dark-mode .action-bar,
+  body.dark-mode .theme-toggle-btn,
+  html.dark-mode-pending .action-bar,
+  html.dark-mode-pending .theme-toggle-btn { display: none !important; }
+}
 
 </style>
 <style>
@@ -438,6 +495,15 @@ body {
   accent-color: var(--cyan); cursor: pointer; flex-shrink: 0;
   border: none; padding: 0; margin: 0;
 }
+/* Green for good/yes/installed/complete, red for bad/no/removed/not_done */
+.opt input[value="good"],
+.opt input[value="yes"],
+.opt input[value="installed"],
+.opt input[value="complete"]  { accent-color: #059669; }
+.opt input[value="bad"],
+.opt input[value="no"],
+.opt input[value="removed"],
+.opt input[value="not_done"]  { accent-color: #DC2626; }
 .notes-line {
   flex: 1; border: none; border-bottom: 1px solid rgba(217,119,6,0.3);
   background: transparent; min-height: 14px;
