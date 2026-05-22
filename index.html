@@ -144,9 +144,9 @@
   --fs-print-desktop-title:     0.82rem;
   --fs-print-desktop-info-label:0.5rem;
   --fs-print-desktop-info-input:0.65rem;
-  --fs-print-desktop-section:   0.6rem;
-  --fs-print-desktop-item:      0.58rem;
-  --fs-print-desktop-option:    0.52rem;
+  --fs-print-desktop-section:   0.69rem;  /* section title bars in desktop PDF            */
+  --fs-print-desktop-item:      0.67rem;  /* checklist item labels in desktop PDF         */
+  --fs-print-desktop-option:    0.61rem;  /* Good/Bad/Yes/No option labels in desktop PDF  */
   --fs-print-desktop-footer:    0.42rem;
   --fs-print-desktop-base:      16px;   /* base html font-size for desktop print        */
 
@@ -530,17 +530,17 @@ body {
   .page:last-child { page-break-after: auto !important; break-after: auto !important; }
   .page-header   { padding-bottom: 3px !important; margin-bottom: 4px !important; }
   .logo-img      { width: 38px !important; height: 38px !important; }
-  .company-name  { font-size: var(--fs-print-phone-company) !important; }
-  .doc-title     { font-size: var(--fs-print-phone-title) !important; }
-  .info-label    { font-size: var(--fs-print-phone-info-label) !important; }
-  .info-input    { font-size: var(--fs-print-phone-info-input) !important; min-height: var(--h-print-phone-info-input) !important; }
+  .company-name  { font-size: var(--fs-print-desktop-company) !important; }
+  .doc-title     { font-size: var(--fs-print-desktop-title) !important; }
+  .info-label    { font-size: var(--fs-print-desktop-info-label) !important; }
+  .info-input    { font-size: var(--fs-print-desktop-info-input) !important; min-height: var(--h-print-desktop-info-input) !important; }
   .info-grid     { gap: 2px 6px !important; margin-top: 3px !important; }
-  .section       { margin-bottom: var(--gap-print-phone-sections) !important; }
-  .section-header{ font-size: var(--fs-print-phone-section) !important; padding: var(--pd-print-phone-section) !important; margin-bottom: 1px !important; }
-  .check-item    { min-height: var(--h-print-phone-item) !important; padding: var(--pd-print-phone-item) !important; border-bottom-color: rgba(217,119,6,0.1) !important; }
-  .item-label    { font-size: var(--fs-print-phone-item) !important; }
-  .item-num      { font-size: var(--fs-print-phone-option) !important; }
-  .opt           { font-size: var(--fs-print-phone-option) !important; gap: 2px !important; }
+  .section       { margin-bottom: var(--gap-print-desktop-sections) !important; }
+  .section-header{ font-size: var(--fs-print-desktop-section) !important; padding: var(--pd-print-desktop-section) !important; margin-bottom: 1px !important; }
+  .check-item    { min-height: var(--h-print-desktop-item) !important; padding: var(--pd-print-desktop-item) !important; border-bottom-color: rgba(217,119,6,0.1) !important; }
+  .item-label    { font-size: var(--fs-print-desktop-item) !important; }
+  .item-num      { font-size: var(--fs-print-desktop-option) !important; }
+  .opt           { font-size: var(--fs-print-desktop-option) !important; gap: 2px !important; }
   .options       { gap: 3px !important; }
   .opt input[type="checkbox"] { width: var(--h-print-phone-checkbox) !important; height: var(--h-print-phone-checkbox) !important; min-width: var(--h-print-phone-checkbox) !important; min-height: var(--h-print-phone-checkbox) !important; }
   .footer-text   { font-size: var(--fs-print-phone-footer) !important; }
