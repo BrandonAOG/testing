@@ -128,25 +128,6 @@
   --fs-print-phone-footer:    0.42rem;  /* "Quality Control Checklist · Always On Generators · Confidential" in PDF */
   --fs-print-phone-summary:   8px;      /* Overall Job Status / Pass / Fail / Items Requiring Follow-Up in PDF */
 
-  /* ── 1d2. PDF — iPhone (separate from iPad) ── */
-  --fs-print-iphone-company:    0.78rem;  /* "Always On Generators" in iPhone PDF         */
-  --fs-print-iphone-title:      0.82rem;  /* "Quality Control Checklist" in iPhone PDF    */
-  --fs-print-iphone-info-label: 0.5rem;   /* Customer Name / Date / Technician labels in iPhone PDF */
-  --fs-print-iphone-info-input: 0.65rem;  /* text in Customer Name, Address… fields in iPhone PDF */
-  --fs-print-iphone-section:    0.6rem;   /* Transfer Switch / Meter / Generator… bars in iPhone PDF */
-  --fs-print-iphone-item:       0.58rem;  /* Check All Wire / Vacuumed… item text in iPhone PDF */
-  --fs-print-iphone-option:     0.52rem;  /* Good / Bad / Yes / No labels in iPhone PDF   */
-  --fs-print-iphone-footer:     0.42rem;  /* footer text in iPhone PDF                    */
-  --fs-print-iphone-summary:    8px;      /* Overall Job Status / Pass / Fail in iPhone PDF */
-  --h-print-iphone-item:        32px;     /* Check All Wire / Vacuumed… row height in iPhone PDF */
-  --h-print-iphone-info-input:  20px;     /* Customer Name / Date… field height in iPhone PDF */
-  --h-print-iphone-checkbox:    12px;     /* Good / Bad / Yes / No checkbox size in iPhone PDF */
-  --pd-print-iphone-page:       8px 12px; /* space between page edge and content in iPhone PDF */
-  --pd-print-iphone-section:    4px 8px;  /* space inside section title bars in iPhone PDF */
-  --pd-print-iphone-item:       5px 6px;  /* space inside each checklist item row in iPhone PDF */
-  --gap-print-iphone-sections:  8px;      /* space between sections in iPhone PDF         */
-  --gap-print-iphone-summary-footer: 2px; /* space between Additional Comments and footer in iPhone PDF */
-
   /* ── 1e. PDF — iPad ── */
   --fs-print-ipad-company:    0.78rem;  /* "Always On Generators" in iPad PDF           */
   --fs-print-ipad-title:      0.82rem;  /* "Quality Control Checklist" in iPad PDF      */
@@ -829,29 +810,29 @@ body.dark-mode .summary-sig-line { border-bottom-color: rgba(0,255,200,0.3) !imp
 
 /* ══ iPad print ══ */
 @media print and (min-width: 768px) {
-  body:not(.iphone-print) html { font-size: var(--fs-print-ipad-section) !important; }
-  body:not(.iphone-print) .company-name   { font-size: var(--fs-print-ipad-company) !important; }
-  body:not(.iphone-print) .doc-title      { font-size: var(--fs-print-ipad-title) !important; }
-  body:not(.iphone-print) .info-label     { font-size: var(--fs-print-ipad-info-label) !important; }
-  body:not(.iphone-print) .info-input     { font-size: var(--fs-print-ipad-info-input) !important; min-height: var(--h-print-ipad-info-input) !important; }
-  body:not(.iphone-print) .section-header { font-size: var(--fs-print-ipad-section) !important; padding: var(--pd-print-ipad-section) !important; }
-  body:not(.iphone-print) .item-label     { font-size: var(--fs-print-ipad-item) !important; }
-  body:not(.iphone-print) .item-num       { font-size: var(--fs-print-ipad-option) !important; }
-  body:not(.iphone-print) .opt            { font-size: var(--fs-print-ipad-option) !important; }
-  body:not(.iphone-print) .check-item     { min-height: var(--h-print-ipad-item) !important; padding: var(--pd-print-ipad-item) !important; flex-wrap: nowrap !important; }
-  body:not(.iphone-print) .opt input[type="checkbox"] { width: var(--h-print-ipad-checkbox) !important; height: var(--h-print-ipad-checkbox) !important; min-width: var(--h-print-ipad-checkbox) !important; min-height: var(--h-print-ipad-checkbox) !important; }
-  body:not(.iphone-print) .footer-text    { font-size: var(--fs-print-ipad-footer) !important; }
-  body:not(.iphone-print) .section        { margin-bottom: var(--gap-print-ipad-sections) !important; }
-  body:not(.iphone-print) .page           { padding: var(--pd-print-ipad-page) !important; }
-  body:not(.iphone-print) .page-header   { padding: var(--pd-print-ipad-header) !important; }
-  body:not(.iphone-print) .info-input    { padding: var(--pd-print-ipad-info-input) !important; }
-  body:not(.iphone-print) .opt           { padding: var(--pd-print-ipad-option) !important; }
-  body:not(.iphone-print) .page-footer   { padding: var(--pd-print-ipad-footer) !important; }
-  body:not(.iphone-print) .summary-body  { padding: var(--pd-print-ipad-summary) !important; }
-  body:not(.iphone-print) .summary-label   { font-size: var(--fs-print-ipad-summary) !important; color: #6B7280 !important; }
-  body:not(.iphone-print) .status-btn      { font-size: var(--fs-print-ipad-summary) !important; min-height: var(--h-print-ipad-item) !important; padding: var(--pd-print-ipad-item) !important; }
-  body:not(.iphone-print) .status-btn span { font-size: var(--fs-print-ipad-summary) !important; }
-  body:not(.iphone-print) .summary-textarea{ font-size: var(--fs-print-ipad-summary) !important; }
+  html { font-size: var(--fs-print-ipad-section) !important; }
+  .company-name   { font-size: var(--fs-print-ipad-company) !important; }
+  .doc-title      { font-size: var(--fs-print-ipad-title) !important; }
+  .info-label     { font-size: var(--fs-print-ipad-info-label) !important; }
+  .info-input     { font-size: var(--fs-print-ipad-info-input) !important; min-height: var(--h-print-ipad-info-input) !important; }
+  .section-header { font-size: var(--fs-print-ipad-section) !important; padding: var(--pd-print-ipad-section) !important; }
+  .item-label     { font-size: var(--fs-print-ipad-item) !important; }
+  .item-num       { font-size: var(--fs-print-ipad-option) !important; }
+  .opt            { font-size: var(--fs-print-ipad-option) !important; }
+  .check-item     { min-height: var(--h-print-ipad-item) !important; padding: var(--pd-print-ipad-item) !important; flex-wrap: nowrap !important; }
+  .opt input[type="checkbox"] { width: var(--h-print-ipad-checkbox) !important; height: var(--h-print-ipad-checkbox) !important; min-width: var(--h-print-ipad-checkbox) !important; min-height: var(--h-print-ipad-checkbox) !important; }
+  .footer-text    { font-size: var(--fs-print-ipad-footer) !important; }
+  .section        { margin-bottom: var(--gap-print-ipad-sections) !important; }
+  .page           { padding: var(--pd-print-ipad-page) !important; }
+  .page-header   { padding: var(--pd-print-ipad-header) !important; }
+  .info-input    { padding: var(--pd-print-ipad-info-input) !important; }
+  .opt           { padding: var(--pd-print-ipad-option) !important; }
+  .page-footer   { padding: var(--pd-print-ipad-footer) !important; }
+  .summary-body  { padding: var(--pd-print-ipad-summary) !important; }
+  .summary-label   { font-size: var(--fs-print-ipad-summary) !important; color: #6B7280 !important; }
+  .status-btn      { font-size: var(--fs-print-ipad-summary) !important; min-height: var(--h-print-ipad-item) !important; padding: var(--pd-print-ipad-item) !important; }
+  .status-btn span { font-size: var(--fs-print-ipad-summary) !important; }
+  .summary-textarea{ font-size: var(--fs-print-ipad-summary) !important; }
 }
 
 /* ══ macOS Safari print ══ */
@@ -912,7 +893,6 @@ body.mobile-safari { -webkit-print-color-adjust: exact; }
   <a class="ab-btn" href="../">🏠 HOME</a>
   <a class="ab-btn" onclick="printForm()" style="cursor:pointer;">📄 PDF</a>
   <a class="ab-btn" onclick="clearForm()" style="cursor:pointer;">🗑 CLEAR</a>
-  <a class="ab-btn" onclick="var d=document.getElementById('print-debug');if(d)d.remove();" style="cursor:pointer;">🐛 CLEAR LOG</a>
   <button class="theme-toggle-btn" id="theme-toggle-btn" title="Toggle dark mode" aria-label="Toggle dark mode" onclick="toggleTheme()">
     <svg class="theme-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
@@ -1499,75 +1479,10 @@ window.addEventListener('afterprint', function() {
   if (ct) ct.style.removeProperty('display');
 });
 
-function showDebug(msg, color) {
-  var d = document.getElementById('print-debug');
-  if (!d) {
-    d = document.createElement('div');
-    d.id = 'print-debug';
-    d.style.cssText = [
-      'position:fixed;top:46px;left:0;right:0;bottom:0;z-index:999999;',
-      'background:#111;color:#0f0;font-family:monospace;font-size:12px;',
-      'padding:8px;overflow-y:auto;-webkit-overflow-scrolling:touch;'
-    ].join('');
-    // Header with copy button
-    var hdr = document.createElement('div');
-    hdr.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;border-bottom:1px solid #333;padding-bottom:4px;';
-    var title = document.createElement('span');
-    title.style.cssText = 'color:#ff0;font-weight:bold;font-size:13px;';
-    title.textContent = '📋 PRINT DEBUG LOG';
-    var btnRow = document.createElement('div');
-    btnRow.style.cssText = 'display:flex;gap:6px;';
-    var copyBtn = document.createElement('button');
-    copyBtn.textContent = '📋 COPY';
-    copyBtn.style.cssText = 'background:#333;color:#0f0;border:1px solid #0f0;padding:4px 8px;font-size:11px;border-radius:4px;';
-    copyBtn.onclick = function() {
-      var log = document.getElementById('print-debug-log');
-      var text = Array.from(log.querySelectorAll('div')).map(function(d){return d.textContent;}).join('\r\n');
-      if (navigator.clipboard) {
-        navigator.clipboard.writeText(text).then(function(){ copyBtn.textContent='✓ COPIED'; setTimeout(function(){copyBtn.textContent='📋 COPY';},2000); });
-      } else {
-        var ta = document.createElement('textarea');
-        ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
-        copyBtn.textContent='✓ COPIED'; setTimeout(function(){copyBtn.textContent='📋 COPY';},2000);
-      }
-    };
-    var closeBtn = document.createElement('button');
-    closeBtn.textContent = '✕ CLOSE';
-    closeBtn.style.cssText = 'background:#333;color:#f00;border:1px solid #f00;padding:4px 8px;font-size:11px;border-radius:4px;';
-    closeBtn.onclick = function(){ document.getElementById('print-debug').remove(); };
-    btnRow.appendChild(copyBtn); btnRow.appendChild(closeBtn);
-    hdr.appendChild(title); hdr.appendChild(btnRow);
-    d.appendChild(hdr);
-    var log = document.createElement('div');
-    log.id = 'print-debug-log';
-    d.appendChild(log);
-    document.body.appendChild(d);
-  }
-  var log = document.getElementById('print-debug-log');
-  var line = document.createElement('div');
-  line.style.cssText = 'color:' + (color||'#0f0') + ';border-bottom:1px solid #222;padding:3px 0;';
-  line.textContent = new Date().toISOString().substr(11,12) + '  ' + msg;
-  log.appendChild(line);
-  log.scrollTop = log.scrollHeight;
-}
-function hideDebug() {
-  var d = document.getElementById('print-debug');
-  if (d) d.style.display = 'none';
-}
-function showDebugAgain() {
-  var d = document.getElementById('print-debug');
-  if (d) d.style.display = '';
-}
-
 function printForm() {
   var isMobileSafari = document.body.classList.contains('mobile-safari');
-  var isIPadPrint    = document.body.classList.contains('ipad-safari');
-  var isIPhonePrint  = isMobileSafari && !isIPadPrint;
   var wasDark        = document.body.classList.contains('dark-mode');
 
-  showDebug('printForm() called', '#ff0');
-  showDebug('mobileSafari=' + isMobileSafari + ' iPad=' + isIPadPrint + ' iPhone=' + isIPhonePrint, '#ff0');
-  showDebug('innerWidth=' + window.innerWidth + ' innerHeight=' + window.innerHeight, '#0ff');
 
   // ── Set document title for PDF filename ──
   var prevTitle = document.title;
@@ -1649,10 +1564,8 @@ function printForm() {
 
   // ── RESTORE function (defined before use) ──
   function restore() {
-    showDebug('restore() called — print dialog closed', '#f80');
     document.title = prevTitle;
     if (vp && origVP) vp.setAttribute('content', origVP);
-    document.body.classList.remove('iphone-print');
     var f  = document.getElementById('safari-print-fix');  if(f)  f.remove();
     var pl = document.getElementById('force-print-light'); if(pl) pl.remove();
     var lv = document.getElementById('force-light-vars');  if(lv) lv.remove();
@@ -1665,16 +1578,12 @@ function printForm() {
     if (compName)  compName.removeAttribute('style');
     if (docTitle)  docTitle.removeAttribute('style');
     footerEls.forEach(function(el){ el.removeAttribute('style'); });
-    showDebugAgain();
   }
 
   if (isMobileSafari && vp) {
-    showDebug('Mobile Safari detected — changing viewport to width=820', '#ff0');
-    if (isIPhonePrint) document.body.classList.add('iphone-print');
     vp.setAttribute('content', 'width=820, initial-scale=1.0');
 
     // Build safari-page-fix style
-    var pfx = isIPhonePrint ? 'iphone' : 'ipad';
     var fix = document.createElement('style');
     fix.id = 'safari-print-fix';
     fix.textContent = [
@@ -1686,34 +1595,32 @@ function printForm() {
       '  .page { display:block!important; width:100%!important; max-width:none!important;',
       '    page-break-after:always!important; break-after:page!important;',
       '    page-break-inside:avoid!important; break-inside:avoid!important;',
-      '    padding:var(--pd-print-' + pfx + '-page)!important;',
+      '    padding:var(--pd-print-ipad-page)!important;',
       '    border:1.5pt solid #D97706!important; box-shadow:none!important;',
       '    margin:0!important; position:static!important; overflow:visible!important; }',
       '  .page:last-child { page-break-after:auto!important; break-after:auto!important; }',
-      '  .company-name   { font-size:var(--fs-print-' + pfx + '-company)!important; }',
-      '  .doc-title      { font-size:var(--fs-print-' + pfx + '-title)!important; }',
-      '  .info-label     { font-size:var(--fs-print-' + pfx + '-info-label)!important; }',
-      '  .info-input     { font-size:var(--fs-print-' + pfx + '-info-input)!important; min-height:var(--h-print-' + pfx + '-info-input)!important; }',
-      '  .section-header { font-size:var(--fs-print-' + pfx + '-section)!important; padding:var(--pd-print-' + pfx + '-section)!important; }',
-      '  .item-label     { font-size:var(--fs-print-' + pfx + '-item)!important; }',
-      '  .item-num       { font-size:var(--fs-print-' + pfx + '-option)!important; }',
-      '  .opt            { font-size:var(--fs-print-' + pfx + '-option)!important; }',
-      '  .check-item     { min-height:var(--h-print-' + pfx + '-item)!important; padding:var(--pd-print-' + pfx + '-item)!important; flex-wrap:nowrap!important; }',
-      '  .section        { margin-bottom:var(--gap-print-' + pfx + '-sections)!important; }',
-      '  .opt input[type="checkbox"] { width:var(--h-print-' + pfx + '-checkbox)!important; height:var(--h-print-' + pfx + '-checkbox)!important; min-width:var(--h-print-' + pfx + '-checkbox)!important; min-height:var(--h-print-' + pfx + '-checkbox)!important; }',
-      '  .footer-text    { font-size:var(--fs-print-' + pfx + '-footer)!important; }',
+      '  .company-name   { font-size:var(--fs-print-ipad-company)!important; }',
+      '  .doc-title      { font-size:var(--fs-print-ipad-title)!important; }',
+      '  .info-label     { font-size:var(--fs-print-ipad-info-label)!important; }',
+      '  .info-input     { font-size:var(--fs-print-ipad-info-input)!important; min-height:var(--h-print-ipad-info-input)!important; }',
+      '  .section-header { font-size:var(--fs-print-ipad-section)!important; padding:var(--pd-print-ipad-section)!important; }',
+      '  .item-label     { font-size:var(--fs-print-ipad-item)!important; }',
+      '  .item-num       { font-size:var(--fs-print-ipad-option)!important; }',
+      '  .opt            { font-size:var(--fs-print-ipad-option)!important; }',
+      '  .check-item     { min-height:var(--h-print-ipad-item)!important; padding:var(--pd-print-ipad-item)!important; flex-wrap:nowrap!important; }',
+      '  .section        { margin-bottom:var(--gap-print-ipad-sections)!important; }',
+      '  .opt input[type="checkbox"] { width:var(--h-print-ipad-checkbox)!important; height:var(--h-print-ipad-checkbox)!important; min-width:var(--h-print-ipad-checkbox)!important; min-height:var(--h-print-ipad-checkbox)!important; }',
+      '  .footer-text    { font-size:var(--fs-print-ipad-footer)!important; }',
       '  #doc-title-continued { display:none!important; }',
-      '  #additional_comments { margin-bottom:var(--gap-print-' + pfx + '-summary-footer)!important; }',
-      '  #page2 .page-footer { margin-top:var(--gap-print-' + pfx + '-summary-footer)!important; }',
+      '  #additional_comments { margin-bottom:var(--gap-print-ipad-summary-footer)!important; }',
+      '  #page2 .page-footer { margin-top:var(--gap-print-ipad-summary-footer)!important; }',
       '  #page2 .summary-body { padding-bottom:0!important; }',
       '}'
     ].join('\n');
 
-    showDebug('safari-print-fix built for: ' + pfx, '#0ff');
 
     // Wait for viewport reflow then inject styles and print
     setTimeout(function() {
-      showDebug('setTimeout fired — injecting styles + printing', '#ff0');
 
       // Force layout commit
       void document.getElementById('page1').getBoundingClientRect();
@@ -1725,8 +1632,6 @@ function printForm() {
       var ct = document.getElementById('doc-title-continued');
       if (ct) ct.style.setProperty('display', 'none', 'important');
 
-      showDebug('Calling window.print()...', '#0f0');
-      hideDebug();
       requestAnimationFrame(function() {
         window.print();
       });
@@ -1746,7 +1651,7 @@ function printForm() {
     setTimeout(function() { if (!wentHidden) restore(); }, 8000);
 
   } else {
-    showDebug('Non-Safari — calling window.print() directly', '#0ff');
+
     window.addEventListener('afterprint', restore);
     window.print();
   }
