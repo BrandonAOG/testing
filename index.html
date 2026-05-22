@@ -128,6 +128,25 @@
   --fs-print-phone-footer:    0.42rem;  /* "Quality Control Checklist · Always On Generators · Confidential" in PDF */
   --fs-print-phone-summary:   8px;      /* Overall Job Status / Pass / Fail / Items Requiring Follow-Up in PDF */
 
+  /* ── 1d2. PDF — iPhone (separate from iPad) ── */
+  --fs-print-iphone-company:    0.78rem;  /* "Always On Generators" in iPhone PDF         */
+  --fs-print-iphone-title:      0.82rem;  /* "Quality Control Checklist" in iPhone PDF    */
+  --fs-print-iphone-info-label: 0.5rem;   /* Customer Name / Date / Technician labels in iPhone PDF */
+  --fs-print-iphone-info-input: 0.65rem;  /* text in Customer Name, Address… fields in iPhone PDF */
+  --fs-print-iphone-section:    0.6rem;   /* Transfer Switch / Meter / Generator… bars in iPhone PDF */
+  --fs-print-iphone-item:       0.58rem;  /* Check All Wire / Vacuumed… item text in iPhone PDF */
+  --fs-print-iphone-option:     0.52rem;  /* Good / Bad / Yes / No labels in iPhone PDF   */
+  --fs-print-iphone-footer:     0.42rem;  /* footer text in iPhone PDF                    */
+  --fs-print-iphone-summary:    8px;      /* Overall Job Status / Pass / Fail in iPhone PDF */
+  --h-print-iphone-item:        32px;     /* Check All Wire / Vacuumed… row height in iPhone PDF */
+  --h-print-iphone-info-input:  20px;     /* Customer Name / Date… field height in iPhone PDF */
+  --h-print-iphone-checkbox:    12px;     /* Good / Bad / Yes / No checkbox size in iPhone PDF */
+  --pd-print-iphone-page:       8px 12px; /* space between page edge and content in iPhone PDF */
+  --pd-print-iphone-section:    4px 8px;  /* space inside section title bars in iPhone PDF */
+  --pd-print-iphone-item:       5px 6px;  /* space inside each checklist item row in iPhone PDF */
+  --gap-print-iphone-sections:  8px;      /* space between sections in iPhone PDF         */
+  --gap-print-iphone-summary-footer: 2px; /* space between Additional Comments and footer in iPhone PDF */
+
   /* ── 1e. PDF — iPad ── */
   --fs-print-ipad-company:    0.78rem;  /* "Always On Generators" in iPad PDF           */
   --fs-print-ipad-title:      0.82rem;  /* "Quality Control Checklist" in iPad PDF      */
@@ -893,6 +912,7 @@ body.mobile-safari { -webkit-print-color-adjust: exact; }
   <a class="ab-btn" href="../">🏠 HOME</a>
   <a class="ab-btn" onclick="printForm()" style="cursor:pointer;">📄 PDF</a>
   <a class="ab-btn" onclick="clearForm()" style="cursor:pointer;">🗑 CLEAR</a>
+  <a class="ab-btn" onclick="var d=document.getElementById('print-debug');if(d)d.remove();" style="cursor:pointer;">🐛 CLEAR LOG</a>
   <button class="theme-toggle-btn" id="theme-toggle-btn" title="Toggle dark mode" aria-label="Toggle dark mode" onclick="toggleTheme()">
     <svg class="theme-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
@@ -1479,9 +1499,37 @@ window.addEventListener('afterprint', function() {
   if (ct) ct.style.removeProperty('display');
 });
 
+function showDebug(msg, color) {
+  var d = document.getElementById('print-debug');
+  if (!d) {
+    d = document.createElement('div');
+    d.id = 'print-debug';
+    d.style.cssText = 'position:fixed;top:50px;left:10px;right:10px;z-index:999999;background:rgba(0,0,0,0.85);color:#0f0;font-family:monospace;font-size:11px;padding:10px;border-radius:6px;max-height:60vh;overflow-y:auto;';
+    document.body.appendChild(d);
+  }
+  var line = document.createElement('div');
+  line.style.color = color || '#0f0';
+  line.style.borderBottom = '1px solid #333';
+  line.style.padding = '2px 0';
+  line.textContent = new Date().toISOString().substr(11,12) + ' ' + msg;
+  d.appendChild(line);
+  d.scrollTop = d.scrollHeight;
+}
+function hideDebug() {
+  var d = document.getElementById('print-debug');
+  if (d) d.remove();
+}
+
 function printForm() {
   var isMobileSafari = document.body.classList.contains('mobile-safari');
+  var isIPadPrint    = document.body.classList.contains('ipad-safari');
+  var isIPhonePrint  = isMobileSafari && !isIPadPrint;
   var wasDark = document.body.classList.contains('dark-mode');
+
+  showDebug('printForm() called', '#ff0');
+  showDebug('isMobileSafari=' + isMobileSafari + ' isIPad=' + isIPadPrint + ' isIPhone=' + isIPhonePrint, '#ff0');
+  showDebug('viewport: ' + window.innerWidth + 'x' + window.innerHeight, '#0ff');
+  showDebug('devicePixelRatio: ' + window.devicePixelRatio, '#0ff');
   var prevTitle = document.title;
   var cName = (document.getElementById('cust_name').value||'').trim();
   document.title = (cName ? cName + ' - ' : '') + 'QC Checklist';
@@ -1597,41 +1645,73 @@ function printForm() {
       '  .page { display:block!important; width:100%!important; max-width:none!important;',
       '    page-break-after:always!important; break-after:page!important;',
       '    page-break-inside:avoid!important; break-inside:avoid!important;',
-      '    padding:var(--pd-print-ipad-page)!important;',
+      '    ' + (isIPhonePrint ? 'padding:var(--pd-print-iphone-page)' : 'padding:var(--pd-print-ipad-page)') + '!important;',
       '    border:1.5pt solid #D97706!important; box-shadow:none!important;',
       '    margin:0!important; position:static!important; overflow:visible!important; }',
       '  .page:last-child { page-break-after:auto!important; break-after:auto!important; }',
-      '  .company-name   { font-size:var(--fs-print-ipad-company)!important; }',
-      '  .doc-title      { font-size:var(--fs-print-ipad-title)!important; }',
-      '  .info-label     { font-size:var(--fs-print-ipad-info-label)!important; }',
-      '  .info-input     { font-size:var(--fs-print-ipad-info-input)!important; min-height:var(--h-print-ipad-info-input)!important; }',
-      '  .section-header { font-size:var(--fs-print-ipad-section)!important; padding:var(--pd-print-ipad-section)!important; }',
-      '  .item-label     { font-size:var(--fs-print-ipad-item)!important; }',
-      '  .item-num       { font-size:var(--fs-print-ipad-option)!important; }',
-      '  .opt            { font-size:var(--fs-print-ipad-option)!important; }',
-      '  .check-item     { min-height:var(--h-print-ipad-item)!important; padding:var(--pd-print-ipad-item)!important; flex-wrap:nowrap!important; }',
-      '  .section        { margin-bottom:var(--gap-print-ipad-sections)!important; }',
-      '  .opt input[type="checkbox"] { width:var(--h-print-ipad-checkbox)!important; height:var(--h-print-ipad-checkbox)!important; min-width:var(--h-print-ipad-checkbox)!important; min-height:var(--h-print-ipad-checkbox)!important; }',
-      '  .footer-text    { font-size:var(--fs-print-ipad-footer)!important; }',
+      (isIPhonePrint
+        ? '  .company-name   { font-size:var(--fs-print-iphone-company)!important; }'
+        : '  .company-name   { font-size:var(--fs-print-ipad-company)!important; }'),
+      (isIPhonePrint
+        ? '  .doc-title      { font-size:var(--fs-print-iphone-title)!important; }'
+        : '  .doc-title      { font-size:var(--fs-print-ipad-title)!important; }'),
+      (isIPhonePrint
+        ? '  .info-label     { font-size:var(--fs-print-iphone-info-label)!important; }'
+        : '  .info-label     { font-size:var(--fs-print-ipad-info-label)!important; }'),
+      (isIPhonePrint
+        ? '  .info-input     { font-size:var(--fs-print-iphone-info-input)!important; min-height:var(--h-print-iphone-info-input)!important; }'
+        : '  .info-input     { font-size:var(--fs-print-ipad-info-input)!important; min-height:var(--h-print-ipad-info-input)!important; }'),
+      (isIPhonePrint
+        ? '  .section-header { font-size:var(--fs-print-iphone-section)!important; padding:var(--pd-print-iphone-section)!important; }'
+        : '  .section-header { font-size:var(--fs-print-ipad-section)!important; padding:var(--pd-print-ipad-section)!important; }'),
+      (isIPhonePrint
+        ? '  .item-label     { font-size:var(--fs-print-iphone-item)!important; }'
+        : '  .item-label     { font-size:var(--fs-print-ipad-item)!important; }'),
+      (isIPhonePrint
+        ? '  .item-num       { font-size:var(--fs-print-iphone-option)!important; }'
+        : '  .item-num       { font-size:var(--fs-print-ipad-option)!important; }'),
+      (isIPhonePrint
+        ? '  .opt            { font-size:var(--fs-print-iphone-option)!important; }'
+        : '  .opt            { font-size:var(--fs-print-ipad-option)!important; }'),
+      (isIPhonePrint
+        ? '  .check-item     { min-height:var(--h-print-iphone-item)!important; padding:var(--pd-print-iphone-item)!important; flex-wrap:nowrap!important; }'
+        : '  .check-item     { min-height:var(--h-print-ipad-item)!important; padding:var(--pd-print-ipad-item)!important; flex-wrap:nowrap!important; }'),
+      (isIPhonePrint
+        ? '  .section        { margin-bottom:var(--gap-print-iphone-sections)!important; }'
+        : '  .section        { margin-bottom:var(--gap-print-ipad-sections)!important; }'),
+      (isIPhonePrint
+        ? '  .opt input[type="checkbox"] { width:var(--h-print-iphone-checkbox)!important; height:var(--h-print-iphone-checkbox)!important; min-width:var(--h-print-iphone-checkbox)!important; min-height:var(--h-print-iphone-checkbox)!important; }'
+        : '  .opt input[type="checkbox"] { width:var(--h-print-ipad-checkbox)!important; height:var(--h-print-ipad-checkbox)!important; min-width:var(--h-print-ipad-checkbox)!important; min-height:var(--h-print-ipad-checkbox)!important; }'),
+      (isIPhonePrint
+        ? '  .footer-text    { font-size:var(--fs-print-iphone-footer)!important; }'
+        : '  .footer-text    { font-size:var(--fs-print-ipad-footer)!important; }'),
       '  #doc-title-continued { display:none!important; }',
-      '  #additional_comments { margin-bottom:var(--gap-print-ipad-summary-footer)!important; }',
-      '  #page2 .page-footer { margin-top:var(--gap-print-ipad-summary-footer)!important; }',
+      (isIPhonePrint
+        ? '  #additional_comments { margin-bottom:var(--gap-print-iphone-summary-footer)!important; }'
+        : '  #additional_comments { margin-bottom:var(--gap-print-ipad-summary-footer)!important; }'),
+      (isIPhonePrint
+        ? '  #page2 .page-footer { margin-top:var(--gap-print-iphone-summary-footer)!important; }'
+        : '  #page2 .page-footer { margin-top:var(--gap-print-ipad-summary-footer)!important; }'),
       '  #page2 .summary-body { padding-bottom:0!important; }',
       '}'
     ].join('\n');
     // Inject styles AFTER viewport reflow has had time to settle
     // then print from the already-rendered state
     setTimeout(function() {
-      // Force layout commit after viewport change
+      showDebug('Timeout fired, forcing layout commit...', '#ff0');
+      showDebug('page1 rect: ' + JSON.stringify(document.getElementById('page1').getBoundingClientRect()), '#0ff');
       void document.getElementById('page1').getBoundingClientRect();
       void document.getElementById('page2').getBoundingClientRect();
-      // Inject fix styles now (layout already done)
+      showDebug('Injecting safari-print-fix styles...', '#ff0');
       document.head.appendChild(fix);
       // Hide continued title
       var ct = document.getElementById('doc-title-continued');
       if (ct) ct.style.setProperty('display', 'none', 'important');
-      // One animation frame then print
+      showDebug('requestAnimationFrame — about to call window.print()', '#0f0');
       requestAnimationFrame(function() {
+        showDebug('CALLING window.print() NOW', '#0f0');
+        // Hide debug before print
+        var dbg = document.getElementById('print-debug'); if(dbg) dbg.style.display='none';
         window.print();
       });
     }, 600);
@@ -1647,6 +1727,8 @@ function printForm() {
     var lv = document.getElementById('force-light-vars');  if(lv) lv.remove();
     if (_darkStyleEl) _darkStyleEl.disabled = false;
     if (wasDark) { document.body.classList.add('dark-mode'); document.documentElement.setAttribute('data-theme','dark'); }
+    showDebug('Print dialog closed, restoring...', '#f80');
+    var dbg = document.getElementById('print-debug'); if(dbg) dbg.style.display='';
     // Restore continued title
     var continuedTitle = document.getElementById('doc-title-continued');
     if (continuedTitle) continuedTitle.style.display = '';
@@ -1668,7 +1750,8 @@ function printForm() {
     // then call print() immediately — the flush is what matters, not the delay.
     // The viewport change already happened above, so Safari will reflow.
 
-    // Step 2: Give Safari time to reflow after viewport change (this is the real render time)
+    showDebug('Viewport changed to width=820, waiting for reflow...', '#ff0');
+  // Step 2: Give Safari time to reflow after viewport change (this is the real render time)
     // Then inject print styles and trigger print from the already-rendered layout
     setTimeout(function() {
       // Force layout read — commits any pending style calculations
