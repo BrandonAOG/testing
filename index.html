@@ -1382,6 +1382,8 @@ window.addEventListener('beforeprint', function() {
   document.body.style.colorScheme = 'light';
   var ds = document.getElementById('dark-mode-style');
   if (ds) ds.disabled = true;
+  var ct = document.getElementById('doc-title-continued');
+  if (ct) ct.style.setProperty('display', 'none', 'important');
 });
 window.addEventListener('afterprint', function() {
   document.documentElement.style.colorScheme = '';
@@ -1391,6 +1393,8 @@ window.addEventListener('afterprint', function() {
   var wasDark = false;
   try { wasDark = localStorage.getItem('aog_theme_preference') === 'dark'; } catch(e) {}
   if (wasDark) document.body.classList.add('dark-mode');
+  var ct = document.getElementById('doc-title-continued');
+  if (ct) ct.style.removeProperty('display');
 });
 
 function printForm() {
@@ -1560,7 +1564,11 @@ function printForm() {
       else if (wentHidden) { document.removeEventListener('visibilitychange', _iosVis); restore(); }
     });
     setTimeout(function() { if (!wentHidden) restore(); }, 3000);
-    setTimeout(function() { window.print(); }, 600);
+    setTimeout(function() {
+      var ct = document.getElementById('doc-title-continued');
+      if (ct) ct.style.setProperty('display', 'none', 'important');
+      window.print();
+    }, 600);
   } else {
     window.addEventListener('afterprint', restore);
     window.print();
