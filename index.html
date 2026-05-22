@@ -1634,6 +1634,17 @@ function printForm() {
 
       requestAnimationFrame(function() {
         window.print();
+
+        // After print dialog opens, force WebKit to re-composite the print layer
+        // by making a trivial style mutation 100ms later while dialog is open
+        setTimeout(function() {
+          // Toggle a harmless property — forces Safari to invalidate + re-render
+          // the print preview from the now-fully-settled layout
+          document.body.style.webkitTransform = 'translateZ(0)';
+          requestAnimationFrame(function() {
+            document.body.style.webkitTransform = '';
+          });
+        }, 100);
       });
     }, 600);
 
