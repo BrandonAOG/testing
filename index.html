@@ -84,6 +84,7 @@
   --fs-phone-section:       0.55rem;  /* section title bars (Transfer Switch, Meter…)   */
   --fs-phone-item:          0.52rem;  /* checklist item text (Check All Wire…)          */
   --fs-phone-option:        0.47rem;  /* Good / Bad / Yes / No option labels            */
+  --fs-phone-summary:       0.45rem;  /* summary labels/buttons/textareas — phone       */
   --fs-phone-footer:        0.38rem;  /* footer confidential text                       */
   --fs-phone-pagenum:       0.38rem;  /* "Page 1 of 2"                                  */
 
@@ -95,6 +96,7 @@
   --fs-ipad-section:        0.55rem;
   --fs-ipad-item:           0.52rem;
   --fs-ipad-option:         0.47rem;
+  --fs-ipad-summary:        0.45rem;  /* summary — iPad                                 */
   --fs-ipad-footer:         0.38rem;
   --fs-ipad-pagenum:        0.38rem;
 
@@ -106,6 +108,7 @@
   --fs-desktop-section:     0.55rem;
   --fs-desktop-item:        0.52rem;
   --fs-desktop-option:      0.47rem;
+  --fs-desktop-summary:     0.45rem;  /* summary — desktop                              */
   --fs-desktop-footer:      0.38rem;
   --fs-desktop-pagenum:     0.38rem;
 
@@ -118,6 +121,7 @@
   --fs-print-phone-item:      0.58rem;  /* checklist item text in PDF                   */
   --fs-print-phone-option:    0.52rem;  /* Good / Bad / Yes / No in PDF                 */
   --fs-print-phone-footer:    0.42rem;  /* footer text in PDF                           */
+  --fs-print-phone-summary:   8px;       /* summary section — phone PDF                  */
 
   /* ── 1e. PDF — iPad ── */
   --fs-print-ipad-company:    0.78rem;
@@ -128,6 +132,7 @@
   --fs-print-ipad-item:       0.58rem;
   --fs-print-ipad-option:     0.52rem;
   --fs-print-ipad-footer:     0.42rem;
+  --fs-print-ipad-summary:    8px;       /* summary section — iPad PDF                   */
 
   /* ── 1f. PDF — macOS Safari ── */
   --fs-print-macos-company:   0.78rem;
@@ -138,6 +143,7 @@
   --fs-print-macos-item:      0.58rem;
   --fs-print-macos-option:    0.52rem;
   --fs-print-macos-footer:    0.42rem;
+  --fs-print-macos-summary:   8px;       /* summary section — macOS PDF                  */
   --fs-print-macos-base:      16px;     /* base html font-size for macOS print          */
 
   /* ── 1g. PDF — Desktop Chrome ── */
@@ -149,7 +155,8 @@
   --fs-print-desktop-item:      0.67rem;  /* checklist item labels in desktop PDF         */
   --fs-print-desktop-option:    0.61rem;  /* Good/Bad/Yes/No option labels in desktop PDF  */
   --fs-print-desktop-footer:    0.42rem;
-  --fs-print-desktop-base:      16px;   /* base html font-size for desktop print        */
+  --fs-print-desktop-summary:   8px;       /* summary section — desktop PDF                */
+  --fs-print-desktop-base:      13px;   /* base html font-size for desktop print        */
 
   /* ╔══════════════════════════════════════════════╗
      ║  SECTION 2 — PADDING                        ║
@@ -540,7 +547,7 @@ body {
   padding: 8px 10px 10px;
 }
 .summary-label {
-  font-family: var(--font-display); font-size: var(--fs-phone-item);
+  font-family: var(--font-display); font-size: var(--fs-phone-summary);
   color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px;
   font-weight: 600; margin-bottom: 6px;
 }
@@ -551,29 +558,32 @@ body.dark-mode .summary-label { color: #7DD3FC; }
 .status-btn {
   display: inline-flex; align-items: center; gap: 5px;
   border: 1.5px solid var(--border-bright); border-radius: 20px;
-  padding: 4px 12px; cursor: pointer; font-family: var(--font-display);
-  font-size: var(--fs-phone-item); font-weight: 600; letter-spacing: 0.5px;
+  min-height: var(--h-phone-item); padding: var(--pd-phone-item);
+  cursor: pointer; font-family: var(--font-display);
+  font-size: var(--fs-phone-summary); font-weight: 600; letter-spacing: 0.5px;
   white-space: nowrap; transition: all 0.15s;
+  color: var(--text-muted);
   -webkit-tap-highlight-color: transparent;
 }
 .status-btn input[type="radio"] { display: none; }
-.status-pass  { border-color: #059669; color: #059669; }
-.status-fail  { border-color: #DC2626; color: #DC2626; }
-.status-followup { border-color: #D97706; color: #D97706; }
-.status-pass:has(input:checked)     { background: rgba(5,150,105,0.12); box-shadow: 0 0 6px rgba(5,150,105,0.2); }
-.status-fail:has(input:checked)     { background: rgba(220,38,38,0.1);  box-shadow: 0 0 6px rgba(220,38,38,0.2); }
-.status-followup:has(input:checked) { background: rgba(217,119,6,0.1);  box-shadow: 0 0 6px rgba(217,119,6,0.2); }
-body.dark-mode .status-btn { border-color: rgba(0,255,200,0.3); color: #7DD3FC; }
-body.dark-mode .status-pass  { border-color: #10B981; color: #10B981; }
-body.dark-mode .status-fail  { border-color: #F43F5E; color: #F43F5E; }
-body.dark-mode .status-followup { border-color: #D97706; color: #F59E0B; }
+.status-icon {
+  width: 1em; height: 1em; flex-shrink: 0;
+  vertical-align: middle; display: inline-block;
+}
+/* Color only on selection */
+.status-pass:has(input:checked)     { border-color: #059669; color: #059669; background: rgba(5,150,105,0.15); box-shadow: 0 0 6px rgba(5,150,105,0.3); }
+.status-fail:has(input:checked)     { border-color: #DC2626; color: #DC2626; background: rgba(220,38,38,0.12); box-shadow: 0 0 6px rgba(220,38,38,0.3); }
+.status-followup:has(input:checked) { border-color: #D97706; color: #D97706; background: rgba(217,119,6,0.12); box-shadow: 0 0 6px rgba(217,119,6,0.3); }
+body.dark-mode .status-btn { border-color: rgba(0,255,200,0.2); color: #7DD3FC; }
+body.dark-mode .status-pass:has(input:checked)     { border-color: #10B981; color: #10B981; background: rgba(16,185,129,0.2); }
+body.dark-mode .status-fail:has(input:checked)     { border-color: #F43F5E; color: #F43F5E; background: rgba(244,63,94,0.2); }
+body.dark-mode .status-followup:has(input:checked) { border-color: #F59E0B; color: #F59E0B; background: rgba(245,158,11,0.2); }
 .summary-textarea {
-  width: 100%; min-height: 52px; resize: vertical;
+  width: 100%; height: 52px; max-height: 52px; resize: none;
   border: none; border-bottom: 1.5px solid rgba(217,119,6,0.3);
   background: transparent; font-family: var(--font-body);
-  font-size: var(--fs-phone-item); color: var(--text);
-  padding: 6px 4px; outline: none; box-sizing: border-box;
-  placeholder-color: var(--text-dim);
+  font-size: var(--fs-phone-summary); color: var(--text);
+  padding: 6px 4px; outline: none; box-sizing: border-box; overflow: hidden;
 }
 .summary-textarea::placeholder { color: var(--text-dim); }
 body.dark-mode .summary-textarea { color: #E0F7FF !important; border-bottom-color: rgba(0,255,200,0.25) !important; background: transparent !important; }
@@ -589,11 +599,16 @@ body.dark-mode .summary-sig-line { border-bottom-color: rgba(0,255,200,0.3) !imp
 /* Print overrides for summary */
 @media print {
   .summary-body { padding: 4px 8px 6px !important; }
-  .summary-label { font-size: var(--fs-print-desktop-item) !important; margin-bottom: 3px !important; color: #6B7280 !important; }
+  .summary-label { font-size: var(--fs-print-desktop-summary) !important; margin-bottom: 3px !important; color: #6B7280 !important; }
   .summary-status-row { gap: 5px !important; margin-bottom: 3px !important; }
-  .status-btn { padding: 2px 8px !important; font-size: var(--fs-print-desktop-item) !important; border-radius: 12px !important; }
-  .status-btn span { font-size: var(--fs-print-desktop-item) !important; }
-  .summary-textarea { min-height: 40px !important; font-size: var(--fs-print-desktop-item) !important; padding: 3px 4px !important; color: #1F2937 !important; background: #ffffff !important; }
+  .status-btn { min-height: var(--h-print-desktop-item) !important; padding: var(--pd-print-desktop-item) !important; font-size: var(--fs-print-desktop-summary) !important; border-radius: 12px !important; color: #6B7280 !important; border-color: rgba(217,119,6,0.4) !important; background: #ffffff !important; }
+  .status-btn span { font-size: var(--fs-print-desktop-summary) !important; color: #6B7280 !important; }
+  .status-pass:has(input:checked)     { border-color: #059669 !important; color: #059669 !important; background: rgba(5,150,105,0.15) !important; }
+  .status-fail:has(input:checked)     { border-color: #DC2626 !important; color: #DC2626 !important; background: rgba(220,38,38,0.12) !important; }
+  .status-followup:has(input:checked) { border-color: #D97706 !important; color: #D97706 !important; background: rgba(217,119,6,0.12) !important; }
+  .summary-textarea { height: 40px !important; max-height: 40px !important; font-size: var(--fs-print-desktop-summary) !important; padding: 3px 4px !important; color: #1F2937 !important; background: #ffffff !important; resize: none !important; overflow: hidden !important; }
+  .summary-textarea::placeholder { color: transparent !important; opacity: 0 !important; }
+  .summary-textarea::-webkit-input-placeholder { color: transparent !important; opacity: 0 !important; }
 }
 
 /* ── PAGE FOOTER ── */
@@ -628,6 +643,9 @@ body.dark-mode .summary-sig-line { border-bottom-color: rgba(0,255,200,0.3) !imp
   body.mobile-safari .page-num      { font-size: var(--fs-ipad-pagenum) !important; }
   body.mobile-safari .section       { margin-bottom: var(--gap-ipad-sections) !important; }
   body.mobile-safari .page          { padding: var(--pd-ipad-page) !important; }
+  body.mobile-safari .summary-label  { font-size: var(--fs-ipad-summary) !important; }
+  body.mobile-safari .status-btn     { font-size: var(--fs-ipad-summary) !important; min-height: var(--h-ipad-item) !important; padding: var(--pd-ipad-item) !important; }
+  body.mobile-safari .summary-textarea { font-size: var(--fs-ipad-summary) !important; }
 }
 /* CSS-only fallback */
 @media screen and (pointer: coarse) and (hover: none) and (min-width: 768px) {
@@ -643,6 +661,9 @@ body.dark-mode .summary-sig-line { border-bottom-color: rgba(0,255,200,0.3) !imp
   .footer-text    { font-size: var(--fs-ipad-footer) !important; }
   .section        { margin-bottom: var(--gap-ipad-sections) !important; }
   .page           { padding: var(--pd-ipad-page) !important; }
+  .summary-label   { font-size: var(--fs-ipad-summary) !important; }
+  .status-btn      { font-size: var(--fs-ipad-summary) !important; min-height: var(--h-ipad-item) !important; padding: var(--pd-ipad-item) !important; }
+  .summary-textarea{ font-size: var(--fs-ipad-summary) !important; }
 }
 
 /* ══════════════════════════════════════
@@ -661,6 +682,9 @@ body.dark-mode .summary-sig-line { border-bottom-color: rgba(0,255,200,0.3) !imp
   .footer-text    { font-size: var(--fs-desktop-footer) !important; }
   .section        { margin-bottom: var(--gap-desktop-sections) !important; }
   .page           { padding: var(--pd-desktop-page) !important; }
+  .summary-label   { font-size: var(--fs-desktop-summary) !important; }
+  .status-btn      { font-size: var(--fs-desktop-summary) !important; min-height: var(--h-desktop-item) !important; padding: var(--pd-desktop-item) !important; }
+  .summary-textarea{ font-size: var(--fs-desktop-summary) !important; }
 }
 
 /* ══════════════════════════════════════
@@ -718,6 +742,10 @@ body.dark-mode .summary-sig-line { border-bottom-color: rgba(0,255,200,0.3) !imp
   .footer-text    { font-size: var(--fs-print-ipad-footer) !important; }
   .section        { margin-bottom: var(--gap-print-ipad-sections) !important; }
   .page           { padding: var(--pd-print-ipad-page) !important; }
+  .summary-label   { font-size: var(--fs-print-ipad-summary) !important; color: #6B7280 !important; }
+  .status-btn      { font-size: var(--fs-print-ipad-summary) !important; min-height: var(--h-print-ipad-item) !important; padding: var(--pd-print-ipad-item) !important; }
+  .status-btn span { font-size: var(--fs-print-ipad-summary) !important; }
+  .summary-textarea{ font-size: var(--fs-print-ipad-summary) !important; }
 }
 
 /* ══ macOS Safari print ══ */
@@ -735,6 +763,10 @@ body.dark-mode .summary-sig-line { border-bottom-color: rgba(0,255,200,0.3) !imp
   html.macos .footer-text    { font-size: var(--fs-print-macos-footer) !important; }
   html.macos .section        { margin-bottom: var(--gap-print-macos-sections) !important; }
   html.macos .page           { padding: var(--pd-print-macos-page) !important; }
+  html.macos .summary-label    { font-size: var(--fs-print-macos-summary) !important; color: #6B7280 !important; }
+  html.macos .status-btn       { font-size: var(--fs-print-macos-summary) !important; min-height: var(--h-print-macos-item) !important; padding: var(--pd-print-macos-item) !important; }
+  html.macos .status-btn span  { font-size: var(--fs-print-macos-summary) !important; }
+  html.macos .summary-textarea { font-size: var(--fs-print-macos-summary) !important; }
 }
 
 /* ══ Desktop Chrome/Windows print ══ */
@@ -1233,15 +1265,15 @@ body.mobile-safari { -webkit-print-color-adjust: exact; }
         <div class="summary-status-row">
           <label class="status-btn status-pass">
             <input type="radio" name="job_status" value="pass">
-            <span>✅ Pass</span>
+            <span><svg class="status-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="8" r="7" fill="#059669"/><polyline points="4,8 7,11 12,5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg> Pass</span>
           </label>
           <label class="status-btn status-fail">
             <input type="radio" name="job_status" value="fail">
-            <span>❌ Fail</span>
+            <span><svg class="status-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><circle cx="8" cy="8" r="7" fill="#DC2626"/><line x1="5" y1="5" x2="11" y2="11" stroke="white" stroke-width="2" stroke-linecap="round"/><line x1="11" y1="5" x2="5" y2="11" stroke="white" stroke-width="2" stroke-linecap="round"/></svg> Fail</span>
           </label>
           <label class="status-btn status-followup">
             <input type="radio" name="job_status" value="followup">
-            <span>⚠️ Needs Follow-Up</span>
+            <span><svg class="status-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M8 2L14.5 13H1.5L8 2Z" fill="#D97706"/><line x1="8" y1="7" x2="8" y2="10" stroke="white" stroke-width="1.5" stroke-linecap="round"/><circle cx="8" cy="12" r="0.75" fill="white"/></svg> Needs Follow-Up</span>
           </label>
         </div>
         <div class="summary-label" style="margin-top:10px;">Items Requiring Follow-Up</div>
@@ -1416,6 +1448,31 @@ function printForm() {
     '  .info-input,.notes-line { background:white!important;color:#1F2937!important; }',
     '  .footer-text,.page-num { color:#9CA3AF!important; }',
     '  .action-bar,.theme-toggle-btn,#save-status { display:none!important; }',
+    '  /* Summary section — restore correct sizing and colors after * override */',
+    '  .summary-label { font-size:var(--fs-print-desktop-summary)!important; color:#6B7280!important; }',
+    '  .status-btn { min-height:var(--h-print-desktop-item)!important; padding:var(--pd-print-desktop-item)!important; font-size:var(--fs-print-desktop-summary)!important; border-radius:12px!important; color:#6B7280!important; border-color:rgba(217,119,6,0.4)!important; background:white!important; }',
+    '  .status-btn span { font-size:var(--fs-print-desktop-summary)!important; color:#6B7280!important; line-height:1!important; display:inline-flex!important; align-items:center!important; gap:3px!important; }',
+    '  .status-btn svg { width:1em!important; height:1em!important; }',
+    '  .status-pass svg circle { fill:#059669!important; }',
+    '  .status-pass svg polyline { stroke:white!important; }',
+    '  .status-fail svg circle { fill:#DC2626!important; }',
+    '  .status-fail svg line { stroke:white!important; }',
+    '  .status-followup svg path { fill:#D97706!important; }',
+    '  .status-followup svg line, .status-followup svg circle { stroke:white!important; fill:white!important; }',
+    '  .status-pass:has(input:checked)     { border:2.5pt solid #059669!important; background:white!important; }',
+    '  .status-pass:has(input:checked),',
+    '  .status-pass:has(input:checked) span,',
+    '  .status-pass:has(input:checked) * { color:#059669!important; }',
+    '  .status-fail:has(input:checked)     { border:2.5pt solid #DC2626!important; background:white!important; }',
+    '  .status-fail:has(input:checked),',
+    '  .status-fail:has(input:checked) span,',
+    '  .status-fail:has(input:checked) * { color:#DC2626!important; }',
+    '  .status-followup:has(input:checked)     { border:2.5pt solid #D97706!important; background:white!important; }',
+    '  .status-followup:has(input:checked),',
+    '  .status-followup:has(input:checked) span,',
+    '  .status-followup:has(input:checked) * { color:#D97706!important; }',
+    '  .summary-textarea { height:40px!important; max-height:40px!important; font-size:var(--fs-print-desktop-summary)!important; color:#1F2937!important; background:white!important; overflow:hidden!important; }',
+    '  .summary-textarea::placeholder { color:transparent!important; opacity:0!important; }',
     '}'
   ].join('\n');
   document.head.appendChild(printStyle);
