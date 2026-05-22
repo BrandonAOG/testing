@@ -1504,64 +1504,85 @@ function showDebug(msg, color) {
   if (!d) {
     d = document.createElement('div');
     d.id = 'print-debug';
-    d.style.cssText = 'position:fixed;top:50px;left:10px;right:10px;z-index:999999;background:rgba(0,0,0,0.85);color:#0f0;font-family:monospace;font-size:11px;padding:10px;border-radius:6px;max-height:60vh;overflow-y:auto;';
+    d.style.cssText = [
+      'position:fixed;top:46px;left:0;right:0;bottom:0;z-index:999999;',
+      'background:#111;color:#0f0;font-family:monospace;font-size:12px;',
+      'padding:8px;overflow-y:auto;-webkit-overflow-scrolling:touch;'
+    ].join('');
+    // Header with copy button
+    var hdr = document.createElement('div');
+    hdr.style.cssText = 'display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;border-bottom:1px solid #333;padding-bottom:4px;';
+    var title = document.createElement('span');
+    title.style.cssText = 'color:#ff0;font-weight:bold;font-size:13px;';
+    title.textContent = '📋 PRINT DEBUG LOG';
+    var btnRow = document.createElement('div');
+    btnRow.style.cssText = 'display:flex;gap:6px;';
+    var copyBtn = document.createElement('button');
+    copyBtn.textContent = '📋 COPY';
+    copyBtn.style.cssText = 'background:#333;color:#0f0;border:1px solid #0f0;padding:4px 8px;font-size:11px;border-radius:4px;';
+    copyBtn.onclick = function() {
+      var log = document.getElementById('print-debug-log');
+      var text = Array.from(log.querySelectorAll('div')).map(function(d){return d.textContent;}).join('\r\n');
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(function(){ copyBtn.textContent='✓ COPIED'; setTimeout(function(){copyBtn.textContent='📋 COPY';},2000); });
+      } else {
+        var ta = document.createElement('textarea');
+        ta.value = text; document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+        copyBtn.textContent='✓ COPIED'; setTimeout(function(){copyBtn.textContent='📋 COPY';},2000);
+      }
+    };
+    var closeBtn = document.createElement('button');
+    closeBtn.textContent = '✕ CLOSE';
+    closeBtn.style.cssText = 'background:#333;color:#f00;border:1px solid #f00;padding:4px 8px;font-size:11px;border-radius:4px;';
+    closeBtn.onclick = function(){ document.getElementById('print-debug').remove(); };
+    btnRow.appendChild(copyBtn); btnRow.appendChild(closeBtn);
+    hdr.appendChild(title); hdr.appendChild(btnRow);
+    d.appendChild(hdr);
+    var log = document.createElement('div');
+    log.id = 'print-debug-log';
+    d.appendChild(log);
     document.body.appendChild(d);
   }
+  var log = document.getElementById('print-debug-log');
   var line = document.createElement('div');
-  line.style.color = color || '#0f0';
-  line.style.borderBottom = '1px solid #333';
-  line.style.padding = '2px 0';
-  line.textContent = new Date().toISOString().substr(11,12) + ' ' + msg;
-  d.appendChild(line);
-  d.scrollTop = d.scrollHeight;
+  line.style.cssText = 'color:' + (color||'#0f0') + ';border-bottom:1px solid #222;padding:3px 0;';
+  line.textContent = new Date().toISOString().substr(11,12) + '  ' + msg;
+  log.appendChild(line);
+  log.scrollTop = log.scrollHeight;
 }
 function hideDebug() {
   var d = document.getElementById('print-debug');
-  if (d) d.remove();
+  if (d) d.style.display = 'none';
+}
+function showDebugAgain() {
+  var d = document.getElementById('print-debug');
+  if (d) d.style.display = '';
 }
 
 function printForm() {
   var isMobileSafari = document.body.classList.contains('mobile-safari');
   var isIPadPrint    = document.body.classList.contains('ipad-safari');
   var isIPhonePrint  = isMobileSafari && !isIPadPrint;
-  var wasDark = document.body.classList.contains('dark-mode');
+  var wasDark        = document.body.classList.contains('dark-mode');
 
   showDebug('printForm() called', '#ff0');
-  showDebug('isMobileSafari=' + isMobileSafari + ' isIPad=' + isIPadPrint + ' isIPhone=' + isIPhonePrint, '#ff0');
-  showDebug('viewport: ' + window.innerWidth + 'x' + window.innerHeight, '#0ff');
-  showDebug('devicePixelRatio: ' + window.devicePixelRatio, '#0ff');
+  showDebug('mobileSafari=' + isMobileSafari + ' iPad=' + isIPadPrint + ' iPhone=' + isIPhonePrint, '#ff0');
+  showDebug('innerWidth=' + window.innerWidth + ' innerHeight=' + window.innerHeight, '#0ff');
+
+  // ── Set document title for PDF filename ──
   var prevTitle = document.title;
   var cName = (document.getElementById('cust_name').value||'').trim();
   document.title = (cName ? cName + ' - ' : '') + 'QC Checklist';
 
-  // Strip dark mode before print — exactly as estimate does
+  // ── Strip dark mode ──
   document.body.classList.remove('dark-mode');
   document.documentElement.classList.remove('dark-mode-pending');
-
-  // Disable the dark mode @media screen block entirely so it can't bleed into print
-  // This is the key step — just removing the class isn't enough for Safari
+  document.documentElement.style.colorScheme = 'light';
+  document.body.style.colorScheme = 'light';
   var _darkStyleEl = document.getElementById('dark-mode-style');
   if (_darkStyleEl) _darkStyleEl.disabled = true;
 
-  // Also force all CSS variables back to light on :root via a style element
-  var lightVars = document.createElement('style');
-  lightVars.id = 'force-light-vars';
-  lightVars.textContent = [
-    ':root, body {',
-    '  --cyan: #D97706 !important;',
-    '  --bg:   #FFFFFF !important;',
-    '  --bg3:  #F8F8F8 !important;',
-    '  --panel:#FFFFFF !important;',
-    '  --text: #1F2937 !important;',
-    '  --text-muted: #6B7280 !important;',
-    '  --text-dim:   #9CA3AF !important;',
-    '  --border: rgba(217,119,6,0.25) !important;',
-    '  --border-bright: rgba(217,119,6,0.5) !important;',
-    '}'
-  ].join('\n');
-  document.head.appendChild(lightVars);
-
-  // Inline-style key elements to force light colors
+  // ── Inline-style key elements ──
   var compName   = document.querySelector('.company-name');
   var docTitle   = document.querySelector('.doc-title');
   var footerEls  = document.querySelectorAll('.footer-text');
@@ -1569,25 +1590,15 @@ function printForm() {
   if (docTitle)  docTitle.setAttribute('style',  'color:#1F2937!important;text-shadow:none!important;');
   footerEls.forEach(function(el){ el.setAttribute('style','color:#9CA3AF!important;text-shadow:none!important;'); });
 
-  // Inject force-print-light style — same pattern as estimate
+  // ── Inject force-print-light ──
   var printStyle = document.createElement('style');
   printStyle.id  = 'force-print-light';
   printStyle.textContent = [
     ':root, html, body { color-scheme: light !important; }',
-    'body {',
-    '  --cyan: #D97706 !important;',
-    '  --bg:   #FFFFFF !important;',
-    '  --bg3:  #F8F8F8 !important;',
-    '  --panel:#FFFFFF !important;',
-    '  --text: #1F2937 !important;',
-    '  --text-muted: #6B7280 !important;',
-    '  --text-dim:   #9CA3AF !important;',
-    '}',
-    ':root { --cyan: #D97706 !important; }',
-    '*, *::before, *::after {',
-    '  animation: none !important; animation-play-state: paused !important; transition: none !important;',
-    '}',
-    'input[type="checkbox"] { accent-color: #D97706 !important; }',
+    'body { --cyan:#D97706!important; --bg:#FFFFFF!important; --bg3:#F8F8F8!important; --panel:#FFFFFF!important; --text:#1F2937!important; --text-muted:#6B7280!important; --text-dim:#9CA3AF!important; }',
+    ':root { --cyan:#D97706!important; }',
+    '*, *::before, *::after { animation:none!important; animation-play-state:paused!important; transition:none!important; }',
+    'input[type="checkbox"] { accent-color:#D97706!important; }',
     '@media print {',
     '  *, *::before, *::after { background:white!important;color:#1F2937!important;box-shadow:none!important;text-shadow:none!important;border-color:rgba(217,119,6,0.4)!important;animation:none!important;transition:none!important; }',
     '  html,body { background:white!important; }',
@@ -1598,8 +1609,7 @@ function printForm() {
     '  .item-label,.item-num,.opt { color:#1F2937!important; }',
     '  .info-input,.notes-line { background:white!important;color:#1F2937!important; }',
     '  .footer-text,.page-num { color:#9CA3AF!important; }',
-    '  .action-bar,.theme-toggle-btn,#save-status { display:none!important; }',
-    '  /* Summary section — restore correct sizing and colors after * override */',
+    '  .action-bar,.theme-toggle-btn,#save-status,#offline-banner,#print-debug { display:none!important; }',
     '  .summary-label { font-size:var(--fs-print-desktop-summary)!important; color:#6B7280!important; }',
     '  .status-btn { min-height:var(--h-print-desktop-item)!important; padding:var(--pd-print-desktop-item)!important; font-size:var(--fs-print-desktop-summary)!important; border-radius:12px!important; color:#6B7280!important; border-color:rgba(217,119,6,0.4)!important; background:white!important; }',
     '  .status-btn span { font-size:var(--fs-print-desktop-summary)!important; color:#6B7280!important; line-height:1!important; display:inline-flex!important; align-items:center!important; gap:3px!important; }',
@@ -1628,12 +1638,41 @@ function printForm() {
   ].join('\n');
   document.head.appendChild(printStyle);
 
+  // ── Force light vars ──
+  var lightVars = document.createElement('style');
+  lightVars.id = 'force-light-vars';
+  lightVars.textContent = ':root, body { --cyan:#D97706!important; --bg:#FFFFFF!important; --bg3:#F8F8F8!important; --panel:#FFFFFF!important; --text:#1F2937!important; --text-muted:#6B7280!important; --text-dim:#9CA3AF!important; --border:rgba(217,119,6,0.25)!important; --border-bright:rgba(217,119,6,0.5)!important; }';
+  document.head.appendChild(lightVars);
+
   var vp = document.querySelector('meta[name="viewport"]');
   var origVP = vp ? vp.getAttribute('content') : null;
 
+  // ── RESTORE function (defined before use) ──
+  function restore() {
+    showDebug('restore() called — print dialog closed', '#f80');
+    document.title = prevTitle;
+    if (vp && origVP) vp.setAttribute('content', origVP);
+    var f  = document.getElementById('safari-print-fix');  if(f)  f.remove();
+    var pl = document.getElementById('force-print-light'); if(pl) pl.remove();
+    var lv = document.getElementById('force-light-vars');  if(lv) lv.remove();
+    document.documentElement.style.colorScheme = '';
+    document.body.style.colorScheme = '';
+    if (_darkStyleEl) _darkStyleEl.disabled = false;
+    if (wasDark) { document.body.classList.add('dark-mode'); document.documentElement.setAttribute('data-theme','dark'); }
+    var ct = document.getElementById('doc-title-continued');
+    if (ct) ct.style.removeProperty('display');
+    if (compName)  compName.removeAttribute('style');
+    if (docTitle)  docTitle.removeAttribute('style');
+    footerEls.forEach(function(el){ el.removeAttribute('style'); });
+    showDebugAgain();
+  }
+
   if (isMobileSafari && vp) {
-    // KEY: change viewport FIRST so Safari starts reflowing immediately
+    showDebug('Mobile Safari detected — changing viewport to width=820', '#ff0');
     vp.setAttribute('content', 'width=820, initial-scale=1.0');
+
+    // Build safari-page-fix style
+    var pfx = isIPhonePrint ? 'iphone' : 'ipad';
     var fix = document.createElement('style');
     fix.id = 'safari-print-fix';
     fix.textContent = [
@@ -1645,133 +1684,67 @@ function printForm() {
       '  .page { display:block!important; width:100%!important; max-width:none!important;',
       '    page-break-after:always!important; break-after:page!important;',
       '    page-break-inside:avoid!important; break-inside:avoid!important;',
-      '    ' + (isIPhonePrint ? 'padding:var(--pd-print-iphone-page)' : 'padding:var(--pd-print-ipad-page)') + '!important;',
+      '    padding:var(--pd-print-' + pfx + '-page)!important;',
       '    border:1.5pt solid #D97706!important; box-shadow:none!important;',
       '    margin:0!important; position:static!important; overflow:visible!important; }',
       '  .page:last-child { page-break-after:auto!important; break-after:auto!important; }',
-      (isIPhonePrint
-        ? '  .company-name   { font-size:var(--fs-print-iphone-company)!important; }'
-        : '  .company-name   { font-size:var(--fs-print-ipad-company)!important; }'),
-      (isIPhonePrint
-        ? '  .doc-title      { font-size:var(--fs-print-iphone-title)!important; }'
-        : '  .doc-title      { font-size:var(--fs-print-ipad-title)!important; }'),
-      (isIPhonePrint
-        ? '  .info-label     { font-size:var(--fs-print-iphone-info-label)!important; }'
-        : '  .info-label     { font-size:var(--fs-print-ipad-info-label)!important; }'),
-      (isIPhonePrint
-        ? '  .info-input     { font-size:var(--fs-print-iphone-info-input)!important; min-height:var(--h-print-iphone-info-input)!important; }'
-        : '  .info-input     { font-size:var(--fs-print-ipad-info-input)!important; min-height:var(--h-print-ipad-info-input)!important; }'),
-      (isIPhonePrint
-        ? '  .section-header { font-size:var(--fs-print-iphone-section)!important; padding:var(--pd-print-iphone-section)!important; }'
-        : '  .section-header { font-size:var(--fs-print-ipad-section)!important; padding:var(--pd-print-ipad-section)!important; }'),
-      (isIPhonePrint
-        ? '  .item-label     { font-size:var(--fs-print-iphone-item)!important; }'
-        : '  .item-label     { font-size:var(--fs-print-ipad-item)!important; }'),
-      (isIPhonePrint
-        ? '  .item-num       { font-size:var(--fs-print-iphone-option)!important; }'
-        : '  .item-num       { font-size:var(--fs-print-ipad-option)!important; }'),
-      (isIPhonePrint
-        ? '  .opt            { font-size:var(--fs-print-iphone-option)!important; }'
-        : '  .opt            { font-size:var(--fs-print-ipad-option)!important; }'),
-      (isIPhonePrint
-        ? '  .check-item     { min-height:var(--h-print-iphone-item)!important; padding:var(--pd-print-iphone-item)!important; flex-wrap:nowrap!important; }'
-        : '  .check-item     { min-height:var(--h-print-ipad-item)!important; padding:var(--pd-print-ipad-item)!important; flex-wrap:nowrap!important; }'),
-      (isIPhonePrint
-        ? '  .section        { margin-bottom:var(--gap-print-iphone-sections)!important; }'
-        : '  .section        { margin-bottom:var(--gap-print-ipad-sections)!important; }'),
-      (isIPhonePrint
-        ? '  .opt input[type="checkbox"] { width:var(--h-print-iphone-checkbox)!important; height:var(--h-print-iphone-checkbox)!important; min-width:var(--h-print-iphone-checkbox)!important; min-height:var(--h-print-iphone-checkbox)!important; }'
-        : '  .opt input[type="checkbox"] { width:var(--h-print-ipad-checkbox)!important; height:var(--h-print-ipad-checkbox)!important; min-width:var(--h-print-ipad-checkbox)!important; min-height:var(--h-print-ipad-checkbox)!important; }'),
-      (isIPhonePrint
-        ? '  .footer-text    { font-size:var(--fs-print-iphone-footer)!important; }'
-        : '  .footer-text    { font-size:var(--fs-print-ipad-footer)!important; }'),
+      '  .company-name   { font-size:var(--fs-print-' + pfx + '-company)!important; }',
+      '  .doc-title      { font-size:var(--fs-print-' + pfx + '-title)!important; }',
+      '  .info-label     { font-size:var(--fs-print-' + pfx + '-info-label)!important; }',
+      '  .info-input     { font-size:var(--fs-print-' + pfx + '-info-input)!important; min-height:var(--h-print-' + pfx + '-info-input)!important; }',
+      '  .section-header { font-size:var(--fs-print-' + pfx + '-section)!important; padding:var(--pd-print-' + pfx + '-section)!important; }',
+      '  .item-label     { font-size:var(--fs-print-' + pfx + '-item)!important; }',
+      '  .item-num       { font-size:var(--fs-print-' + pfx + '-option)!important; }',
+      '  .opt            { font-size:var(--fs-print-' + pfx + '-option)!important; }',
+      '  .check-item     { min-height:var(--h-print-' + pfx + '-item)!important; padding:var(--pd-print-' + pfx + '-item)!important; flex-wrap:nowrap!important; }',
+      '  .section        { margin-bottom:var(--gap-print-' + pfx + '-sections)!important; }',
+      '  .opt input[type="checkbox"] { width:var(--h-print-' + pfx + '-checkbox)!important; height:var(--h-print-' + pfx + '-checkbox)!important; min-width:var(--h-print-' + pfx + '-checkbox)!important; min-height:var(--h-print-' + pfx + '-checkbox)!important; }',
+      '  .footer-text    { font-size:var(--fs-print-' + pfx + '-footer)!important; }',
       '  #doc-title-continued { display:none!important; }',
-      (isIPhonePrint
-        ? '  #additional_comments { margin-bottom:var(--gap-print-iphone-summary-footer)!important; }'
-        : '  #additional_comments { margin-bottom:var(--gap-print-ipad-summary-footer)!important; }'),
-      (isIPhonePrint
-        ? '  #page2 .page-footer { margin-top:var(--gap-print-iphone-summary-footer)!important; }'
-        : '  #page2 .page-footer { margin-top:var(--gap-print-ipad-summary-footer)!important; }'),
+      '  #additional_comments { margin-bottom:var(--gap-print-' + pfx + '-summary-footer)!important; }',
+      '  #page2 .page-footer { margin-top:var(--gap-print-' + pfx + '-summary-footer)!important; }',
       '  #page2 .summary-body { padding-bottom:0!important; }',
       '}'
     ].join('\n');
-    // Inject styles AFTER viewport reflow has had time to settle
-    // then print from the already-rendered state
+
+    showDebug('safari-print-fix built for: ' + pfx, '#0ff');
+
+    // Wait for viewport reflow then inject styles and print
     setTimeout(function() {
-      showDebug('Timeout fired, forcing layout commit...', '#ff0');
-      showDebug('page1 rect: ' + JSON.stringify(document.getElementById('page1').getBoundingClientRect()), '#0ff');
+      showDebug('setTimeout fired — injecting styles + printing', '#ff0');
+
+      // Force layout commit
       void document.getElementById('page1').getBoundingClientRect();
       void document.getElementById('page2').getBoundingClientRect();
-      showDebug('Injecting safari-print-fix styles...', '#ff0');
+
       document.head.appendChild(fix);
+
       // Hide continued title
       var ct = document.getElementById('doc-title-continued');
       if (ct) ct.style.setProperty('display', 'none', 'important');
-      showDebug('requestAnimationFrame — about to call window.print()', '#0f0');
+
+      showDebug('Calling window.print()...', '#0f0');
+      hideDebug();
       requestAnimationFrame(function() {
-        showDebug('CALLING window.print() NOW', '#0f0');
-        // Hide debug before print
-        var dbg = document.getElementById('print-debug'); if(dbg) dbg.style.display='none';
         window.print();
       });
     }, 600);
-    return; // print called inside setTimeout
-  }
 
-  function restore() {
-    window.removeEventListener('afterprint', restore);
-    document.title = prevTitle;
-    if (isMobileSafari && vp && origVP) vp.setAttribute('content', origVP);
-    var f  = document.getElementById('safari-print-fix');  if(f)  f.remove();
-    var pl = document.getElementById('force-print-light'); if(pl) pl.remove();
-    var lv = document.getElementById('force-light-vars');  if(lv) lv.remove();
-    if (_darkStyleEl) _darkStyleEl.disabled = false;
-    if (wasDark) { document.body.classList.add('dark-mode'); document.documentElement.setAttribute('data-theme','dark'); }
-    showDebug('Print dialog closed, restoring...', '#f80');
-    var dbg = document.getElementById('print-debug'); if(dbg) dbg.style.display='';
-    // Restore continued title
-    var continuedTitle = document.getElementById('doc-title-continued');
-    if (continuedTitle) continuedTitle.style.display = '';
-    // Restore inline styles
-    if (compName)  compName.removeAttribute('style');
-    if (docTitle)  docTitle.removeAttribute('style');
-    footerEls.forEach(function(el){ el.removeAttribute('style'); });
-  }
-
-  if (isMobileSafari) {
+    // Detect when print dialog closes
     var wentHidden = false;
     document.addEventListener('visibilitychange', function _iosVis() {
-      if (document.hidden) { wentHidden = true; }
-      else if (wentHidden) { document.removeEventListener('visibilitychange', _iosVis); restore(); }
+      if (document.hidden) {
+        wentHidden = true;
+      } else if (wentHidden) {
+        document.removeEventListener('visibilitychange', _iosVis);
+        restore();
+      }
     });
-    setTimeout(function() { if (!wentHidden) restore(); }, 3000);
-    // Safari print strategy:
-    // Set viewport + inject styles first, then force a synchronous layout flush,
-    // then call print() immediately — the flush is what matters, not the delay.
-    // The viewport change already happened above, so Safari will reflow.
+    // Fallback restore after 8s if visibility never changes
+    setTimeout(function() { if (!wentHidden) restore(); }, 8000);
 
-    showDebug('Viewport changed to width=820, waiting for reflow...', '#ff0');
-  // Step 2: Give Safari time to reflow after viewport change (this is the real render time)
-    // Then inject print styles and trigger print from the already-rendered layout
-    setTimeout(function() {
-      // Force layout read — commits any pending style calculations
-      void document.getElementById('page1').getBoundingClientRect();
-      void document.getElementById('page2').getBoundingClientRect();
-
-      // Step 3: NOW inject the print fix styles (after reflow, not before)
-      document.head.appendChild(fix);
-
-      // Step 4: Hide continued title
-      var ct = document.getElementById('doc-title-continued');
-      if (ct) ct.style.setProperty('display', 'none', 'important');
-
-      // Step 5: One paint cycle then print — Safari renders from the settled layout
-      requestAnimationFrame(function() {
-        window.print();
-      });
-    }, 800);
-    return; // skip the document.head.appendChild(fix) below — we do it inside setTimeout
   } else {
+    showDebug('Non-Safari — calling window.print() directly', '#0ff');
     window.addEventListener('afterprint', restore);
     window.print();
   }
