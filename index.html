@@ -1076,7 +1076,7 @@ body.mobile-safari { -webkit-print-color-adjust: exact; }
            onerror="this.style.display='none'">
       <div class="header-right">
         <div class="company-name">Always On Generators</div>
-        <div class="doc-title">Quality Control Checklist — continued</div>
+        <div class="doc-title" id="doc-title-continued">Quality Control Checklist — continued</div>
         <div class="info-grid">
           <div class="info-row full">
             <span class="info-label">Customer Name:</span>
@@ -1524,6 +1524,7 @@ function printForm() {
       '  .section        { margin-bottom:var(--gap-print-ipad-sections)!important; }',
       '  .opt input[type="checkbox"] { width:var(--h-print-ipad-checkbox)!important; height:var(--h-print-ipad-checkbox)!important; min-width:var(--h-print-ipad-checkbox)!important; min-height:var(--h-print-ipad-checkbox)!important; }',
       '  .footer-text    { font-size:var(--fs-print-ipad-footer)!important; }',
+      '  #doc-title-continued { display:none!important; }',
       '}'
     ].join('\n');
     document.head.appendChild(fix);
