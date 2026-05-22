@@ -535,6 +535,67 @@ body {
 }
 .check-solo { display: flex; align-items: center; gap: 3px; }
 
+/* ── SUMMARY SECTION ── */
+.summary-body {
+  padding: 8px 10px 10px;
+}
+.summary-label {
+  font-family: var(--font-display); font-size: var(--fs-phone-section);
+  color: var(--text-muted); text-transform: uppercase; letter-spacing: 1.5px;
+  font-weight: 600; margin-bottom: 6px;
+}
+body.dark-mode .summary-label { color: #7DD3FC; }
+.summary-status-row {
+  display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 4px;
+}
+.status-btn {
+  display: inline-flex; align-items: center; gap: 5px;
+  border: 1.5px solid var(--border-bright); border-radius: 20px;
+  padding: 4px 12px; cursor: pointer; font-family: var(--font-display);
+  font-size: var(--fs-phone-option); font-weight: 600; letter-spacing: 0.5px;
+  white-space: nowrap; transition: all 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+.status-btn input[type="radio"] { display: none; }
+.status-pass  { border-color: #059669; color: #059669; }
+.status-fail  { border-color: #DC2626; color: #DC2626; }
+.status-followup { border-color: #D97706; color: #D97706; }
+.status-pass:has(input:checked)     { background: rgba(5,150,105,0.12); box-shadow: 0 0 6px rgba(5,150,105,0.2); }
+.status-fail:has(input:checked)     { background: rgba(220,38,38,0.1);  box-shadow: 0 0 6px rgba(220,38,38,0.2); }
+.status-followup:has(input:checked) { background: rgba(217,119,6,0.1);  box-shadow: 0 0 6px rgba(217,119,6,0.2); }
+body.dark-mode .status-btn { border-color: rgba(0,255,200,0.3); color: #7DD3FC; }
+body.dark-mode .status-pass  { border-color: #10B981; color: #10B981; }
+body.dark-mode .status-fail  { border-color: #F43F5E; color: #F43F5E; }
+body.dark-mode .status-followup { border-color: #D97706; color: #F59E0B; }
+.summary-textarea {
+  width: 100%; min-height: 52px; resize: vertical;
+  border: none; border-bottom: 1.5px solid rgba(217,119,6,0.3);
+  background: transparent; font-family: var(--font-body);
+  font-size: var(--fs-phone-item); color: var(--text);
+  padding: 6px 4px; outline: none; box-sizing: border-box;
+  placeholder-color: var(--text-dim);
+}
+.summary-textarea::placeholder { color: var(--text-dim); }
+body.dark-mode .summary-textarea { color: #E0F7FF !important; border-bottom-color: rgba(0,255,200,0.25) !important; background: transparent !important; }
+body.dark-mode .summary-textarea::placeholder { color: rgba(125,211,252,0.4) !important; }
+.summary-signoff {
+  display: flex; align-items: flex-end; gap: 6px; margin-top: 10px; flex-wrap: wrap;
+}
+.summary-sig-line {
+  flex: 1; border-bottom: 1.5px solid rgba(217,119,6,0.4); min-height: 22px; min-width: 80px;
+}
+body.dark-mode .summary-sig-line { border-bottom-color: rgba(0,255,200,0.3) !important; }
+
+/* Print overrides for summary */
+@media print {
+  .summary-body { padding: 4px 8px 6px !important; }
+  .summary-label { font-size: var(--fs-print-desktop-section) !important; margin-bottom: 3px !important; }
+  .summary-status-row { gap: 5px !important; margin-bottom: 2px !important; }
+  .status-btn { padding: 2px 8px !important; font-size: var(--fs-print-desktop-option) !important; border-radius: 12px !important; }
+  .summary-textarea { min-height: 36px !important; font-size: var(--fs-print-desktop-item) !important; padding: 3px 4px !important; }
+  .summary-signoff { margin-top: 6px !important; }
+}
+
 /* ── PAGE FOOTER ── */
 .page-footer {
   margin-top: 8px; border-top: 1px solid var(--border-bright);
@@ -929,6 +990,29 @@ body.mobile-safari { -webkit-print-color-adjust: exact; }
       </div>
     </div>
 
+    <!-- CONDUIT STRAPPING -->
+    <div class="section">
+      <div class="section-header">Conduit Strapping</div>
+      <div class="check-item">
+        <span class="item-num">1.</span>
+        <span class="item-label">Penetration Caulked or Foamed</span>
+        <div class="options">
+          <label class="opt"><input type="checkbox" name="cs_caulk" value="yes"><span>Yes</span></label>
+          <label class="opt"><input type="checkbox" name="cs_caulk" value="no"><span>No</span></label>
+        </div>
+        <input class="notes-line" type="text" placeholder="" autocomplete="off">
+      </div>
+      <div class="check-item">
+        <span class="item-num">2.</span>
+        <span class="item-label">Strapping Condition</span>
+        <div class="options">
+          <label class="opt"><input type="checkbox" name="cs_strap" value="good"><span>Good</span></label>
+          <label class="opt"><input type="checkbox" name="cs_strap" value="bad"><span>Bad</span></label>
+        </div>
+        <input class="notes-line" type="text" placeholder="" autocomplete="off">
+      </div>
+    </div>
+
     <div class="page-footer">
       <span class="footer-text">QUALITY CONTROL CHECKLIST · ALWAYS ON GENERATORS · CONFIDENTIAL</span>
       <span class="page-num">Page 1 of 2</span>
@@ -951,31 +1035,6 @@ body.mobile-safari { -webkit-print-color-adjust: exact; }
             <input class="info-input" type="date" id="cust_date2" style="max-width:120px;">
           </div>
         </div>
-      </div>
-    </div>
-
-    <!-- CONDUIT STRAPPING -->
-    <div class="section">
-      <div class="section-header">Conduit Strapping</div>
-      <div class="check-item">
-        <span class="item-num">1.</span>
-        <span class="item-label">Penetration Caulked or Foamed</span>
-        <div class="options">
-          <label class="opt"><input type="checkbox" name="cs_caulk" value="yes"><span>Yes</span></label>
-          <label class="opt"><input type="checkbox" name="cs_caulk" value="no"><span>No</span></label>
-          
-        </div>
-        <input class="notes-line" type="text" placeholder="" autocomplete="off">
-      </div>
-      <div class="check-item">
-        <span class="item-num">2.</span>
-        <span class="item-label">Strapping Condition</span>
-        <div class="options">
-          <label class="opt"><input type="checkbox" name="cs_strap" value="good"><span>Good</span></label>
-          <label class="opt"><input type="checkbox" name="cs_strap" value="bad"><span>Bad</span></label>
-          
-        </div>
-        <input class="notes-line" type="text" placeholder="" autocomplete="off">
       </div>
     </div>
 
@@ -1163,14 +1222,35 @@ body.mobile-safari { -webkit-print-color-adjust: exact; }
       </div>
     </div>
 
-    <!-- TECH SIGNATURE AREA -->
-    <div class="section">
-      <div class="section-header">Sign Off</div>
-      <div class="check-item" style="gap:10px;">
-        <span class="item-label">Technician Signature:</span>
-        <div style="flex:1;border-bottom:1.5px solid rgba(217,119,6,0.4);min-height:22px;"></div>
-        <span class="item-label" style="margin-left:10px;">Date:</span>
-        <input class="info-input" type="date" id="sign_date" style="max-width:110px;">
+    <!-- SUMMARY -->
+    <div class="section summary-section">
+      <div class="section-header">Summary</div>
+      <div class="summary-body">
+        <div class="summary-label">Overall Job Status</div>
+        <div class="summary-status-row">
+          <label class="status-btn status-pass">
+            <input type="radio" name="job_status" value="pass">
+            <span>✅ Pass</span>
+          </label>
+          <label class="status-btn status-fail">
+            <input type="radio" name="job_status" value="fail">
+            <span>❌ Fail</span>
+          </label>
+          <label class="status-btn status-followup">
+            <input type="radio" name="job_status" value="followup">
+            <span>⚠️ Needs Follow-Up</span>
+          </label>
+        </div>
+        <div class="summary-label" style="margin-top:10px;">Items Requiring Follow-Up</div>
+        <textarea id="followup_notes" name="followup_notes" class="summary-textarea" placeholder="List any items that need to be revisited or corrected…" autocomplete="off"></textarea>
+        <div class="summary-label" style="margin-top:8px;">Additional Comments</div>
+        <textarea id="additional_comments" name="additional_comments" class="summary-textarea" placeholder="Any other notes, observations, or customer concerns…" autocomplete="off"></textarea>
+        <div class="summary-signoff">
+          <span class="summary-label">Technician Signature:</span>
+          <div class="summary-sig-line"></div>
+          <span class="summary-label" style="margin-left:12px;white-space:nowrap;">Date:</span>
+          <input class="info-input" type="date" id="sign_date" style="max-width:120px;flex-shrink:0;">
+        </div>
       </div>
     </div>
 
