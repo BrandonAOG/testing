@@ -829,29 +829,29 @@ body.dark-mode .summary-sig-line { border-bottom-color: rgba(0,255,200,0.3) !imp
 
 /* ══ iPad print ══ */
 @media print and (min-width: 768px) {
-  html { font-size: var(--fs-print-ipad-section) !important; }
-  .company-name   { font-size: var(--fs-print-ipad-company) !important; }
-  .doc-title      { font-size: var(--fs-print-ipad-title) !important; }
-  .info-label     { font-size: var(--fs-print-ipad-info-label) !important; }
-  .info-input     { font-size: var(--fs-print-ipad-info-input) !important; min-height: var(--h-print-ipad-info-input) !important; }
-  .section-header { font-size: var(--fs-print-ipad-section) !important; padding: var(--pd-print-ipad-section) !important; }
-  .item-label     { font-size: var(--fs-print-ipad-item) !important; }
-  .item-num       { font-size: var(--fs-print-ipad-option) !important; }
-  .opt            { font-size: var(--fs-print-ipad-option) !important; }
-  .check-item     { min-height: var(--h-print-ipad-item) !important; padding: var(--pd-print-ipad-item) !important; flex-wrap: nowrap !important; }
-  .opt input[type="checkbox"] { width: var(--h-print-ipad-checkbox) !important; height: var(--h-print-ipad-checkbox) !important; min-width: var(--h-print-ipad-checkbox) !important; min-height: var(--h-print-ipad-checkbox) !important; }
-  .footer-text    { font-size: var(--fs-print-ipad-footer) !important; }
-  .section        { margin-bottom: var(--gap-print-ipad-sections) !important; }
-  .page           { padding: var(--pd-print-ipad-page) !important; }
-  .page-header   { padding: var(--pd-print-ipad-header) !important; }
-  .info-input    { padding: var(--pd-print-ipad-info-input) !important; }
-  .opt           { padding: var(--pd-print-ipad-option) !important; }
-  .page-footer   { padding: var(--pd-print-ipad-footer) !important; }
-  .summary-body  { padding: var(--pd-print-ipad-summary) !important; }
-  .summary-label   { font-size: var(--fs-print-ipad-summary) !important; color: #6B7280 !important; }
-  .status-btn      { font-size: var(--fs-print-ipad-summary) !important; min-height: var(--h-print-ipad-item) !important; padding: var(--pd-print-ipad-item) !important; }
-  .status-btn span { font-size: var(--fs-print-ipad-summary) !important; }
-  .summary-textarea{ font-size: var(--fs-print-ipad-summary) !important; }
+  body:not(.iphone-print) html { font-size: var(--fs-print-ipad-section) !important; }
+  body:not(.iphone-print) .company-name   { font-size: var(--fs-print-ipad-company) !important; }
+  body:not(.iphone-print) .doc-title      { font-size: var(--fs-print-ipad-title) !important; }
+  body:not(.iphone-print) .info-label     { font-size: var(--fs-print-ipad-info-label) !important; }
+  body:not(.iphone-print) .info-input     { font-size: var(--fs-print-ipad-info-input) !important; min-height: var(--h-print-ipad-info-input) !important; }
+  body:not(.iphone-print) .section-header { font-size: var(--fs-print-ipad-section) !important; padding: var(--pd-print-ipad-section) !important; }
+  body:not(.iphone-print) .item-label     { font-size: var(--fs-print-ipad-item) !important; }
+  body:not(.iphone-print) .item-num       { font-size: var(--fs-print-ipad-option) !important; }
+  body:not(.iphone-print) .opt            { font-size: var(--fs-print-ipad-option) !important; }
+  body:not(.iphone-print) .check-item     { min-height: var(--h-print-ipad-item) !important; padding: var(--pd-print-ipad-item) !important; flex-wrap: nowrap !important; }
+  body:not(.iphone-print) .opt input[type="checkbox"] { width: var(--h-print-ipad-checkbox) !important; height: var(--h-print-ipad-checkbox) !important; min-width: var(--h-print-ipad-checkbox) !important; min-height: var(--h-print-ipad-checkbox) !important; }
+  body:not(.iphone-print) .footer-text    { font-size: var(--fs-print-ipad-footer) !important; }
+  body:not(.iphone-print) .section        { margin-bottom: var(--gap-print-ipad-sections) !important; }
+  body:not(.iphone-print) .page           { padding: var(--pd-print-ipad-page) !important; }
+  body:not(.iphone-print) .page-header   { padding: var(--pd-print-ipad-header) !important; }
+  body:not(.iphone-print) .info-input    { padding: var(--pd-print-ipad-info-input) !important; }
+  body:not(.iphone-print) .opt           { padding: var(--pd-print-ipad-option) !important; }
+  body:not(.iphone-print) .page-footer   { padding: var(--pd-print-ipad-footer) !important; }
+  body:not(.iphone-print) .summary-body  { padding: var(--pd-print-ipad-summary) !important; }
+  body:not(.iphone-print) .summary-label   { font-size: var(--fs-print-ipad-summary) !important; color: #6B7280 !important; }
+  body:not(.iphone-print) .status-btn      { font-size: var(--fs-print-ipad-summary) !important; min-height: var(--h-print-ipad-item) !important; padding: var(--pd-print-ipad-item) !important; }
+  body:not(.iphone-print) .status-btn span { font-size: var(--fs-print-ipad-summary) !important; }
+  body:not(.iphone-print) .summary-textarea{ font-size: var(--fs-print-ipad-summary) !important; }
 }
 
 /* ══ macOS Safari print ══ */
@@ -1652,6 +1652,7 @@ function printForm() {
     showDebug('restore() called — print dialog closed', '#f80');
     document.title = prevTitle;
     if (vp && origVP) vp.setAttribute('content', origVP);
+    document.body.classList.remove('iphone-print');
     var f  = document.getElementById('safari-print-fix');  if(f)  f.remove();
     var pl = document.getElementById('force-print-light'); if(pl) pl.remove();
     var lv = document.getElementById('force-light-vars');  if(lv) lv.remove();
@@ -1669,6 +1670,7 @@ function printForm() {
 
   if (isMobileSafari && vp) {
     showDebug('Mobile Safari detected — changing viewport to width=820', '#ff0');
+    if (isIPhonePrint) document.body.classList.add('iphone-print');
     vp.setAttribute('content', 'width=820, initial-scale=1.0');
 
     // Build safari-page-fix style
