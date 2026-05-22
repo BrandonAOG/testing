@@ -120,23 +120,23 @@
   /* ── 1d. PDF — Phone (base for all print) ── */
   --fs-print-phone-company:   0.78rem;  /* "Always On Generators" in PDF                */
   --fs-print-phone-title:     0.82rem;  /* "Quality Control Checklist" in PDF           */
-  --fs-print-phone-info-label:0.5rem;   /* Customer Name / Date / Technician / Gas Crew labels in PDF */
-  --fs-print-phone-info-input:0.65rem;  /* text in Customer Name, Address, Date… fields in PDF */
+  --fs-print-phone-info-label:0.7rem;   /* Customer Name / Date / Technician / Gas Crew labels in PDF */
+  --fs-print-phone-info-input:0.7rem;  /* text in Customer Name, Address, Date… fields in PDF */
   --fs-print-phone-section:   0.6rem;   /* Transfer Switch / Meter / Generator… section bars in PDF */
   --fs-print-phone-item:      0.58rem;  /* Check All Wire Connections, Vacuumed… item text in PDF */
   --fs-print-phone-option:    0.52rem;  /* Good / Bad / Yes / No / Installed / Removed in PDF */
-  --fs-print-phone-footer:    0.42rem;  /* "Quality Control Checklist · Always On Generators · Confidential" in PDF */
+  --fs-print-phone-footer:    0.38rem;  /* "Quality Control Checklist · Always On Generators · Confidential" in PDF */
   --fs-print-phone-summary:   8px;      /* Overall Job Status / Pass / Fail / Items Requiring Follow-Up in PDF */
 
   /* ── 1e. PDF — iPad ── */
   --fs-print-ipad-company:    0.78rem;  /* "Always On Generators" in iPad PDF           */
   --fs-print-ipad-title:      0.82rem;  /* "Quality Control Checklist" in iPad PDF      */
-  --fs-print-ipad-info-label: 0.5rem;   /* Customer Name / Date / Technician / Gas Crew labels in iPad PDF */
-  --fs-print-ipad-info-input: 0.65rem;  /* text in Customer Name, Address, Date… fields in iPad PDF */
+  --fs-print-ipad-info-label: 0.7rem;   /* Customer Name / Date / Technician / Gas Crew labels in iPad PDF */
+  --fs-print-ipad-info-input: 0.7rem;  /* text in Customer Name, Address, Date… fields in iPad PDF */
   --fs-print-ipad-section:    0.6rem;   /* Transfer Switch / Meter / Generator… section bars in iPad PDF */
   --fs-print-ipad-item:       0.58rem;  /* Check All Wire Connections, Vacuumed… item text in iPad PDF */
   --fs-print-ipad-option:     0.52rem;  /* Good / Bad / Yes / No / Installed / Removed in iPad PDF */
-  --fs-print-ipad-footer:     0.42rem;  /* "Quality Control Checklist · Always On Generators · Confidential" in iPad PDF */
+  --fs-print-ipad-footer:     0.35rem;  /* "Quality Control Checklist · Always On Generators · Confidential" in iPad PDF */
   --fs-print-ipad-summary:    8px;      /* Overall Job Status / Pass / Fail / Items Requiring Follow-Up in iPad PDF */
 
   /* ── 1f. PDF — macOS Safari ── */
@@ -206,7 +206,7 @@
   --pd-print-phone-item:        5px 6px;    /* space inside each Check All Wire / Vacuumed… row in PDF */
   --pd-print-phone-option:      0 3px;      /* space around Good / Bad / Yes / No labels in PDF */
   --pd-print-phone-info-input:  0 2px;      /* space inside Customer Name / Address… fields in PDF */
-  --pd-print-phone-footer:      2px 0;      /* space above/below footer bar in PDF         */
+  --pd-print-phone-footer:      1px 0;      /* space above/below footer bar in PDF         */
   --pd-print-phone-summary:     4px 8px;    /* space inside Summary section body in PDF    */
 
   /* ── 2e. PDF — iPad ── */
@@ -216,7 +216,7 @@
   --pd-print-ipad-item:         5px 6px;    /* space inside each checklist item row in iPad PDF */
   --pd-print-ipad-option:       0 3px;      /* space around Good / Bad / Yes / No labels in iPad PDF */
   --pd-print-ipad-info-input:   0 2px;      /* space inside Customer Name / Address… fields in iPad PDF */
-  --pd-print-ipad-footer:       2px 0;      /* space above/below footer bar in iPad PDF    */
+  --pd-print-ipad-footer:       1px 0;      /* space above/below footer bar in iPad PDF    */
   --pd-print-ipad-summary:      4px 8px;    /* space inside Summary section body in iPad PDF */
 
   /* ── 2f. PDF — macOS ── */
@@ -243,8 +243,8 @@
   --gap-phone-summary-footer:     2px;   /* space between Additional Comments box and footer — phone  */
   --gap-ipad-summary-footer:      2px;   /* space between Additional Comments box and footer — iPad   */
   --gap-desktop-summary-footer:   2px;   /* space between Additional Comments box and footer — desktop */
-  --gap-print-phone-summary-footer:   2px;   /* space between Additional Comments box and footer — phone PDF  */
-  --gap-print-ipad-summary-footer:    2px;   /* space between Additional Comments box and footer — iPad PDF   */
+  --gap-print-phone-summary-footer:   1px;   /* space between Additional Comments box and footer — phone PDF  */
+  --gap-print-ipad-summary-footer:    1px;   /* space between Additional Comments box and footer — iPad PDF   */
   --gap-print-macos-summary-footer:   2px;   /* space between Additional Comments box and footer — macOS PDF  */
   --gap-print-desktop-summary-footer: 2px;   /* space between Additional Comments box and footer — desktop PDF */
 
@@ -290,8 +290,8 @@
   --gap-phone-sections:         5px;   /* space between Transfer Switch / Meter / Generator… sections — phone */
   --gap-ipad-sections:          5px;   /* space between sections — iPad                  */
   --gap-desktop-sections:       5px;   /* space between sections — desktop               */
-  --gap-print-phone-sections:  5px;   /* space between Transfer Switch / Meter / Generator… sections in PDF */
-  --gap-print-ipad-sections:   5px;   /* space between sections in iPad PDF             */
+  --gap-print-phone-sections:  12px;   /* space between Transfer Switch / Meter / Generator… sections in PDF */
+  --gap-print-ipad-sections:   8px;   /* space between sections in iPad PDF             */
   --gap-print-macos-sections:  12px;   /* space between sections in macOS PDF            */
   --gap-print-desktop-sections:12px;   /* space between sections in desktop PDF          */
 }
@@ -1584,9 +1584,7 @@ function printForm() {
   var origVP = vp ? vp.getAttribute('content') : null;
 
   if (isMobileSafari && vp) {
-    // Directly hide the continued title via inline style — CSS injection isn't reliable
-    var continuedTitle = document.getElementById('doc-title-continued');
-    if (continuedTitle) continuedTitle.style.display = 'none';
+    // KEY: change viewport FIRST so Safari starts reflowing immediately
     vp.setAttribute('content', 'width=820, initial-scale=1.0');
     var fix = document.createElement('style');
     fix.id = 'safari-print-fix';
@@ -1621,7 +1619,23 @@ function printForm() {
       '  #page2 .summary-body { padding-bottom:0!important; }',
       '}'
     ].join('\n');
-    document.head.appendChild(fix);
+    // Inject styles AFTER viewport reflow has had time to settle
+    // then print from the already-rendered state
+    setTimeout(function() {
+      // Force layout commit after viewport change
+      void document.getElementById('page1').getBoundingClientRect();
+      void document.getElementById('page2').getBoundingClientRect();
+      // Inject fix styles now (layout already done)
+      document.head.appendChild(fix);
+      // Hide continued title
+      var ct = document.getElementById('doc-title-continued');
+      if (ct) ct.style.setProperty('display', 'none', 'important');
+      // One animation frame then print
+      requestAnimationFrame(function() {
+        window.print();
+      });
+    }, 600);
+    return; // print called inside setTimeout
   }
 
   function restore() {
@@ -1654,28 +1668,26 @@ function printForm() {
     // then call print() immediately — the flush is what matters, not the delay.
     // The viewport change already happened above, so Safari will reflow.
 
-    // 1. Force synchronous layout — makes Safari commit all CSS var resolutions
-    //    and font metrics BEFORE print() is called
-    document.querySelectorAll('.page, .section, .check-item, .summary-body').forEach(function(el) {
-      void el.getBoundingClientRect();
-    });
-    // 2. Force a style recalc by toggling a property
-    document.body.style.webkitTransform = 'translateZ(0)';
-    void document.body.offsetHeight;
-    document.body.style.webkitTransform = '';
-    void document.body.offsetHeight;
+    // Step 2: Give Safari time to reflow after viewport change (this is the real render time)
+    // Then inject print styles and trigger print from the already-rendered layout
+    setTimeout(function() {
+      // Force layout read — commits any pending style calculations
+      void document.getElementById('page1').getBoundingClientRect();
+      void document.getElementById('page2').getBoundingClientRect();
 
-    // 3. Hide continued title
-    var ct = document.getElementById('doc-title-continued');
-    if (ct) ct.style.setProperty('display', 'none', 'important');
+      // Step 3: NOW inject the print fix styles (after reflow, not before)
+      document.head.appendChild(fix);
 
-    // 4. Call print inside a rAF so Safari paints the flushed layout first
-    requestAnimationFrame(function() {
-      void document.body.offsetHeight; // one more flush
+      // Step 4: Hide continued title
+      var ct = document.getElementById('doc-title-continued');
+      if (ct) ct.style.setProperty('display', 'none', 'important');
+
+      // Step 5: One paint cycle then print — Safari renders from the settled layout
       requestAnimationFrame(function() {
         window.print();
       });
-    });
+    }, 800);
+    return; // skip the document.head.appendChild(fix) below — we do it inside setTimeout
   } else {
     window.addEventListener('afterprint', restore);
     window.print();
