@@ -542,15 +542,6 @@ body {
   .footer-text   { font-size: var(--fs-print-phone-footer) !important; }
   .page-num      { font-size: var(--fs-print-phone-footer) !important; }
   .page-footer   { margin-top: 4px !important; padding-top: 2px !important; }
-  /* Force white background in print regardless of dark mode */
-  body.dark-mode .page, body.dark-mode .page-header,
-  body.dark-mode .section, body.dark-mode .section-header,
-  body.dark-mode .check-item, body.dark-mode .action-bar { background: #ffffff !important; color: #1F2937 !important; }
-  body.dark-mode .company-name { color: #D97706 !important; }
-  body.dark-mode .section-header { color: #D97706 !important; background: #f5f5f5 !important; }
-  body.dark-mode .item-label, body.dark-mode .opt, body.dark-mode .item-num { color: #1F2937 !important; }
-  body.dark-mode .footer-text, body.dark-mode .page-num { color: #9CA3AF !important; }
-  body.dark-mode .info-input { color: #1F2937 !important; background: #ffffff !important; }
 }
 
 /* ══ iPad print ══ */
@@ -1141,9 +1132,54 @@ function setStatus(msg) { var el=document.getElementById('save-status'); if(el){
 
 function printForm() {
   var isMobileSafari = document.body.classList.contains('mobile-safari');
+  var wasDark = document.body.classList.contains('dark-mode');
   var prevTitle = document.title;
   var cName = (document.getElementById('cust_name').value||'').trim();
   document.title = (cName ? cName + ' - ' : '') + 'QC Checklist';
+
+  // Strip dark mode before print
+  document.body.classList.remove('dark-mode');
+
+  // Inline-style key elements to force light colors
+  var compName   = document.querySelector('.company-name');
+  var docTitle   = document.querySelector('.doc-title');
+  var footerEls  = document.querySelectorAll('.footer-text');
+  if (compName)  compName.setAttribute('style',  'color:#D97706!important;text-shadow:none!important;');
+  if (docTitle)  docTitle.setAttribute('style',  'color:#1F2937!important;text-shadow:none!important;');
+  footerEls.forEach(function(el){ el.setAttribute('style','color:#9CA3AF!important;text-shadow:none!important;'); });
+
+  // Inject force-print-light style — same pattern as estimate
+  var printStyle = document.createElement('style');
+  printStyle.id  = 'force-print-light';
+  printStyle.textContent = [
+    'body {',
+    '  --cyan: #D97706 !important;',
+    '  --bg:   #FFFFFF !important;',
+    '  --bg3:  #F8F8F8 !important;',
+    '  --panel:#FFFFFF !important;',
+    '  --text: #1F2937 !important;',
+    '  --text-muted: #6B7280 !important;',
+    '  --text-dim:   #9CA3AF !important;',
+    '}',
+    ':root { --cyan: #D97706 !important; }',
+    '*, *::before, *::after {',
+    '  animation: none !important; animation-play-state: paused !important; transition: none !important;',
+    '}',
+    'input[type="checkbox"] { accent-color: #D97706 !important; }',
+    '@media print {',
+    '  *, *::before, *::after { background:white!important;color:#1F2937!important;box-shadow:none!important;text-shadow:none!important;border-color:rgba(217,119,6,0.4)!important;animation:none!important;transition:none!important; }',
+    '  html,body { background:white!important; }',
+    '  .page { border:1.5pt solid #D97706!important;background:white!important; }',
+    '  .company-name { color:#D97706!important; }',
+    '  .doc-title { color:#1F2937!important; }',
+    '  .section-header { background:#f5f5f5!important;color:#D97706!important;text-shadow:none!important; }',
+    '  .item-label,.item-num,.opt { color:#1F2937!important; }',
+    '  .info-input,.notes-line { background:white!important;color:#1F2937!important; }',
+    '  .footer-text,.page-num { color:#9CA3AF!important; }',
+    '  .action-bar,.theme-toggle-btn,#save-status { display:none!important; }',
+    '}'
+  ].join('\n');
+  document.head.appendChild(printStyle);
 
   var vp = document.querySelector('meta[name="viewport"]');
   var origVP = vp ? vp.getAttribute('content') : null;
@@ -1181,7 +1217,13 @@ function printForm() {
     window.removeEventListener('afterprint', restore);
     document.title = prevTitle;
     if (isMobileSafari && vp && origVP) vp.setAttribute('content', origVP);
-    var f = document.getElementById('safari-print-fix'); if(f) f.remove();
+    var f  = document.getElementById('safari-print-fix');  if(f)  f.remove();
+    var pl = document.getElementById('force-print-light'); if(pl) pl.remove();
+    if (wasDark) document.body.classList.add('dark-mode');
+    // Restore inline styles
+    if (compName)  compName.removeAttribute('style');
+    if (docTitle)  docTitle.removeAttribute('style');
+    footerEls.forEach(function(el){ el.removeAttribute('style'); });
   }
 
   if (isMobileSafari) {
