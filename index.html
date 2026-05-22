@@ -10,7 +10,6 @@
 <meta name="apple-mobile-web-app-title" content="AOG Forms">
 
 <script>
-  
 (function() {
   var saved = '';
   try { saved = localStorage.getItem('aog_theme_preference') || ''; } catch(e) {}
@@ -56,6 +55,7 @@
 
 <style>
 :root {
+  color-scheme: light;
   --cyan:          #D97706;
   --amber:         #D97706;
   --bg:            #FFFFFF;
@@ -305,7 +305,7 @@ body.dark-mode .action-bar {
   border-bottom-color: rgba(0,255,200,0.25) !important;
 }
 body.dark-mode .ab-btn { color: #00FFC8 !important; border-color: rgba(0,255,200,0.25) !important; background: rgba(0,255,200,0.05) !important; }
-}
+
 /* ── Dark mode theme toggle ── */
 .theme-toggle-btn {
   position: relative; width: 36px; height: 36px; padding: 5px;
@@ -328,6 +328,7 @@ body.dark-mode .theme-icon.theme-icon-moon { opacity: 1; transform: rotate(0deg)
     background: #ffffff !important;
     color: #1F2937 !important;
     color-scheme: light !important;
+    -webkit-color-scheme: light !important;
     -webkit-print-color-adjust: exact !important;
     print-color-adjust: exact !important;
   }
@@ -380,40 +381,7 @@ body {
   min-height: 100vh;
   -webkit-text-size-adjust: 100%;
 }
-/* ── MOBILE HEADER WRAPPING FIX ── */
-@media screen and (max-width: 768px) {
-  
-  .page-header,
-  .section-header {
-    flex-wrap: wrap !important;
-    gap: 8px !important;
-  }
 
-  .doc-title,
-  .section-header,
-  .company-name {
-    white-space: normal !important;
-    word-break: break-word !important;
-    overflow-wrap: break-word !important;
-    hyphens: auto !important;
-    line-height: 1.25 !important;
-  }
-
-  .section-header {
-    padding: 6px 8px !important;   /* give it more breathing room */
-    font-size: 0.52rem !important; /* slight reduction if needed */
-  }
-
-  /* Prevent horizontal scroll */
-  .page {
-    overflow-x: hidden !important;
-  }
-
-  .item-label {
-    white-space: normal !important;
-    word-break: break-word !important;
-  }
-}
 /* ── ACTION BAR ── */
 .action-bar {
   position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
@@ -503,6 +471,7 @@ body {
 /* ── CHECKLIST ITEM ── */
 .check-item {
   display: flex; align-items: center; gap: 4px;
+  flex-wrap: wrap;
   padding: var(--pd-phone-item);
   min-height: var(--h-phone-item);
   border-bottom: 1px solid rgba(217,119,6,0.08);
@@ -516,7 +485,7 @@ body {
   font-family: var(--font-body); font-size: var(--fs-phone-item);
   color: var(--text); flex: 0 1 auto; font-weight: 500; white-space: nowrap;
 }
-.options { display: flex; gap: 4px; align-items: center; }
+.options { display: flex; gap: 4px; align-items: center; flex-shrink: 0; }
 .opt {
   display: flex; align-items: center; gap: 2px;
   font-family: var(--font-display); font-size: var(--fs-phone-option);
@@ -542,6 +511,16 @@ body {
   flex: 1; border: none; border-bottom: 1px solid rgba(217,119,6,0.3);
   background: transparent; min-height: 14px;
   min-width: 60px; font-size: 0.4rem;
+}
+/* On small screens: notes-line drops to its own full-width row */
+@media screen and (max-width: 600px) {
+  .notes-line {
+    flex-basis: 100%;
+    margin-left: 18px; /* align with label, past the item-num */
+    min-width: 0;
+  }
+  .check-item { align-items: flex-start; }
+  .item-num { padding-top: 3px; }
 }
 .check-solo { display: flex; align-items: center; gap: 3px; }
 
@@ -637,7 +616,7 @@ body {
   .info-grid     { gap: 2px 6px !important; margin-top: 3px !important; }
   .section       { margin-bottom: var(--gap-print-desktop-sections) !important; }
   .section-header{ font-size: var(--fs-print-desktop-section) !important; padding: var(--pd-print-desktop-section) !important; margin-bottom: 1px !important; }
-  .check-item    { min-height: var(--h-print-desktop-item) !important; padding: var(--pd-print-desktop-item) !important; border-bottom-color: rgba(217,119,6,0.1) !important; }
+  .check-item    { min-height: var(--h-print-desktop-item) !important; padding: var(--pd-print-desktop-item) !important; border-bottom-color: rgba(217,119,6,0.1) !important; flex-wrap: nowrap !important; }
   .item-label    { font-size: var(--fs-print-desktop-item) !important; }
   .item-num      { font-size: var(--fs-print-desktop-option) !important; }
   .opt           { font-size: var(--fs-print-desktop-option) !important; gap: 2px !important; }
@@ -659,7 +638,7 @@ body {
   .item-label     { font-size: var(--fs-print-ipad-item) !important; }
   .item-num       { font-size: var(--fs-print-ipad-option) !important; }
   .opt            { font-size: var(--fs-print-ipad-option) !important; }
-  .check-item     { min-height: var(--h-print-ipad-item) !important; padding: var(--pd-print-ipad-item) !important; }
+  .check-item     { min-height: var(--h-print-ipad-item) !important; padding: var(--pd-print-ipad-item) !important; flex-wrap: nowrap !important; }
   .opt input[type="checkbox"] { width: var(--h-print-ipad-checkbox) !important; height: var(--h-print-ipad-checkbox) !important; min-width: var(--h-print-ipad-checkbox) !important; min-height: var(--h-print-ipad-checkbox) !important; }
   .footer-text    { font-size: var(--fs-print-ipad-footer) !important; }
   .section        { margin-bottom: var(--gap-print-ipad-sections) !important; }
@@ -1234,6 +1213,25 @@ function clearForm() {
 // ── PRINT ──
 function setStatus(msg) { var el=document.getElementById('save-status'); if(el){el.textContent=msg;el.style.display=msg?'block':'none';} }
 
+// ── BEFORE/AFTER PRINT (Chrome needs these) ──
+window.addEventListener('beforeprint', function() {
+  document.body.classList.remove('dark-mode');
+  document.documentElement.classList.remove('dark-mode-pending');
+  document.documentElement.style.colorScheme = 'light';
+  document.body.style.colorScheme = 'light';
+  var ds = document.getElementById('dark-mode-style');
+  if (ds) ds.disabled = true;
+});
+window.addEventListener('afterprint', function() {
+  document.documentElement.style.colorScheme = '';
+  document.body.style.colorScheme = '';
+  var ds = document.getElementById('dark-mode-style');
+  if (ds) ds.disabled = false;
+  var wasDark = false;
+  try { wasDark = localStorage.getItem('aog_theme_preference') === 'dark'; } catch(e) {}
+  if (wasDark) document.body.classList.add('dark-mode');
+});
+
 function printForm() {
   var isMobileSafari = document.body.classList.contains('mobile-safari');
   var wasDark = document.body.classList.contains('dark-mode');
@@ -1280,6 +1278,7 @@ function printForm() {
   var printStyle = document.createElement('style');
   printStyle.id  = 'force-print-light';
   printStyle.textContent = [
+    ':root, html, body { color-scheme: light !important; }',
     'body {',
     '  --cyan: #D97706 !important;',
     '  --bg:   #FFFFFF !important;',
@@ -1337,7 +1336,7 @@ function printForm() {
       '  .item-label     { font-size:var(--fs-print-ipad-item)!important; }',
       '  .item-num       { font-size:var(--fs-print-ipad-option)!important; }',
       '  .opt            { font-size:var(--fs-print-ipad-option)!important; }',
-      '  .check-item     { min-height:var(--h-print-ipad-item)!important; padding:var(--pd-print-ipad-item)!important; }',
+      '  .check-item     { min-height:var(--h-print-ipad-item)!important; padding:var(--pd-print-ipad-item)!important; flex-wrap:nowrap!important; }',
       '  .section        { margin-bottom:var(--gap-print-ipad-sections)!important; }',
       '  .opt input[type="checkbox"] { width:var(--h-print-ipad-checkbox)!important; height:var(--h-print-ipad-checkbox)!important; min-width:var(--h-print-ipad-checkbox)!important; min-height:var(--h-print-ipad-checkbox)!important; }',
       '  .footer-text    { font-size:var(--fs-print-ipad-footer)!important; }',
