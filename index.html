@@ -687,6 +687,7 @@ body.dark-mode .summary-sig-line { border-bottom-color: rgba(0,255,200,0.3) !imp
   .info-input    { font-size: var(--fs-print-desktop-info-input) !important; min-height: var(--h-print-desktop-info-input) !important; }
   .info-grid    { grid-template-columns: 1fr !important; gap: 2px 6px !important; margin-top: 3px !important; }
   #name-date-row { flex-wrap: nowrap !important; }
+  #addr-elec-row { flex-wrap: nowrap !important; }
   #tech-crew-row { flex-wrap: nowrap !important; }
   .section       { margin-bottom: var(--gap-print-desktop-sections) !important; }
   .section-header{ font-size: var(--fs-print-desktop-section) !important; padding: var(--pd-print-desktop-section) !important; margin-bottom: 1px !important; }
@@ -793,14 +794,16 @@ body.mobile-safari { -webkit-print-color-adjust: exact; }
             <span class="info-label" style="margin-left:8px;flex-shrink:0;">Date:</span>
             <input class="info-input" type="date" id="cust_date" style="max-width:160px;flex-shrink:0;">
           </div>
-          <div class="info-row full">
+          <div class="info-row full" id="addr-elec-row">
             <span class="info-label">Address:</span>
             <input class="info-input" type="text" id="cust_addr" autocomplete="off">
+            <span class="info-label" style="margin-left:8px;flex-shrink:0;">Elec. Crew:</span>
+            <input class="info-input" type="text" id="elec_crew" autocomplete="off">
           </div>
           <div class="info-row full" id="tech-crew-row">
             <span class="info-label">Technician:</span>
             <input class="info-input" type="text" id="tech_name" autocomplete="off">
-            <span class="info-label" style="margin-left:8px;flex-shrink:0;">Install Crew:</span>
+            <span class="info-label" style="margin-left:8px;flex-shrink:0;">Gas Crew:</span>
             <input class="info-input" type="text" id="crew_name" autocomplete="off">
           </div>
         </div>
