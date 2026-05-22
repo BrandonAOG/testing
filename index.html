@@ -1649,11 +1649,29 @@ function printForm() {
       else if (wentHidden) { document.removeEventListener('visibilitychange', _iosVis); restore(); }
     });
     setTimeout(function() { if (!wentHidden) restore(); }, 3000);
+    // Force Safari to fully render before print dialog opens:
+    // 1. Force layout flush by reading offsetHeight on every section
+    document.querySelectorAll('.page, .section, .check-item, .summary-body').forEach(function(el) {
+      void el.offsetHeight;
+    });
+    // 2. Force a repaint
+    document.body.style.display = 'none';
+    void document.body.offsetHeight;
+    document.body.style.display = '';
+    // 3. Wait for fonts + images + CSS vars to fully settle, then print
     setTimeout(function() {
+      // Final layout flush right before print
+      void document.getElementById('page1').offsetHeight;
+      void document.getElementById('page2').offsetHeight;
       var ct = document.getElementById('doc-title-continued');
       if (ct) ct.style.setProperty('display', 'none', 'important');
-      window.print();
-    }, 600);
+      // One more rAF to let Safari paint before handing off to print
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() {
+          window.print();
+        });
+      });
+    }, 1200);
   } else {
     window.addEventListener('afterprint', restore);
     window.print();
