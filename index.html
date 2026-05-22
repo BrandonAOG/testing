@@ -629,7 +629,7 @@ body.dark-mode .summary-sig-line { border-bottom-color: rgba(0,255,200,0.3) !imp
 
 /* ── PAGE FOOTER ── */
 .page-footer {
-  margin-top: 8px; border-top: 1px solid var(--border-bright);
+  margin-top: 3px; border-top: 1px solid var(--border-bright);
   padding-top: 4px; display: flex; justify-content: space-between; align-items: center;
 }
 .footer-text {
@@ -1498,6 +1498,9 @@ function printForm() {
   var origVP = vp ? vp.getAttribute('content') : null;
 
   if (isMobileSafari && vp) {
+    // Directly hide the continued title via inline style — CSS injection isn't reliable
+    var continuedTitle = document.getElementById('doc-title-continued');
+    if (continuedTitle) continuedTitle.style.display = 'none';
     vp.setAttribute('content', 'width=820, initial-scale=1.0');
     var fix = document.createElement('style');
     fix.id = 'safari-print-fix';
@@ -1541,6 +1544,9 @@ function printForm() {
     var lv = document.getElementById('force-light-vars');  if(lv) lv.remove();
     if (_darkStyleEl) _darkStyleEl.disabled = false;
     if (wasDark) { document.body.classList.add('dark-mode'); document.documentElement.setAttribute('data-theme','dark'); }
+    // Restore continued title
+    var continuedTitle = document.getElementById('doc-title-continued');
+    if (continuedTitle) continuedTitle.style.display = '';
     // Restore inline styles
     if (compName)  compName.removeAttribute('style');
     if (docTitle)  docTitle.removeAttribute('style');
