@@ -77,15 +77,15 @@
      ╚══════════════════════════════════════════════╝ */
 
   /* ── 1a. Screen — Phone (base) ── */
-  --fs-phone-company:       0.8rem;  /* "Always On Generators" in header               */
-  --fs-phone-title:         0.8rem;  /* "Quality Control Checklist" in header          */
-  --fs-phone-info-label:    0.55rem;  /* Customer Name, Date, Technician labels         */
-  --fs-phone-info-input:    0.69rem;  /* text typed into header info fields             */
-  --fs-phone-section:       0.7rem;  /* section title bars (Transfer Switch, Meter…)   */
-  --fs-phone-item:          0.55rem;  /* checklist item text (Check All Wire…)          */
-  --fs-phone-option:        0.55rem;  /* Good / Bad / Yes / No option labels            */
-  --fs-phone-footer:        0.40rem;  /* footer confidential text                       */
-  --fs-phone-pagenum:       0.40rem;  /* "Page 1 of 2"                                  */
+  --fs-phone-company:       0.75rem;  /* "Always On Generators" in header               */
+  --fs-phone-title:         0.78rem;  /* "Quality Control Checklist" in header          */
+  --fs-phone-info-label:    0.45rem;  /* Customer Name, Date, Technician labels         */
+  --fs-phone-info-input:    0.62rem;  /* text typed into header info fields             */
+  --fs-phone-section:       0.55rem;  /* section title bars (Transfer Switch, Meter…)   */
+  --fs-phone-item:          0.52rem;  /* checklist item text (Check All Wire…)          */
+  --fs-phone-option:        0.47rem;  /* Good / Bad / Yes / No option labels            */
+  --fs-phone-footer:        0.38rem;  /* footer confidential text                       */
+  --fs-phone-pagenum:       0.38rem;  /* "Page 1 of 2"                                  */
 
   /* ── 1b. Screen — iPad ── */
   --fs-ipad-company:        0.75rem;
@@ -902,15 +902,6 @@ body.mobile-safari { -webkit-print-color-adjust: exact; }
         </div>
         <input class="notes-line" type="text" placeholder="" autocomplete="off">
       </div>
-      <div class="check-item">
-        <span class="item-num">4.</span>
-        <span class="item-label">Placards Installed</span>
-        <div class="options">
-          <label class="opt"><input type="checkbox" name="cp_placards" value="yes"><span>Yes</span></label>
-          <label class="opt"><input type="checkbox" name="cp_placards" value="no"><span>No</span></label>
-        </div>
-        <input class="notes-line" type="text" placeholder="" autocomplete="off">
-      </div>
     </div>
 
     <!-- LOAD SHEDDING -->
@@ -1048,21 +1039,37 @@ body.mobile-safari { -webkit-print-color-adjust: exact; }
       <div class="section-header">Gas Tank</div>
       <div class="check-item">
         <span class="item-num">1.</span>
-        <span class="item-label">Vacuumed</span>
+        <span class="item-label">Filled</span>
         <div class="options">
-          <label class="opt"><input type="checkbox" name="gt_vac" value="yes"><span>Yes</span></label>
-          <label class="opt"><input type="checkbox" name="gt_vac" value="no"><span>No</span></label>
-          
+          <label class="opt"><input type="checkbox" name="gt_filled" value="yes"><span>Yes</span></label>
+          <label class="opt"><input type="checkbox" name="gt_filled" value="no"><span>No</span></label>
         </div>
         <input class="notes-line" type="text" placeholder="" autocomplete="off">
       </div>
       <div class="check-item">
         <span class="item-num">2.</span>
+        <span class="item-label">Vacuumed</span>
+        <div class="options">
+          <label class="opt"><input type="checkbox" name="gt_vac" value="yes"><span>Yes</span></label>
+          <label class="opt"><input type="checkbox" name="gt_vac" value="no"><span>No</span></label>
+        </div>
+        <input class="notes-line" type="text" placeholder="" autocomplete="off">
+      </div>
+      <div class="check-item">
+        <span class="item-num">3.</span>
         <span class="item-label">Bonded (Attic ONLY)</span>
         <div class="options">
           <label class="opt"><input type="checkbox" name="gt_bond" value="yes"><span>Yes</span></label>
           <label class="opt"><input type="checkbox" name="gt_bond" value="no"><span>No</span></label>
-          
+        </div>
+        <input class="notes-line" type="text" placeholder="" autocomplete="off">
+      </div>
+      <div class="check-item">
+        <span class="item-num">4.</span>
+        <span class="item-label">Leak Check</span>
+        <div class="options">
+          <label class="opt"><input type="checkbox" name="gt_leak" value="yes"><span>Yes</span></label>
+          <label class="opt"><input type="checkbox" name="gt_leak" value="no"><span>No</span></label>
         </div>
         <input class="notes-line" type="text" placeholder="" autocomplete="off">
       </div>
@@ -1142,7 +1149,15 @@ body.mobile-safari { -webkit-print-color-adjust: exact; }
         <div class="options">
           <label class="opt"><input type="checkbox" name="site_clean" value="yes"><span>Yes</span></label>
           <label class="opt"><input type="checkbox" name="site_clean" value="no"><span>No</span></label>
-          
+        </div>
+        <input class="notes-line" type="text" placeholder="" autocomplete="off">
+      </div>
+      <div class="check-item">
+        <span class="item-num">2.</span>
+        <span class="item-label">Placards Installed</span>
+        <div class="options">
+          <label class="opt"><input type="checkbox" name="site_placards" value="yes"><span>Yes</span></label>
+          <label class="opt"><input type="checkbox" name="site_placards" value="no"><span>No</span></label>
         </div>
         <input class="notes-line" type="text" placeholder="" autocomplete="off">
       </div>
