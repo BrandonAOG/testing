@@ -455,11 +455,12 @@ body {
 /* On small phones — stack name/date and tech/crew each on their own rows */
 @media screen and (max-width: 500px) {
   .info-grid { grid-template-columns: 1fr; }
-  .info-row { grid-column: 1 / -1; }
-  #name-date-row { flex-wrap: wrap; gap: 2px; }
-  #name-date-row input[type="date"] { max-width: 100% !important; }
-  #tech-crew-row { flex-wrap: wrap; gap: 2px; }
-  #tech-crew-row .info-input { min-width: 80px; }
+  .info-row { grid-column: 1 / -1; flex-wrap: wrap; align-items: flex-end; row-gap: 2px; }
+  /* Give labels a fixed width so inputs always start at the same column */
+  .info-row .info-label { min-width: 90px; }
+  /* When a row wraps, second label+input pair gets the same indent */
+  .info-row .info-label:nth-of-type(2) { margin-left: 0; }
+  #name-date-row input[type="date"] { max-width: 150px !important; }
 }
 
 /* ── SECTION ── */
