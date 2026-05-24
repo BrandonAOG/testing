@@ -2034,6 +2034,9 @@ function printForm() {
   var isIPhone = isMobileSafari && !isIPad;
 
   if (isMobileSafari && vp) {
+    // Force viewport to paper width so Safari renders at 1:1 scale
+    vp.setAttribute('content', 'width=816, initial-scale=1.0');
+
     var safariPageFix = document.createElement('style');
     safariPageFix.id = 'safari-page-fix';
     safariPageFix.textContent = [
@@ -2090,6 +2093,7 @@ if (wasDark) document.body.classList.add('dark-mode');
     if (_printSeasonalCanvas) _printSeasonalCanvas.style.display = '';
     if (_seasonalSheet) setTimeout(function() { document.head.appendChild(_seasonalSheet); }, 500);
     // Viewport not changed — no restore needed
+    if (origViewport && vp) vp.setAttribute('content', origViewport);
     document.title = prevTitle;
   }
 
