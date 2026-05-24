@@ -2317,11 +2317,11 @@ function printForm() {
       input.style.cssText = 'opacity:0!important;position:absolute!important;width:0!important;height:0!important;';
       var box = document.createElement('span');
       if (isChecked) {
-        box.style.cssText = 'display:inline-flex!important;width:13px!important;height:13px!important;min-width:13px!important;min-height:13px!important;background:#D97706!important;border:1.5px solid #D97706!important;border-radius:' + (isRadio ? '50%' : '2px') + '!important;flex-shrink:0!important;vertical-align:middle!important;box-sizing:border-box!important;align-items:center!important;justify-content:center!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;';
+        box.style.cssText = 'display:inline-flex!important;width:14px!important;height:14px!important;min-width:14px!important;min-height:14px!important;background:#D97706!important;border:2px solid #D97706!important;border-radius:' + (isRadio ? '50%' : '2px') + '!important;flex-shrink:0!important;vertical-align:middle!important;box-sizing:border-box!important;align-items:center!important;justify-content:center!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;';
         var mark = document.createElement('span');
         mark.style.cssText = isRadio
-          ? 'display:block!important;width:5px!important;height:5px!important;background:#ffffff!important;border-radius:50%!important;flex-shrink:0!important;'
-          : 'display:block!important;width:7px!important;height:4px!important;border-left:2px solid #ffffff!important;border-bottom:2px solid #ffffff!important;transform:rotate(-45deg)!important;margin-top:-2px!important;';
+          ? 'display:block!important;width:6px!important;height:6px!important;min-width:6px!important;min-height:6px!important;background:#ffffff!important;border-radius:50%!important;flex-shrink:0!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;'
+          : 'display:block!important;width:8px!important;height:4px!important;border-left:2.5px solid #ffffff!important;border-bottom:2.5px solid #ffffff!important;transform:rotate(-45deg)!important;margin-top:-2px!important;flex-shrink:0!important;';
         box.appendChild(mark);
       } else {
         box.style.cssText = 'display:inline-block!important;width:13px!important;height:13px!important;min-width:13px!important;min-height:13px!important;background:#ffffff!important;border:1.5px solid #9CA3AF!important;border-radius:' + (isRadio ? '50%' : '2px') + '!important;flex-shrink:0!important;vertical-align:middle!important;box-sizing:border-box!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;';
@@ -2554,12 +2554,12 @@ function capturePageToCanvas() {
               input.style.cssText = 'opacity:0!important;position:absolute!important;width:0!important;height:0!important;';
               if (isChecked) {
                 var box = clonedDoc.createElement('span');
-                box.style.cssText = 'display:inline-flex!important;width:13px!important;height:13px!important;min-width:13px!important;min-height:13px!important;background:#D97706!important;border:1.5px solid #D97706!important;border-radius:' + (isRadio ? '50%' : '2px') + '!important;flex-shrink:0!important;vertical-align:middle!important;margin-right:3px!important;box-sizing:border-box!important;align-items:center!important;justify-content:center!important;';
+                box.style.cssText = 'display:inline-flex!important;width:14px!important;height:14px!important;min-width:14px!important;min-height:14px!important;background:#D97706!important;border:2px solid #D97706!important;border-radius:' + (isRadio ? '50%' : '2px') + '!important;flex-shrink:0!important;vertical-align:middle!important;margin-right:3px!important;box-sizing:border-box!important;align-items:center!important;justify-content:center!important;';
                 var mark = clonedDoc.createElement('span');
                 if (isRadio) {
-                  mark.style.cssText = 'display:block!important;width:5px!important;height:5px!important;background:#ffffff!important;border-radius:50%!important;';
+                  mark.style.cssText = 'display:block!important;width:6px!important;height:6px!important;min-width:6px!important;min-height:6px!important;background:#ffffff!important;border-radius:50%!important;-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;';
                 } else {
-                  mark.style.cssText = 'display:block!important;width:7px!important;height:4px!important;border-left:2px solid #ffffff!important;border-bottom:2px solid #ffffff!important;transform:rotate(-45deg)!important;margin-top:-2px!important;';
+                  mark.style.cssText = 'display:block!important;width:8px!important;height:4px!important;border-left:2.5px solid #ffffff!important;border-bottom:2.5px solid #ffffff!important;transform:rotate(-45deg)!important;margin-top:-2px!important;';
                 }
                 box.appendChild(mark);
                 input.parentNode.insertBefore(box, input);
