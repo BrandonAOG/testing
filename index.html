@@ -2333,12 +2333,13 @@ function printForm() {
       }
     });
     // Fallback: if page never hides (Safari blocked print), restore after 3s
-    setTimeout(function() {
-      if (!_wentHidden) {
-        _printDebugLog('FALLBACK 3s timeout — page never hid, calling restore');
-        restore();
-      }
-    }, 3000);
+    // No fallback timeout — on this iOS version the page never hides
+    // restore() fires via afterprint or visibilitychange only
+    window.addEventListener('afterprint', function() {
+      _printDebugLog('afterprint fired on iOS — calling restore');
+      restore();
+    });
+    _printDebugLog('Waiting for afterprint or visibilitychange to restore...');
   } else {
     window.addEventListener('afterprint', function() { _printDebugLog('afterprint fired'); restore(); });
   }
