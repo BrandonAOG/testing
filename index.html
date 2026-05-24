@@ -1134,7 +1134,7 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
   .check-item span { color: #1F2937 !important; text-shadow: none !important; font-size: 0.56rem !important; line-height: 1 !important; }
   .check-item:has(input:checked) span { color: #92400E !important; }
 
-  /* ── Row spacing ── */
+  #circuits_60a, #circuits_100a { width: 4ch !important; min-width: 4ch !important; max-width: 4ch !important; }
   .field-row  { margin-bottom: 1px !important; min-height: 24px !important; flex-wrap: nowrap !important; }
   .inline-row { margin-bottom: 1px !important; min-height: 22px !important; }
 
@@ -2086,6 +2086,8 @@ function printForm() {
       '#pad_notes   { height:22px!important; min-height:22px!important; max-height:22px!important; }',
       '#gas_notes   { height:28px!important; min-height:28px!important; max-height:28px!important; }',
       '#ready_notes { height:22px!important; min-height:22px!important; max-height:22px!important; width:100%!important; box-sizing:border-box!important; }',
+      // Specific input widths
+      '#circuits_60a,#circuits_100a { width:4ch!important; min-width:4ch!important; max-width:4ch!important; }',
       // Footer
       '.footer { margin-top:1px!important; padding:2px 12px!important; }',
       '.footer-text { font-size:0.45rem!important; }',
