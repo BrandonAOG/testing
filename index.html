@@ -2214,6 +2214,8 @@ function printForm() {
       '@page { size: 8.5in 10.2in; margin: 0.1in; }',
       '@media print {',
       '  .field-row,.inline-row { min-height:var(--h-print-ipad-field-row)!important; }',
+      '  .field-row { flex-wrap:nowrap!important; }',
+      '  input[type=date] { min-width:0!important;flex-shrink:1!important;width:auto!important; }',
       '  input[type=text],input[type=email],input[type=tel],input[type=date],input[type=number] { min-height:var(--h-print-ipad-input)!important;height:var(--h-print-ipad-input)!important;font-size:var(--fs-print-ipad-input)!important; }',
       '  .yn-group,.yn-group .yn-label { height:var(--h-print-ipad-yn-label)!important;min-height:var(--h-print-ipad-yn-label)!important;line-height:var(--h-print-ipad-yn-label)!important; }',
       '  .check-item { height:var(--h-print-ipad-check-item)!important;min-height:var(--h-print-ipad-check-item)!important; }',
