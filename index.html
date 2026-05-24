@@ -2053,6 +2053,12 @@ function printForm() {
     var safariPageFix = document.createElement('style');
     safariPageFix.id = 'safari-page-fix';
     safariPageFix.textContent = [
+      // Fix header — hide <br> in company name to keep it one line
+      '.company-name br { display:none!important; }',
+      '.company-name { white-space:nowrap!important; font-size:0.8rem!important; }',
+      '.doc-title { white-space:nowrap!important; font-size:0.8rem!important; }',
+      // Fix gas appliances — tighten gap so Pool Heater stays on first row
+      '.gas-appliances-box .check-group { gap:1px!important; }',
       // Page setup
       '@page { size: 8.5in 11in; margin: 0.1in; }',
       // Unlock overflow containers
