@@ -2265,9 +2265,17 @@ function printForm() {
     document.head.appendChild(safariPageFix);
   }
 
+  var _printReplaced = [];
   function restore() {
     window.removeEventListener('afterprint', restore);
     document.removeEventListener('visibilitychange', onVis);
+    // Restore replaced print spans first
+    _printReplaced.forEach(function(r) {
+      if (r.box && r.box.parentNode) r.box.parentNode.removeChild(r.box);
+      if (r.origStyle) r.input.setAttribute('style', r.origStyle);
+      else r.input.removeAttribute('style');
+    });
+    _printReplaced = [];
     var el = document.getElementById('force-print-light'); if (el) { el.remove(); }
     var fix = document.getElementById('safari-page-fix');  if (fix) { fix.remove(); }
     if (wasDark) { document.body.classList.add('dark-mode'); }
@@ -2308,7 +2316,6 @@ function printForm() {
 
   // Replace check-item radios/checkboxes with styled spans on Safari
   // Safari PDF renderer doesn't fully fill radio circles via accent-color
-  var _printReplaced = [];
   if (isAnySafari) {
     document.querySelectorAll('.check-item input[type=radio], .check-item input[type=checkbox]').forEach(function(input) {
       var isChecked = input.checked;
@@ -2335,20 +2342,10 @@ function printForm() {
   document.body.getBoundingClientRect();
   document.getElementById('page').getBoundingClientRect();
 
-  function _doRestore() {
-    _printReplaced.forEach(function(r) {
-      if (r.box.parentNode) r.box.parentNode.removeChild(r.box);
-      if (r.origStyle) r.input.setAttribute('style', r.origStyle);
-      else r.input.removeAttribute('style');
-    });
-    _printReplaced = [];
-  }
-
   if (isAnySafari) {
     setTimeout(function() {
       document.body.getBoundingClientRect();
       window.print();
-      setTimeout(_doRestore, 2000);
     }, 800);
   } else {
     window.print();
