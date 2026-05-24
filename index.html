@@ -1052,7 +1052,8 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
   .section-body { background: #ffffff !important; padding: 3px 8px !important; }
 
   /* ── Top grid ── */
-  .top-grid { margin-bottom: 0 !important; background: #ffffff !important; box-shadow: none !important; }
+  .top-grid { display: grid !important; grid-template-columns: 1fr 1fr !important; margin-bottom: 0 !important; background: #ffffff !important; box-shadow: none !important; }
+  .top-col:first-child { border-right: 1px solid rgba(217,119,6,0.35) !important; border-bottom: none !important; }
   .top-col  { padding: 5px 8px !important; background: #ffffff !important; }
   .col-label {
     color: #D97706 !important; background: #f5f5f5 !important;
@@ -2041,6 +2042,9 @@ function printForm() {
       // Unlock overflow containers (critical — same as @media print)
       '.page { overflow:visible!important; padding-top:0!important; min-height:0!important; }',
       '.content { overflow:visible!important; overflow-y:visible!important; flex:none!important; }',
+      // Force two-column layout — overrides the max-width:600px single-column rule
+      '.top-grid { display:grid!important; grid-template-columns:1fr 1fr!important; }',
+      '.top-col:first-child { border-right:1px solid rgba(217,119,6,0.35)!important; border-bottom:none!important; }',
       // Field rows
       '.field-row  { min-height:24px!important; flex-wrap:nowrap!important; margin-bottom:1px!important; }',
       '.inline-row { min-height:22px!important; margin-bottom:1px!important; }',
