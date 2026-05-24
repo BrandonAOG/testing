@@ -1728,6 +1728,7 @@ function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', 'dark');
   } else {
     document.body.classList.remove('dark-mode');
+  _printDebugLog('dark-mode removed — still dark:' + document.body.classList.contains('dark-mode'));
     document.documentElement.setAttribute('data-theme', 'light');
   }
   document.documentElement.classList.remove('dark-mode-pending');
@@ -2136,8 +2137,31 @@ function getEstimateFilename(ext) {
 }
 
 // ── PRINT ──
+// ── PRINT DEBUG PANEL ──
+function _printDebugLog(msg) {
+  var panel = document.getElementById('_print-debug-panel');
+  if (!panel) {
+    panel = document.createElement('div');
+    panel.id = '_print-debug-panel';
+    panel.style.cssText = 'position:fixed;bottom:0;left:0;right:0;z-index:999999;background:rgba(0,0,0,0.92);color:#00FFC8;font-family:monospace;font-size:11px;padding:8px 12px;max-height:180px;overflow-y:auto;line-height:1.6;';
+    document.body.appendChild(panel);
+    var close = document.createElement('button');
+    close.textContent = 'X';
+    close.style.cssText = 'position:absolute;top:4px;right:8px;background:#DC2626;color:#fff;border:none;border-radius:3px;padding:2px 8px;cursor:pointer;font-size:11px;';
+    close.onclick = function(){ panel.remove(); };
+    panel.appendChild(close);
+  }
+  var line = document.createElement('div');
+  var time = new Date().toLocaleTimeString('en',{hour12:false,hour:'2-digit',minute:'2-digit',second:'2-digit',fractionalSecondDigits:3});
+  line.textContent = '[' + time + '] ' + msg;
+  panel.appendChild(line);
+  panel.scrollTop = panel.scrollHeight;
+  console.log('[PRINT DEBUG]', msg);
+}
+
 function printForm() {
 
+  _printDebugLog('printForm() START — dark:' + document.body.classList.contains('dark-mode'));
   var isMobileSafari = document.body.classList.contains('mobile-safari');
   var ua = navigator.userAgent;
   var isMacSafari = /Macintosh/.test(ua) && /Safari/.test(ua) && !/Chrome|Chromium|Firefox|Edge/.test(ua);
@@ -2157,6 +2181,7 @@ function printForm() {
   // Disable seasonal + dark mode stylesheets entirely so print preview can't re-apply them
   var _seasonalSheet = document.getElementById('seasonal-styles');
   if (_seasonalSheet) _seasonalSheet.parentNode.removeChild(_seasonalSheet);
+  _printDebugLog('seasonal-styles removed:' + !_seasonalSheet);
   var _darkModeSheet = document.getElementById('print-optimization-styles');
   if (_darkModeSheet) _darkModeSheet.disabled = true;
   var _printOptSheet = document.getElementById('print-optimization-styles');
@@ -2268,6 +2293,7 @@ function printForm() {
 
   var _printReplaced = [];
   function restore() {
+    _printDebugLog('restore() CALLED — re-adding dark:' + wasDark);
     window.removeEventListener('afterprint', restore);
     document.removeEventListener('visibilitychange', onVis);
     // Restore replaced print spans first
@@ -2300,6 +2326,7 @@ function printForm() {
       if (document.hidden) {
         _wentHidden = true;
       } else if (_wentHidden) {
+        _printDebugLog('visibilitychange: page visible again — calling restore');
         document.removeEventListener('visibilitychange', _iosVis);
         if (_restorePoller) clearInterval(_restorePoller);
         restore();
@@ -2308,11 +2335,12 @@ function printForm() {
     // Fallback: if page never hides (Safari blocked print), restore after 3s
     setTimeout(function() {
       if (!_wentHidden) {
+        _printDebugLog('FALLBACK 3s timeout — page never hid, calling restore');
         restore();
       }
     }, 3000);
   } else {
-    window.addEventListener('afterprint', restore);
+    window.addEventListener('afterprint', function() { _printDebugLog('afterprint fired'); restore(); });
   }
 
   // Replace check-item radios/checkboxes with styled spans on Safari
@@ -2346,6 +2374,7 @@ function printForm() {
   if (isAnySafari) {
     setTimeout(function() {
       document.body.getBoundingClientRect();
+      _printDebugLog('window.print() called');
       window.print();
     }, 800);
   } else {
