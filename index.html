@@ -2230,7 +2230,10 @@ function printForm() {
 
   // ── Restore function ──
   var _printReplaced = [];
+  var _restored = false;
   function restore() {
+    if (_restored) return;
+    _restored = true;
     _printReplaced.forEach(function(r) {
       if (r.box && r.box.parentNode) r.box.parentNode.removeChild(r.box);
       if (r.origStyle) r.input.setAttribute('style', r.origStyle);
@@ -2241,9 +2244,7 @@ function printForm() {
     el = document.getElementById('force-print-light'); if (el) el.remove();
     el = document.getElementById('safari-page-fix');  if (el) el.remove();
     el = document.getElementById('no-transitions');   if (el) el.remove();
-    console.log('[RESTORE] wasDark:', wasDark, 'seasonal:', _printSeasonalClasses);
-    if (wasDark) document.body.classList.add('dark-mode');
-    console.log('[RESTORE] dark-mode after restore:', document.body.classList.contains('dark-mode'));
+if (wasDark) document.body.classList.add('dark-mode');
     _printSeasonalClasses.forEach(function(c) { document.body.classList.add(c); });
     if (_printSeasonalCanvas) _printSeasonalCanvas.style.display = '';
     if (_seasonalSheet) setTimeout(function() { document.head.appendChild(_seasonalSheet); }, 500);
