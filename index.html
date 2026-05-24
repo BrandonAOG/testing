@@ -2047,16 +2047,15 @@ function printForm() {
   var isIPhone = isMobileSafari && !isIPad;
 
   if (isMobileSafari && vp) {
-    // Force viewport to paper width so Safari renders at 1:1 scale
-    vp.setAttribute('content', 'width=816, initial-scale=1.0');
+    // Set viewport wider than paper — Safari auto-scales content to fit paper width
+    // 960px viewport → 816px paper = 0.85 scale, fits content on one page
+    vp.setAttribute('content', 'width=960, initial-scale=1.0');
 
     var safariPageFix = document.createElement('style');
     safariPageFix.id = 'safari-page-fix';
     safariPageFix.textContent = [
       // Fix gas appliances — tighten gap so Pool Heater stays on first row
       '.gas-appliances-box .check-group { gap:1px!important; }',
-      // Scale entire page down to fit on one sheet
-      'html { -webkit-transform:scale(0.85); -webkit-transform-origin:top left; transform:scale(0.85); transform-origin:top left; width:117.6%; }',
       // Page setup
       '@page { size: 8.5in 11in; margin: 0.1in; }',
       // Unlock overflow containers
@@ -2131,6 +2130,7 @@ function printForm() {
     el = document.getElementById('force-print-light'); if (el) el.remove();
     el = document.getElementById('safari-page-fix');  if (el) el.remove();
     el = document.getElementById('no-transitions');   if (el) el.remove();
+    el = document.getElementById('safari-print-debug'); if (el) el.remove();
 if (wasDark) document.body.classList.add('dark-mode');
     _printSeasonalClasses.forEach(function(c) { document.body.classList.add(c); });
     if (_printSeasonalCanvas) _printSeasonalCanvas.style.display = '';
@@ -2165,6 +2165,46 @@ if (wasDark) document.body.classList.add('dark-mode');
 
   // ── Flush layout then print ──
   void document.body.offsetHeight;
+
+  // ── Safari Print Debug Overlay ──
+  if (isMobileSafari) {
+    var page   = document.getElementById('page');
+    var content = document.querySelector('.content');
+    var dbg = document.createElement('div');
+    dbg.id = 'safari-print-debug';
+    dbg.style.cssText = [
+      'position:fixed', 'bottom:0', 'left:0', 'right:0', 'z-index:999999',
+      'background:rgba(0,0,0,0.85)', 'color:#00FF88', 'font-family:monospace',
+      'font-size:11px', 'padding:8px 12px', 'line-height:1.6',
+      '-webkit-print-color-adjust:exact', 'print-color-adjust:exact'
+    ].join('!important;') + '!important;';
+
+    var vw        = window.innerWidth;
+    var vh        = window.innerHeight;
+    var pageH     = page  ? page.scrollHeight  : 'n/a';
+    var contentH  = content ? content.scrollHeight : 'n/a';
+    var contentOF = content ? window.getComputedStyle(content).overflow      : 'n/a';
+    var contentOY = content ? window.getComputedStyle(content).overflowY     : 'n/a';
+    var pagePT    = page    ? window.getComputedStyle(page).paddingTop        : 'n/a';
+    var pageOF    = page    ? window.getComputedStyle(page).overflow          : 'n/a';
+    var vpContent = vp ? vp.getAttribute('content') : 'n/a';
+    var dpr       = window.devicePixelRatio || 1;
+    var paperPx   = Math.round(8.5 * 96);
+    var scaleEst  = (paperPx / vw).toFixed(3);
+
+    dbg.innerHTML = [
+      '<b style="color:#FFD700">── Safari Print Debug ──</b>',
+      'Viewport:       ' + vw + ' × ' + vh + 'px  (dpr:' + dpr + ')',
+      'VP meta:        ' + vpContent,
+      'Scale estimate: ' + scaleEst + '  (paper=' + paperPx + 'px / vw=' + vw + ')',
+      'page.scrollH:   ' + pageH + 'px  (padTop:' + pagePT + '  overflow:' + pageOF + ')',
+      'content.scrollH:' + contentH + 'px  (overflow:' + contentOF + '  overflowY:' + contentOY + ')',
+      'Paper budget:   ' + Math.round(10.8 * 96) + 'px (11in - 0.1in margins × 2)',
+      'Fits on 1 page: ' + (Math.round(pageH * parseFloat(scaleEst)) <= Math.round(10.8 * 96) ? '✅ YES' : '❌ NO — est. ' + Math.round(pageH * parseFloat(scaleEst)) + 'px scaled')
+    ].join('<br>');
+
+    document.body.appendChild(dbg);
+  }
 
   // ── Restore triggers ──
   // iPhone/iPad Safari: afterprint fires immediately on iOS 16+ before dialog closes — delay restore
