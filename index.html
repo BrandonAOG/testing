@@ -482,6 +482,10 @@ body.dark-mode .header::after {
   letter-spacing: 2.5px; line-height: 1.15; text-shadow: 0 0 12px rgba(217,119,6,0.2);
   font-weight: 700; transition: color 0.3s ease, text-shadow 0.3s ease;
 }
+/* Force line break after "Always On" on screen only */
+@media screen {
+  .cn-break::after { content: '\A'; white-space: pre; }
+}
 
 body.dark-mode .company-name {
   color: #00FFC8;
@@ -1043,8 +1047,9 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
     padding: 6px 16px !important;
     min-height: 52px !important;
   }
-  .company-name, body.dark-mode .company-name { color: #D97706 !important; text-shadow: none !important; }
-  .doc-title,    body.dark-mode .doc-title    { color: #D97706 !important; text-shadow: none !important; }
+  .company-name, body.dark-mode .company-name { color: #D97706 !important; text-shadow: none !important; white-space: nowrap !important; }
+  .company-name .cn-break { color: #D97706 !important; }
+  .doc-title,    body.dark-mode .doc-title    { color: #D97706 !important; text-shadow: none !important; white-space: nowrap !important; }
 
   /* ── Sections ── */
   .section { margin-bottom: 2px !important; background: #ffffff !important; box-shadow: none !important; }
@@ -1257,7 +1262,7 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
       <img src="../logo.png"
            alt="Always On Generators logo" width="48" height="48" class="logo-img"
            onerror="this.style.display='none';this.nextElementSibling.style.marginLeft='0';">
-      <div class="company-name">Always On<br>Generators</div>
+      <div class="company-name"><span class="cn-break">Always On</span> Generators</div>
     </div>
     <div class="doc-title">Installation Estimate</div>
   </div>
@@ -2017,7 +2022,7 @@ function printForm() {
     'input[type=radio],input[type=checkbox],.check-item input[type=radio],.check-item input[type=checkbox] { accent-color:#D97706!important; }',
     '  *, *::before, *::after { background:white!important;color:#1F2937!important;box-shadow:none!important;text-shadow:none!important;border-color:rgba(217,119,6,0.4)!important;animation:none!important;animation-play-state:paused!important;transition:none!important; }',
     '  svg, svg * { background:transparent!important; }',
-    '  .doc-title,.company-name { color:#D97706!important;text-shadow:none!important; }',
+    '  .doc-title,.company-name,.company-name .cn-break { color:#D97706!important;text-shadow:none!important; }',
     '  .doc-title::before,.doc-title::after,.company-name::before,.company-name::after,.header::after { content:none!important;display:none!important; }',
     '  html,body { background:white!important; }',
     '  .page { border:1.5pt solid #D97706!important;background:white!important; }',
@@ -2038,6 +2043,10 @@ function printForm() {
   ].join('\n');
   document.head.appendChild(printStyle);
 
+  // Force cn-break span color — inline style beats Safari's wildcard override
+  var cnBreak = document.querySelector('.cn-break');
+  if (cnBreak) cnBreak.style.setProperty('color', '#D97706', 'important');
+
   // ── Viewport fix for Mobile Safari ──
   var vp = document.querySelector('meta[name=viewport]');
   var origViewport = vp ? vp.getAttribute('content') : null;
@@ -2053,9 +2062,8 @@ function printForm() {
     var safariPageFix = document.createElement('style');
     safariPageFix.id = 'safari-page-fix';
     safariPageFix.textContent = [
-      // Fix header — hide <br> in company name to keep it one line
-      '.company-name br { display:none!important; }',
-      '.company-name { white-space:nowrap!important; font-size:0.8rem!important; }',
+      // Header — single line, no wrap
+      '.company-name { white-space:nowrap!important; max-width:none!important; font-size:0.8rem!important; }',
       '.doc-title { white-space:nowrap!important; font-size:0.8rem!important; }',
       // Fix gas appliances — tighten gap so Pool Heater stays on first row
       '.gas-appliances-box .check-group { gap:1px!important; }',
@@ -2133,6 +2141,8 @@ function printForm() {
     el = document.getElementById('force-print-light'); if (el) el.remove();
     el = document.getElementById('safari-page-fix');  if (el) el.remove();
     el = document.getElementById('no-transitions');   if (el) el.remove();
+    var cnBreak = document.querySelector('.cn-break');
+    if (cnBreak) cnBreak.style.removeProperty('color');
 if (wasDark) document.body.classList.add('dark-mode');
     _printSeasonalClasses.forEach(function(c) { document.body.classList.add(c); });
     if (_printSeasonalCanvas) _printSeasonalCanvas.style.display = '';
