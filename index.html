@@ -2276,7 +2276,7 @@ function printForm() {
     // afterprint fires immediately on iOS 26 — wait 5s before restoring
     window.addEventListener('afterprint', function _iosAfter() {
       window.removeEventListener('afterprint', _iosAfter);
-      setTimeout(restore, 60);
+      setTimeout(restore, 300);
     });
     setTimeout(function() { window.print(); }, 800);
   } else {
