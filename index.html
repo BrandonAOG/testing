@@ -647,6 +647,17 @@ input.tiny  { width: 40px; min-width: 40px; text-align: center; }
 input.med   { width: 120px; min-width: 80px; }
 input.long  { flex: 1; min-width: 100px; }
 
+/* Remove spinners from all number inputs */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
+
+#elec_run_ft  { width: 5ch; min-width: 5ch; }
+#num_panels,
+#num_ts       { width: 4ch; min-width: 4ch; }
+#circuits_60a,
+#circuits_100a { width: 3ch; min-width: 3ch; }
+
 textarea { width: 100%; resize: vertical; border: 1px solid rgba(217,119,6,0.2); padding: var(--pd-phone-textarea); margin-top: 3px; min-height: 44px; height: 44px; background: var(--panel); color: var(--text); transition: all 0.3s ease; box-sizing: border-box; }
 body.dark-mode textarea { background: rgba(10,14,39,0.6); border-color: rgba(0,255,200,0.15); color: #E0F7FF; }
 textarea:focus { border-color: var(--cyan); box-shadow: 0 0 8px rgba(217,119,6,0.1); }
@@ -1296,7 +1307,6 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
           <input type="text" id="sqft" name="sqft" title="Home square footage — e.g. 2000" class="med" placeholder="e.g. 2000"
                  inputmode="numeric" autocomplete="off" aria-label="Square footage">
         </div>
-        <div class="field-row"><label for="gas">Natural Gas / Propane</label><input type="text" id="gas" name="gas" title="Fuel type available at property — e.g. Natural Gas, Propane, None" class="long" autocomplete="off" aria-label="Natural gas or propane"></div>
         <div class="field-row"><label for="financing">Financing</label><input type="text" id="financing" name="financing" title="Financing option discussed — e.g. Yes, No, Applied, GreenSky" class="long" autocomplete="off" aria-label="Financing option"></div>
         <div class="field-row">
           <fieldset style="border:none;padding:0;margin:0;display:contents;">
