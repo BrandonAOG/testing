@@ -2333,20 +2333,16 @@ function printForm() {
       }
     });
     // Fallback: if page never hides (Safari blocked print), restore after 3s
-    // iOS 26: afterprint fires immediately (bug), page never hides (no visibilitychange)
-    // Solution: show a restore button the user taps after print dialog closes
-    var restoreBtn = document.createElement('button');
-    restoreBtn.id = '_print-restore-btn';
-    restoreBtn.textContent = '✓ Done Printing — Tap to Restore';
-    restoreBtn.style.cssText = 'position:fixed;top:12px;left:50%;transform:translateX(-50%);z-index:999999;background:#D97706;color:#000;font-family:monospace;font-weight:bold;font-size:13px;border:none;border-radius:8px;padding:12px 24px;cursor:pointer;box-shadow:0 4px 20px rgba(0,0,0,0.4);white-space:nowrap;';
-    restoreBtn.onclick = function() {
-      _printDebugLog('Restore button tapped');
-      var b = document.getElementById('_print-restore-btn');
-      if (b) b.remove();
-      restore();
-    };
-    document.body.appendChild(restoreBtn);
-    _printDebugLog('Restore button shown — waiting for user tap');
+    // iOS 26: afterprint fires immediately (bug) — wait 5s after it fires before restoring
+    window.addEventListener('afterprint', function _iosAfterPrint() {
+      window.removeEventListener('afterprint', _iosAfterPrint);
+      _printDebugLog('afterprint fired — waiting 5s before restore');
+      setTimeout(function() {
+        _printDebugLog('5s elapsed — calling restore');
+        restore();
+      }, 5000);
+    });
+    _printDebugLog('Waiting for afterprint...');
   } else {
     window.addEventListener('afterprint', function() { _printDebugLog('afterprint fired'); restore(); });
   }
