@@ -1661,13 +1661,13 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
           </div>
           <div class="field-block" style="margin-top:var(--mt-notes-box-phone);"><textarea id="gas_notes" name="gas_notes" title="Gas appliance notes — list unlisted appliances, BTU load concerns, meter size" placeholder="List other gas appliances or notes…" aria-label="Gas appliance notes"></textarea></div>
         </div>
-        <div class="grid-4" style="margin-bottom:0;">
-          <div class="field-block"><label for="fuel_underground" style="margin-bottom:-20px;font-size:var(--fs-fuel-label);">Underground (ft)</label><input type="number" id="fuel_underground" name="fuel_underground" title="Underground gas line run in feet from tank/meter to generator" inputmode="numeric" autocomplete="off" aria-label="Underground fuel run in feet"></div>
-          <div class="field-block"><label for="fuel_aboveground" style="margin-bottom:-20px;font-size:var(--fs-fuel-label);">Above Ground (ft)</label><input type="number" id="fuel_aboveground" name="fuel_aboveground" title="Above-ground gas line run in feet" inputmode="numeric" autocomplete="off" aria-label="Above ground fuel run in feet"></div>
-          <div class="field-block"><label for="fuel_attic" style="margin-bottom:-20px;font-size:var(--fs-fuel-label);">Attic (ft)</label><input type="number" id="fuel_attic" name="fuel_attic" title="Gas line run through attic in feet" inputmode="numeric" autocomplete="off" aria-label="Attic fuel run in feet"></div>
-          <div class="field-block" style="display:flex;flex-direction:column;gap:14px;">
-            <label style="font-size:var(--fs-bore-label-phone);margin-bottom:var(--mb-bore-label-phone);margin-left:var(--gap-phone-label-sm);">Bore</label>
-            <div class="yn-group" role="group" aria-label="Fuel bore required" style="width:fit-content;min-width:0;flex-shrink:1;">
+        <div class="inline-row" style="margin-bottom:0;flex-wrap:wrap;gap:8px 16px;">
+          <div class="field-block" style="flex:1;min-width:80px;"><label for="fuel_underground" style="margin-bottom:-20px;font-size:var(--fs-fuel-label);">Underground (ft)</label><input type="number" id="fuel_underground" name="fuel_underground" title="Underground gas line run in feet from tank/meter to generator" inputmode="numeric" autocomplete="off" aria-label="Underground fuel run in feet"></div>
+          <div class="field-block" style="flex:1;min-width:80px;"><label for="fuel_aboveground" style="margin-bottom:-20px;font-size:var(--fs-fuel-label);">Above Ground (ft)</label><input type="number" id="fuel_aboveground" name="fuel_aboveground" title="Above-ground gas line run in feet" inputmode="numeric" autocomplete="off" aria-label="Above ground fuel run in feet"></div>
+          <div class="field-block" style="flex:1;min-width:80px;"><label for="fuel_attic" style="margin-bottom:-20px;font-size:var(--fs-fuel-label);">Attic (ft)</label><input type="number" id="fuel_attic" name="fuel_attic" title="Gas line run through attic in feet" inputmode="numeric" autocomplete="off" aria-label="Attic fuel run in feet"></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:4px;flex-shrink:0;">
+            <label style="font-size:var(--fs-bore-label-phone);white-space:nowrap;">Bore</label>
+            <div class="yn-group" role="group" aria-label="Fuel bore required" style="width:fit-content;min-width:0;flex-shrink:0;">
               <input type="radio" name="bore_fuel" id="bf_y" value="Y" class="yn-y"><label class="yn-label yn-label-y" for="bf_y" style="font-size:0.65rem;padding:0 10px;">Y</label>
               <input type="radio" name="bore_fuel" id="bf_n" value="N" class="yn-n"><label class="yn-label yn-label-n" for="bf_n" style="font-size:0.65rem;padding:0 10px;">N</label>
             </div>
