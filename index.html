@@ -2040,34 +2040,56 @@ function printForm() {
     var safariPageFix = document.createElement('style');
     safariPageFix.id = 'safari-page-fix';
     safariPageFix.textContent = [
-      // Page setup — match our @page rule
+      // Page setup
       '@page { size: 8.5in 11in; margin: 0.1in; }',
-      // Unlock overflow containers (critical — same as @media print)
-      '.page { overflow:visible!important; padding-top:0!important; min-height:0!important; }',
-      '.content { overflow:visible!important; overflow-y:visible!important; flex:none!important; }',
-      // Force two-column layout — overrides the max-width:600px single-column rule
-      '.top-grid { display:grid!important; grid-template-columns:1fr 1fr!important; }',
+      // Unlock overflow containers
+      '.page { overflow:visible!important; padding-top:0!important; min-height:0!important; border:1.5pt solid #D97706!important; box-shadow:none!important; }',
+      '.content { overflow:visible!important; overflow-y:visible!important; flex:none!important; padding:4px 8px!important; }',
+      // Force two-column layout
+      '.top-grid { display:grid!important; grid-template-columns:1fr 1fr!important; margin-bottom:0!important; box-shadow:none!important; }',
+      '.top-col { padding:2px 6px!important; }',
       '.top-col:first-child { border-right:1px solid rgba(217,119,6,0.35)!important; border-bottom:none!important; }',
-      // Field rows
-      '.field-row  { min-height:24px!important; flex-wrap:nowrap!important; margin-bottom:1px!important; }',
-      '.inline-row { min-height:22px!important; margin-bottom:1px!important; }',
+      // Header
+      '.header { padding:4px 12px!important; min-height:44px!important; box-shadow:none!important; }',
+      '.company-name { font-size:0.9rem!important; }',
+      '.doc-title { font-size:0.9rem!important; }',
+      '.logo-img { width:36px!important; height:36px!important; }',
+      // Section titles & col-labels
+      '.section-header { padding:2px 8px!important; font-size:0.55rem!important; }',
+      '.col-label { font-size:0.55rem!important; padding:1px 6px 1px 5px!important; margin-bottom:1px!important; }',
+      // Section spacing
+      '.section { margin-bottom:1px!important; box-shadow:none!important; }',
+      '.section-body { padding:2px 6px!important; }',
+      '.flood-bar { margin-bottom:0!important; padding:0 6px!important; }',
+      '.flood-item { padding:1px 6px!important; }',
+      '.flood-bar + .section { margin-top:1px!important; }',
+      // Labels
+      'label { font-size:0.55rem!important; }',
+      '.inline-label { font-size:0.55rem!important; }',
+      // Rows
+      '.field-row  { min-height:18px!important; flex-wrap:nowrap!important; margin-bottom:1px!important; }',
+      '.inline-row { min-height:18px!important; flex-wrap:wrap!important; margin-bottom:1px!important; }',
       // Inputs
-      'input[type=text],input[type=email],input[type=tel],input[type=date],input[type=number] { min-height:22px!important; height:22px!important; font-size:0.82rem!important; padding:1px 4px!important; }',
+      'input[type=text],input[type=email],input[type=tel],input[type=date],input[type=number] { min-height:16px!important; height:16px!important; font-size:0.72rem!important; padding:0 3px!important; }',
       'input[type=date] { min-width:0!important; flex-shrink:1!important; width:auto!important; }',
       // Y/N toggles
-      '.yn-group .yn-label { height:20px!important; min-height:20px!important; line-height:20px!important; font-size:0.6rem!important; padding:0 8px!important; }',
+      '.yn-group .yn-label { height:16px!important; min-height:16px!important; line-height:16px!important; font-size:0.55rem!important; padding:0 6px!important; }',
       // Check items
-      '.check-item { height:20px!important; min-height:20px!important; }',
+      '.check-item { height:16px!important; min-height:16px!important; padding:0 4px 0 3px!important; }',
+      '.check-item span { font-size:0.52rem!important; }',
+      '.check-item input[type=checkbox],.check-item input[type=radio] { width:10px!important; height:10px!important; min-width:10px!important; min-height:10px!important; }',
+      // Gas appliances
+      '.gas-appliances-box { padding:2px 5px!important; }',
+      '.gas-appliances-label { font-size:0.52rem!important; margin-bottom:1px!important; }',
       // Textareas
-      '#gen_notes   { height:34px!important; min-height:34px!important; max-height:34px!important; }',
-      '#pad_notes   { height:26px!important; min-height:26px!important; max-height:26px!important; }',
-      '#gas_notes   { height:34px!important; min-height:34px!important; max-height:34px!important; }',
-      '#ready_notes { height:26px!important; min-height:26px!important; max-height:26px!important; width:100%!important; box-sizing:border-box!important; }',
-      // Section spacing
-      '.section { margin-bottom:2px!important; }',
-      '.flood-bar { margin-bottom:0!important; }',
-      '.flood-bar + .section { margin-top:2px!important; }',
-      '.footer { margin-top:1px!important; }'
+      '#gen_notes   { height:28px!important; min-height:28px!important; max-height:28px!important; }',
+      '#pad_notes   { height:22px!important; min-height:22px!important; max-height:22px!important; }',
+      '#gas_notes   { height:28px!important; min-height:28px!important; max-height:28px!important; }',
+      '#ready_notes { height:22px!important; min-height:22px!important; max-height:22px!important; width:100%!important; box-sizing:border-box!important; }',
+      // Footer
+      '.footer { margin-top:1px!important; padding:2px 12px!important; }',
+      '.footer-text { font-size:0.45rem!important; }',
+      '#ver-span { font-size:0.55rem!important; }'
     ].join('\n');
     document.head.appendChild(safariPageFix);
   }
