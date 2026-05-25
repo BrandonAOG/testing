@@ -1254,7 +1254,7 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
   body.mobile-safari .gas-appliances-box               { padding: var(--pd-ipad-gas-box) !important; }
   body.mobile-safari .footer-text                      { font-size: var(--fs-ipad-footer) !important; }
   body.mobile-safari #ver-span                         { font-size: var(--fs-ipad-ver-span) !important; }
-  body.mobile-safari .page, .page { padding-top: var(--action-bar-clearance-ipad) !important; }
+  body.mobile-safari .page { padding-top: var(--action-bar-clearance-ipad) !important; }
 
   /* ---- misc overrides : ipad ---- */
   .logo-img { width: var(--logo-size-screen-ipad) !important; height: var(--logo-size-screen-ipad) !important; }
@@ -4116,6 +4116,22 @@ function adjustTopPadding() {
 window.addEventListener('resize', adjustTopPadding);
 window.addEventListener('load', adjustTopPadding);
 setTimeout(adjustTopPadding, 100);
+
+// ── PRINT: strip inline padding-top so Safari iPad doesn't generate a blank page 2 ──
+var _savedPagePaddingTop = '';
+window.addEventListener('beforeprint', function() {
+  var page = document.getElementById('page');
+  if (page) {
+    _savedPagePaddingTop = page.style.paddingTop;
+    page.style.paddingTop = '';
+  }
+});
+window.addEventListener('afterprint', function() {
+  var page = document.getElementById('page');
+  if (page) {
+    page.style.paddingTop = _savedPagePaddingTop;
+  }
+});
 </script>
 </body>
 </html>
