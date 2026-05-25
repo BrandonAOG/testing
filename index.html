@@ -313,9 +313,9 @@
   --h-print-phone-yn-label:     27px;   /* Y/N button height in PDF                      */
   --h-print-phone-check-item:   26px;   /* checkbox/radio pill height in PDF             */
   --h-print-phone-gen-notes:    40px;   /* Generator notes text box height in PDF        */
-  --h-print-phone-pad-notes:    38px;   /* Precast Pad notes text box height in PDF      */
+  --h-print-phone-pad-notes:    40px;   /* Precast Pad notes text box height in PDF      */
   --h-print-phone-gas-notes:    40px;   /* Fuel Tank / gas appliances notes box in PDF   */
-  --h-print-phone-ready-notes:  38px;   /* Install Details ready/notes box in PDF        */
+  --h-print-phone-ready-notes:  40px;   /* Install Details ready/notes box in PDF        */
 
   /* ---- PRINT HEIGHTS : iPAD ---- */
   --h-print-ipad-input:         32px;  /* text fields in iPad PDF                          */
@@ -2421,7 +2421,7 @@ function printForm() {
     var safariPageFix = document.createElement('style');
     safariPageFix.id = 'safari-page-fix';
     safariPageFix.textContent = [
-      '@page { size: 8.5in 11.1in; margin: 0.0in; }',
+      '@page { size: 8.5in 11in; margin: 0.0in; }',
       '.field-row,.inline-row { min-height:var(--h-print-ipad-field-row)!important; }',
       '.field-row { flex-wrap:nowrap!important; }',
       '.inline-row { flex-wrap:wrap!important; overflow:visible!important; }',
