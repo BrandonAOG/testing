@@ -1360,8 +1360,10 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
 
 /* ===== iPAD PRINT — all elements ===== */
 @media print and (min-width: 768px) {
-  html { font-size: var(--fs-print-ipad-base) !important; }
-  @page { margin-bottom: 0in !important; }
+  html { font-size: var(--fs-print-ipad-base) !important; zoom: 0.777; margin: 0 !important; padding: 0 !important; }
+  body { width: 1050px !important; max-width: none !important; }
+  .page { width: 1050px !important; max-width: none !important; }
+  @page { margin: 0in !important; }
   .company-name          { font-size: var(--fs-print-ipad-company-name) !important; }
   .doc-title             { font-size: var(--fs-print-ipad-doc-title) !important; }
   .section-header        { font-size: var(--fs-print-ipad-section-header) !important; padding: var(--pd-print-ipad-section-header) !important; }
