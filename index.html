@@ -1434,7 +1434,7 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
   /* Transfer Switch — bottom padding only */
   #transfer-switch-row .section-body,
   body.mobile-safari #transfer-switch-row .section-body { padding: 4px 12px 0px 12px !important; }
-  #transfer-switch-row .inline-row:last-child { min-height: 0 !important; height: auto !important; max-height: fit-content !important; margin-bottom: 0 !important; padding-bottom: 0 !important; }
+  #transfer-switch-row .inline-row:last-child { min-height: 0 !important; height: auto !important; max-height: fit-content !important; margin-bottom: 0 !important; padding-bottom: 0 !important; flex-wrap: nowrap !important; overflow: hidden !important; }
 }
 
 /* ===== DESKTOP PRINT — all elements ===== */
@@ -1715,9 +1715,7 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
             <label class="check-item"><input type="checkbox" name="coverage" value="pool"><span>Pool</span></label>
             <label class="check-item"><input type="checkbox" name="coverage" value="no_pool"><span>No Pool</span></label>
           </div>
-        </div>
-        <div class="inline-row">
-          <span class="inline-label">Circuit Swap?</span>
+          <span class="inline-label" style="margin-left:var(--gap-phone-label-lg);">Circuit Swap?</span>
           <div class="yn-group" role="group" aria-label="Circuit swap after inspection">
             <input type="radio" name="circuit_swap" id="cs_y" value="Y" class="yn-y"><label class="yn-label yn-label-y" for="cs_y">Y</label>
             <input type="radio" name="circuit_swap" id="cs_n" value="N" class="yn-n"><label class="yn-label yn-label-n" for="cs_n">N</label>
@@ -2451,7 +2449,7 @@ function printForm() {
       '.section-body,.section,.page { overflow:visible!important; }',
       '.section-body { padding:var(--pd-print-ipad-section-body)!important; }',
       '#transfer-switch-row .section-body { padding:4px 12px 0px 12px!important; }',
-      '#transfer-switch-row .inline-row:last-child { min-height:0!important;height:auto!important;max-height:fit-content!important;margin-bottom:0!important;padding-bottom:0!important; }',
+      '#transfer-switch-row .inline-row:last-child { min-height:0!important;height:auto!important;max-height:fit-content!important;margin-bottom:0!important;padding-bottom:0!important;flex-wrap:nowrap!important;overflow:hidden!important; }',
       '#precast-pad-row .section-body { padding-top:0px!important; }',
       'input[type=date] { min-width:0!important;flex-shrink:1!important;width:auto!important; }',
       'input[type=text],input[type=email],input[type=tel],input[type=number] { min-height:var(--h-print-ipad-input)!important;height:var(--h-print-ipad-input)!important; }',
