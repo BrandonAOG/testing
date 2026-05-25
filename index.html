@@ -1363,7 +1363,7 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
 @media print and (min-width: 768px) {
   html { font-size: var(--fs-print-ipad-base) !important; zoom: 0.777; margin: 0 !important; padding: 0 !important; }
   body { width: 1050px !important; max-width: none !important; }
-  .page { width: 1050px !important; max-width: none !important; }
+  .page { width: 1050px !important; max-width: none !important; border-left: none !important; border-right: none !important; }
   @page { margin: 0in !important; }
   .company-name          { font-size: var(--fs-print-ipad-company-name) !important; }
   .doc-title             { font-size: var(--fs-print-ipad-doc-title) !important; }
@@ -1390,11 +1390,10 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
   .content               { padding: var(--pd-print-ipad-content) !important; padding-bottom: var(--pb-content-print-ipad) !important; }
   .section-body          { padding: var(--pd-print-ipad-section-body) !important; }
   .top-col               { padding: var(--pd-print-ipad-top-col) !important; }
-  .flood-bar             { display: flex !important; flex-wrap: wrap !important; }
-  .flood-item            { padding: var(--pd-print-ipad-flood-item) !important; align-items: flex-start !important; }
+  .top-grid              { margin-bottom: 0 !important; }
+  .flood-bar             { display: flex !important; flex-wrap: wrap !important; border: 1px solid #D97706 !important; border-top: none !important; margin-bottom: 0 !important; flex-shrink: 0 !important; background: #ffffff !important; }
+  .flood-item            { padding: var(--pd-print-ipad-flood-item) !important; align-items: flex-start !important; border-right-color: #D97706 !important; background: #ffffff !important; }
   .flood-item label      { align-self: flex-start !important; }
-  .top-col:first-child   { border-right: none !important; border-bottom: 1px solid #D97706 !important; }
-  .top-grid              { grid-template-columns: 1fr !important; }
   #est_done_on           { width: auto !important; min-width: 0 !important; align-self: flex-start !important; font-size: var(--fs-print-ipad-date) !important; }
   #today                 { font-size: var(--fs-print-ipad-date) !important; }
   #est_date              { font-size: var(--fs-print-ipad-date) !important; }
