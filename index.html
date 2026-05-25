@@ -2332,10 +2332,30 @@ if (wasDark) document.body.classList.add('dark-mode');
   void document.body.offsetHeight;
 
   // ── Restore triggers ──
-  window.addEventListener('afterprint', function _onAfterPrint() {
+  // Three-way: afterprint, visibilitychange (dialog closed), or 30s safety net.
+  // Whichever fires first wins — _triggered guard prevents double-restore.
+  var _triggered = false;
+  function triggerRestore(delay) {
+    if (_triggered) return;
+    _triggered = true;
+    clearTimeout(_safetyTimer);
     window.removeEventListener('afterprint', _onAfterPrint);
-    setTimeout(restore, isMobileSafari ? 300 : 0);
-  });
+    document.removeEventListener('visibilitychange', _onVisible);
+    setTimeout(restore, delay);
+  }
+
+  // afterprint — fires immediately on iOS 26, use 300ms delay on mobile Safari
+  function _onAfterPrint() { triggerRestore(isMobileSafari ? 300 : 0); }
+  window.addEventListener('afterprint', _onAfterPrint);
+
+  // visibilitychange — fires when user dismisses the print/share dialog
+  function _onVisible() {
+    if (document.visibilityState === 'visible') { triggerRestore(300); }
+  }
+  document.addEventListener('visibilitychange', _onVisible);
+
+  // 30s safety net — in case neither of the above fires
+  var _safetyTimer = setTimeout(function() { triggerRestore(0); }, 30000);
 
   // ── Print — must be called synchronously within user gesture on iOS ──
   window.print();
