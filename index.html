@@ -2243,25 +2243,42 @@ function printForm() {
   if (isMobileSafari && vp) {
     // Don't change viewport width — causes right-edge cutoff on phone
     // vp.setAttribute('content', 'width=1050, initial-scale=1.0');
+    // Detect iPad vs iPhone — iPad has screen.width >= 768 in both orientations
+    var isIpadSafari = isMobileSafari && Math.min(screen.width, screen.height) >= 768;
     var safariPageFix = document.createElement('style');
     safariPageFix.id = 'safari-page-fix';
-    safariPageFix.textContent = [
-      '@page { size: 8.5in 10.2in; margin: 0.1in; }',
-      '@media print {',
-      '  .field-row,.inline-row { min-height:var(--h-print-ipad-field-row)!important; }',
-      '  .field-row { flex-wrap:nowrap!important; }',
-      '  .inline-row { flex-wrap:wrap!important; overflow:visible!important; }',
-      '  .section-body,.section,.page { overflow:visible!important; }',
-      '  input[type=date] { min-width:0!important;flex-shrink:1!important;width:auto!important; }',
-      '  input[type=text],input[type=email],input[type=tel],input[type=date],input[type=number] { min-height:var(--h-print-ipad-input)!important;height:var(--h-print-ipad-input)!important;font-size:var(--fs-print-ipad-input)!important; }',
-      '  .yn-group,.yn-group .yn-label { height:var(--h-print-ipad-yn-label)!important;min-height:var(--h-print-ipad-yn-label)!important;line-height:var(--h-print-ipad-yn-label)!important; }',
-      '  .check-item { height:var(--h-print-ipad-check-item)!important;min-height:var(--h-print-ipad-check-item)!important; }',
-      '  #gen_notes  { height:var(--h-print-ipad-gen-notes)!important;min-height:var(--h-print-ipad-gen-notes)!important;max-height:var(--h-print-ipad-gen-notes)!important; }',
-      '  #pad_notes  { height:var(--h-print-ipad-pad-notes)!important;min-height:var(--h-print-ipad-pad-notes)!important;max-height:var(--h-print-ipad-pad-notes)!important; }',
-      '  #gas_notes  { height:var(--h-print-ipad-gas-notes)!important;min-height:var(--h-print-ipad-gas-notes)!important;max-height:var(--h-print-ipad-gas-notes)!important; }',
-      '  #ready_notes { height:var(--h-print-ipad-ready-notes)!important;min-height:var(--h-print-ipad-ready-notes)!important;max-height:var(--h-print-ipad-ready-notes)!important;width:100%!important;margin-top:2px!important;box-sizing:border-box!important; }',
-      '}'
-    ].join('\n');
+    if (isIpadSafari) {
+      safariPageFix.textContent = [
+        '@page { size: 8.5in 10.2in; margin: 0.1in; }',
+        '@media print {',
+        '  .field-row,.inline-row { min-height:var(--h-print-ipad-field-row)!important; }',
+        '  .field-row { flex-wrap:nowrap!important; }',
+        '  .inline-row { flex-wrap:wrap!important; overflow:visible!important; }',
+        '  .section-body,.section,.page { overflow:visible!important; }',
+        '  .section-body { padding:var(--pd-print-ipad-section-body)!important; }',
+        '  #transfer-switch-row .section-body { padding:4px 12px 1px 12px!important; }',
+        '  input[type=date] { min-width:0!important;flex-shrink:1!important;width:auto!important; }',
+        '  input[type=text],input[type=email],input[type=tel],input[type=date],input[type=number] { min-height:var(--h-print-ipad-input)!important;height:var(--h-print-ipad-input)!important;font-size:var(--fs-print-ipad-input)!important; }',
+        '  .yn-group,.yn-group .yn-label { height:var(--h-print-ipad-yn-label)!important;min-height:var(--h-print-ipad-yn-label)!important;line-height:var(--h-print-ipad-yn-label)!important; }',
+        '  .check-item { height:var(--h-print-ipad-check-item)!important;min-height:var(--h-print-ipad-check-item)!important; }',
+        '  #gen_notes  { height:var(--h-print-ipad-gen-notes)!important;min-height:var(--h-print-ipad-gen-notes)!important;max-height:var(--h-print-ipad-gen-notes)!important; }',
+        '  #pad_notes  { height:var(--h-print-ipad-pad-notes)!important;min-height:var(--h-print-ipad-pad-notes)!important;max-height:var(--h-print-ipad-pad-notes)!important; }',
+        '  #gas_notes  { height:var(--h-print-ipad-gas-notes)!important;min-height:var(--h-print-ipad-gas-notes)!important;max-height:var(--h-print-ipad-gas-notes)!important; }',
+        '  #ready_notes { height:var(--h-print-ipad-ready-notes)!important;min-height:var(--h-print-ipad-ready-notes)!important;max-height:var(--h-print-ipad-ready-notes)!important;width:100%!important;margin-top:2px!important;box-sizing:border-box!important; }',
+        '}'
+      ].join('\n');
+    } else {
+      // iPhone — use phone print variables, no ipad size bleed
+      safariPageFix.textContent = [
+        '@page { size: 8.5in 11in; margin: 0.05in; }',
+        '@media print {',
+        '  .field-row { flex-wrap:nowrap!important; }',
+        '  .inline-row { flex-wrap:wrap!important; overflow:visible!important; }',
+        '  .section-body,.section,.page { overflow:visible!important; }',
+        '  input[type=date] { min-width:0!important;flex-shrink:1!important;width:auto!important; }',
+        '}'
+      ].join('\n');
+    }
     document.head.appendChild(safariPageFix);
   }
 
