@@ -26,7 +26,7 @@
   window.IS_MOBILE = IS_MOBILE;
   window.PAPER_W_PX = 816;
   window.PAPER_H_PX = 1056;
-  window.PAGE_NATURAL_W = 816;
+  window.PAGE_NATURAL_W = 1050;
 
   (function() {
     var saved = '';
@@ -37,6 +37,12 @@
       document.documentElement.classList.add('dark-mode-pending');
     }
   })();
+
+  var PRINT_CSS = '@media print { .toolbar, #pdfModal, #imageModal, #offline-banner, #theme-toggle-btn, .gps-btn, #gps-status, #gps-live, #address-suggestions { display: none !important; } }';
+  var styleEl = document.createElement('style');
+  styleEl.setAttribute('id', 'print-optimization-styles');
+  styleEl.textContent = PRINT_CSS;
+  document.head.appendChild(styleEl);
   if (IS_MOBILE) document.documentElement.classList.add('is-mobile-device');
 })();
 </script>
@@ -113,6 +119,41 @@
   --fs-desktop-gas-label:          0.6rem;   /* gas appliances section label                     */
   --fs-desktop-address-suggestion: 0.78rem;  /* address autocomplete dropdown items              */
 
+  /* ---- PRINT : PHONE ---- */
+  --fs-print-phone-company-name:   1.05rem;  /* "Always On Generators" in PDF                   */
+  --fs-print-phone-doc-title:      1.05rem;  /* "Generator Installation Estimate" in PDF         */
+  --fs-print-phone-section-header: 0.69rem;  /* section title bars in PDF                        */
+  --fs-print-phone-col-label:      0.62rem;  /* column label pills in PDF                        */
+  --fs-print-phone-label:          0.62rem;  /* field labels in PDF (Name, Phone, Best Email…)   */
+  --fs-print-phone-inline-label:   0.62rem;  /* inline labels in PDF                             */
+  --fs-print-phone-input:          0.88rem;  /* text inside input fields in PDF                  */
+  --fs-print-phone-yn-label:       0.67rem;  /* Y / N toggle buttons in PDF                      */
+  --fs-print-phone-check-item:     0.62rem;  /* checkbox & radio options in PDF                  */
+  --fs-print-phone-gas-label:      0.57rem;  /* gas appliances label in PDF                      */
+
+  /* ---- PRINT : iPAD ---- */
+  --fs-print-ipad-company-name:    1.05rem;  /* "Always On Generators" in iPad PDF               */
+  --fs-print-ipad-doc-title:       1.05rem;  /* "Generator Installation Estimate" in iPad PDF    */
+  --fs-print-ipad-section-header:  0.69rem;  /* section title bars in iPad PDF                   */
+  --fs-print-ipad-col-label:       0.62rem;  /* column label pills in iPad PDF                   */
+  --fs-print-ipad-label:           0.62rem;  /* field labels in iPad PDF                         */
+  --fs-print-ipad-inline-label:    0.7rem;  /* inline labels in iPad PDF                        */
+  --fs-print-ipad-input:              1rem;  /* text inside input fields in iPad PDF             */
+  --fs-print-ipad-yn-label:        0.65rem;  /* Y / N toggle buttons in iPad PDF                 */
+  --fs-print-ipad-check-item:      0.65rem;  /* checkbox & radio options in iPad PDF             */
+  --fs-print-ipad-gas-label:       0.6rem;  /* gas appliances label in iPad PDF                 */
+
+  /* ---- PRINT : DESKTOP ---- */
+  --fs-print-desktop-company-name:   1.05rem;  /* "Always On Generators" in desktop PDF            */
+  --fs-print-desktop-doc-title:      1.05rem;  /* "Generator Installation Estimate" in desktop PDF */
+  --fs-print-desktop-section-header: 0.69rem;  /* section title bars in desktop PDF                */
+  --fs-print-desktop-col-label:      0.62rem;  /* column label pills in desktop PDF                */
+  --fs-print-desktop-label:          0.62rem;  /* field labels in desktop PDF                      */
+  --fs-print-desktop-inline-label:   0.62rem;  /* inline labels in desktop PDF                     */
+  --fs-print-desktop-input:          0.88rem;  /* text inside input fields in desktop PDF          */
+  --fs-print-desktop-yn-label:       0.67rem;  /* Y / N toggle buttons in desktop PDF              */
+  --fs-print-desktop-check-item:     0.62rem;  /* checkbox & radio options in desktop PDF          */
+  --fs-print-desktop-gas-label:      0.57rem;  /* gas appliances label in desktop PDF              */
 
   /* =============================================
      PADDING — edit any value to adjust spacing.
@@ -168,6 +209,50 @@
   --pd-desktop-gas-box:        6px 8px;         /* gas appliances inner box                             */
   --pd-desktop-footer:         3px 22px;        /* footer bar (bottom of page)                          */
 
+  /* ---- PRINT PADDING : PHONE ---- */
+  --pd-print-phone-header:           10px 28px;  /* header bar in PDF                                    */
+  --pd-print-phone-content:          4px 14px;   /* outer page margins in PDF                            */
+  --pd-print-phone-section-header:   4px 12px;   /* section title bars in PDF                            */
+  --pd-print-phone-section-body:     4px 12px;   /* inside section content in PDF                        */
+  --pd-print-phone-top-col:          6px 12px;   /* Customer Info & Property Info columns in PDF          */
+  --pd-print-phone-col-label:        2px 10px 2px 7px; /* column label pill in PDF                       */
+  --pd-print-phone-input:            2px 5px;    /* inside text fields in PDF (Name, Phone, Best Email…) */
+  --pd-print-phone-textarea:         5px 8px;    /* inside note boxes in PDF                             */
+  --pd-print-phone-yn-label:         0 11px;     /* Y / N buttons in PDF                                 */
+  --pd-print-phone-check-item:       0 8px 0 6px; /* checkbox/radio pills in PDF                        */
+  --pd-print-phone-flood-item:       3px 12px;   /* flood bar items in PDF                               */
+  --pd-print-phone-gas-box:          4px 8px;    /* gas appliances box in PDF                            */
+  --pd-print-phone-footer:           4px 20px;   /* footer bar in PDF                                    */
+
+  /* ---- PRINT PADDING : iPAD ---- */
+  --pd-print-ipad-header:            10px 28px;       /* header bar in iPad PDF                               */
+  --pd-print-ipad-content:           4px 14px;        /* outer page margins in iPad PDF                       */
+  --pd-print-ipad-section-header:    4px 12px;        /* section title bars in iPad PDF                       */
+  --pd-print-ipad-section-body:      4px 12px;        /* inside section content in iPad PDF                   */
+  --pd-print-ipad-top-col:           6px 12px;        /* Customer Info & Property Info columns in iPad PDF     */
+  --pd-print-ipad-col-label:         2px 10px 2px 7px; /* column label pill in iPad PDF                       */
+  --pd-print-ipad-input:             2px 5px;         /* inside text fields in iPad PDF                       */
+  --pd-print-ipad-textarea:          5px 8px;         /* inside note boxes in iPad PDF                        */
+  --pd-print-ipad-yn-label:          0 11px;          /* Y / N buttons in iPad PDF                            */
+  --pd-print-ipad-check-item:        0 8px 0 6px;     /* checkbox/radio pills in iPad PDF                     */
+  --pd-print-ipad-flood-item:        3px 12px;        /* flood bar items in iPad PDF                          */
+  --pd-print-ipad-gas-box:           4px 8px;         /* gas appliances box in iPad PDF                       */
+  --pd-print-ipad-footer:            2px 20px;        /* footer bar in iPad PDF                               */
+
+  /* ---- PRINT PADDING : DESKTOP ---- */
+  --pd-print-desktop-header:         10px 28px;       /* header bar in desktop PDF                            */
+  --pd-print-desktop-content:        4px 14px;        /* outer page margins in desktop PDF                    */
+  --pd-print-desktop-section-header: 4px 12px;        /* section title bars in desktop PDF                    */
+  --pd-print-desktop-section-body:   4px 12px;        /* inside section content in desktop PDF                */
+  --pd-print-desktop-top-col:        6px 12px;        /* Customer Info & Property Info columns in desktop PDF  */
+  --pd-print-desktop-col-label:      2px 10px 2px 7px; /* column label pill in desktop PDF                    */
+  --pd-print-desktop-input:          2px 5px;         /* inside text fields in desktop PDF                    */
+  --pd-print-desktop-textarea:       5px 8px;         /* inside note boxes in desktop PDF                     */
+  --pd-print-desktop-yn-label:       0 11px;          /* Y / N buttons in desktop PDF                         */
+  --pd-print-desktop-check-item:     0 8px 0 6px;     /* checkbox/radio pills in desktop PDF                  */
+  --pd-print-desktop-flood-item:     3px 12px;        /* flood bar items in desktop PDF                       */
+  --pd-print-desktop-gas-box:        4px 8px;         /* gas appliances box in desktop PDF                    */
+  --pd-print-desktop-footer:         4px 20px;        /* footer bar in desktop PDF                            */
 
   /* =============================================
      ELEMENT HEIGHTS — controls the box height
@@ -203,6 +288,38 @@
   --h-desktop-yn-label:   22px;  /* Y/N individual button height                      */
   --h-desktop-check-item: 30px;  /* checkbox/radio pill (Easy/Med/Hard, Whole House…) */
 
+  /* ---- PRINT HEIGHTS : PHONE ---- */
+  --h-print-phone-input:        31px;   /* text fields in PDF (Name, Phone, Best Email…) */
+  --h-print-phone-field-row:    31px;   /* row container in PDF                          */
+  --h-print-phone-inline-row:   31px;   /* inline row in PDF                             */
+  --h-print-phone-yn-label:     27px;   /* Y/N button height in PDF                      */
+  --h-print-phone-check-item:   26px;   /* checkbox/radio pill height in PDF             */
+  --h-print-phone-gen-notes:    40px;   /* Generator notes text box height in PDF        */
+  --h-print-phone-pad-notes:    32px;   /* Precast Pad notes text box height in PDF      */
+  --h-print-phone-gas-notes:    40px;   /* Fuel Tank / gas appliances notes box in PDF   */
+  --h-print-phone-ready-notes:  38px;   /* Install Details ready/notes box in PDF        */
+
+  /* ---- PRINT HEIGHTS : iPAD ---- */
+  --h-print-ipad-input:         35px;  /* text fields in iPad PDF                          */
+  --h-print-ipad-field-row:     35px;  /* row container in iPad PDF                        */
+  --h-print-ipad-inline-row:    32px;  /* inline row in iPad PDF                           */
+  --h-print-ipad-yn-label:      26px;  /* Y/N button height in iPad PDF                    */
+  --h-print-ipad-check-item:    26px;  /* checkbox/radio pill height in iPad PDF           */
+  --h-print-ipad-gen-notes:     40px;   /* Generator notes text box height in PDF        */
+  --h-print-ipad-pad-notes:     32px;   /* Precast Pad notes text box height in PDF      */
+  --h-print-ipad-gas-notes:     40px;   /* Fuel Tank / gas appliances notes box in PDF   */
+  --h-print-ipad-ready-notes:   38px;   /* Install Details ready/notes box in PDF        */
+
+  /* ---- PRINT HEIGHTS : DESKTOP ---- */
+  --h-print-desktop-input:      31px;  /* text fields in desktop PDF                       */
+  --h-print-desktop-field-row:  31px;  /* row container in desktop PDF                     */
+  --h-print-desktop-inline-row: 31px;  /* inline row in desktop PDF                        */
+  --h-print-desktop-yn-label:   27px;  /* Y/N button height in desktop PDF                 */
+  --h-print-desktop-check-item: 26px;  /* checkbox/radio pill height in desktop PDF        */
+  --h-print-desktop-gen-notes:  40px;   /* Generator notes text box height in PDF        */
+  --h-print-desktop-pad-notes:  32px;   /* Precast Pad notes text box height in PDF      */
+  --h-print-desktop-gas-notes:  40px;   /* Fuel Tank / gas appliances notes box in PDF   */
+  --h-print-desktop-ready-notes:38px;   /* Install Details ready/notes box in PDF        */
 
   /* =============================================
      FOOTER TEXT SIZES — controls the two items
@@ -222,6 +339,17 @@
   --fs-desktop-footer:             0.55rem;  /* "GENERATOR INSTALLATION ESTIMATE · CONFIDENTIAL" */
   --fs-desktop-ver-span:           0.72rem;  /* "Ver. 1.1" version number                        */
 
+  /* ---- PRINT FOOTER : PHONE ---- */
+  --fs-print-phone-footer:         0.55rem;  /* confidential text in phone PDF                   */
+  --fs-print-phone-ver-span:       0.72rem;  /* "Ver. 1.1" in phone PDF                          */
+
+  /* ---- PRINT FOOTER : iPAD ---- */
+  --fs-print-ipad-footer:          0.3rem;  /* confidential text in iPad PDF                    */
+  --fs-print-ipad-ver-span:        0.3rem;  /* "Ver. 1.1" in iPad PDF                           */
+
+  /* ---- PRINT FOOTER : DESKTOP ---- */
+  --fs-print-desktop-footer:       0.55rem;  /* confidential text in desktop PDF                 */
+  --fs-print-desktop-ver-span:     0.72rem;  /* "Ver. 1.1" in desktop PDF                        */
 
   /* =============================================
      MISCELLANEOUS SIZES — device-specific.
@@ -233,16 +361,25 @@
   --logo-size-screen:            40px;   /* AOG logo square size on screen (phone)           */
   --logo-size-screen-ipad:       40px;   /* AOG logo square size on screen (iPad)            */
   --logo-size-screen-desktop:    40px;   /* AOG logo square size on screen (desktop)         */
+  --logo-size-print:             48px;   /* AOG logo square size in PDF (phone)              */
+  --logo-size-print-ipad:        48px;   /* AOG logo square size in PDF (iPad)               */
+  --logo-size-print-desktop:     48px;   /* AOG logo square size in PDF (desktop)            */
 
   /* ---- FUEL LABEL (Underground / Above Ground / Attic) ---- */
   --fs-fuel-label:               0.75rem; /* phone — "Underground (ft)" / "Above Ground (ft)" / "Attic (ft)" */
   --fs-fuel-label-ipad:          0.75rem; /* iPad                                             */
   --fs-fuel-label-desktop:       0.75rem; /* desktop                                          */
+  --fs-fuel-label-print:         0.75rem; /* phone PDF                                        */
+  --fs-fuel-label-print-ipad:    0.75rem; /* iPad PDF                                         */
+  --fs-fuel-label-print-desktop: 0.75rem; /* desktop PDF                                      */
 
   /* ---- DIVIDER ---- */
   --divider-margin-phone:        8px 0;  /* space above/below divider lines (phone)          */
   --divider-margin-ipad:         8px 0;  /* space above/below divider lines (iPad)           */
   --divider-margin-desktop:      8px 0;  /* space above/below divider lines (desktop)        */
+  --divider-margin-print:        4px 0;  /* space above/below divider lines (phone PDF)      */
+  --divider-margin-print-ipad:   4px 0;  /* space above/below divider lines (iPad PDF)       */
+  --divider-margin-print-desktop:4px 0;  /* space above/below divider lines (desktop PDF)    */
 
   /* ---- GPS BUTTON ---- */
   --gps-btn-width:               30px;   /* GPS button width (phone)                         */
@@ -256,11 +393,17 @@
   --grid4-gap-phone:             10px;   /* gap between four info boxes (phone)              */
   --grid4-gap-ipad:              10px;   /* gap between four info boxes (iPad)               */
   --grid4-gap-desktop:           10px;   /* gap between four info boxes (desktop)            */
+  --grid4-gap-print:             8px;    /* gap between four info boxes (phone PDF)          */
+  --grid4-gap-print-ipad:        8px;    /* gap between four info boxes (iPad PDF)           */
+  --grid4-gap-print-desktop:     8px;    /* gap between four info boxes (desktop PDF)        */
 
   /* ---- GRID-2 / GRID-3 GAP (section columns) ---- */
   --grid23-gap-phone:            10px;   /* gap between 2 and 3 col section grids (phone)   */
   --grid23-gap-ipad:             10px;   /* gap between 2 and 3 col section grids (iPad)    */
   --grid23-gap-desktop:          10px;   /* gap between 2 and 3 col section grids (desktop) */
+  --grid23-gap-print:            8px;    /* (phone PDF)                                      */
+  --grid23-gap-print-ipad:       8px;    /* (iPad PDF)                                       */
+  --grid23-gap-print-desktop:    8px;    /* (desktop PDF)                                    */
 
   /* ---- CHECK GROUP GAP ---- */
   --check-group-gap-phone:       4px;    /* gap between checkbox/radio pills (phone)         */
@@ -268,6 +411,7 @@
   --check-group-gap-desktop:     4px;    /* gap between checkbox/radio pills (desktop)       */
 
   /* ---- DESKTOP PRINT BASE FONT ---- */
+  --fs-print-desktop-base:       13.08px; /* base html font-size for desktop print           */
 
   /* ---- INPUT FIELD WIDTHS — PHONE ---- */
   --w-phone-gen-size:        15ch;  /* Generator size input (phone)                     */
@@ -303,10 +447,37 @@
   --w-desktop-install-days:  12ch;
 
   /* ---- INPUT FIELD WIDTHS — PRINT (phone) ---- */
+  --w-print-gen-size:        15ch;
+  --w-print-num-panels:      8ch;
+  --w-print-num-ts:          8ch;
+  --w-print-ts-type:         20ch;
+  --w-print-ts-placement:    25ch;
+  --w-print-circuits:        5ch;
+  --w-print-stand-height:    10ch;
+  --w-print-tank-size:       10ch;
+  --w-print-install-days:    12ch;
 
   /* ---- INPUT FIELD WIDTHS — PRINT iPAD ---- */
+  --w-print-ipad-gen-size:       15ch;
+  --w-print-ipad-num-panels:     8ch;
+  --w-print-ipad-num-ts:         8ch;
+  --w-print-ipad-ts-type:        20ch;
+  --w-print-ipad-ts-placement:   25ch;
+  --w-print-ipad-circuits:       5ch;
+  --w-print-ipad-stand-height:   10ch;
+  --w-print-ipad-tank-size:      10ch;
+  --w-print-ipad-install-days:   12ch;
 
   /* ---- INPUT FIELD WIDTHS — PRINT DESKTOP ---- */
+  --w-print-desktop-gen-size:    15ch;
+  --w-print-desktop-num-panels:  8ch;
+  --w-print-desktop-num-ts:      8ch;
+  --w-print-desktop-ts-type:     20ch;
+  --w-print-desktop-ts-placement:25ch;
+  --w-print-desktop-circuits:    5ch;
+  --w-print-desktop-stand-height:10ch;
+  --w-print-desktop-tank-size:   10ch;
+  --w-print-desktop-install-days:12ch;
 
   /* ---- INLINE LABEL GAPS — PHONE ---- */
   --gap-phone-label-sm:      4px;   /* tight — # Transfer Switches, 100A circuits, Height */
@@ -327,10 +498,22 @@
   --gap-desktop-label-xl:    12px;
 
   /* ---- INLINE LABEL GAPS — PRINT (phone) ---- */
+  --gap-print-label-sm:      4px;
+  --gap-print-label-md:      6px;
+  --gap-print-label-lg:      8px;
+  --gap-print-label-xl:      12px;
 
   /* ---- INLINE LABEL GAPS — PRINT iPAD ---- */
+  --gap-print-ipad-label-sm: 4px;
+  --gap-print-ipad-label-md: 6px;
+  --gap-print-ipad-label-lg: 8px;
+  --gap-print-ipad-label-xl: 12px;
 
   /* ---- INLINE LABEL GAPS — PRINT DESKTOP ---- */
+  --gap-print-desktop-label-sm: 4px;
+  --gap-print-desktop-label-md: 6px;
+  --gap-print-desktop-label-lg: 8px;
+  --gap-print-desktop-label-xl: 12px;
 
   /* ---- BORE LABEL ---- */
   --fs-bore-label-phone:     0.65rem; /* "Bore" label (phone)                             */
@@ -359,6 +542,9 @@
   --mt-notes-box-phone:      10px;   /* space above Pad notes and Gas notes boxes (phone)*/
   --mt-notes-box-ipad:       10px;   /* (iPad)                                           */
   --mt-notes-box-desktop:    10px;   /* (desktop)                                        */
+  --mt-notes-box-print:      10px;   /* (phone PDF)                                      */
+  --mt-notes-box-print-ipad: 10px;   /* (iPad PDF)                                       */
+  --mt-notes-box-print-desktop:10px; /* (desktop PDF)                                    */
 
   --icon-color-primary: #D97706;
   --icon-color-section: #D97706;
@@ -389,7 +575,7 @@ body {
   font-family: var(--font-body);
   background: var(--bg);
   color: var(--text);
-  width: 100%; max-width: 816px; margin: 0 auto;
+  width: 100%; max-width: 1050px; margin: 0 auto;
   min-height: 100vh; padding: 0;
   padding-bottom: env(safe-area-inset-bottom, 24px);
   -webkit-text-size-adjust: 100%;
@@ -404,7 +590,7 @@ html.dark-mode-pending body {
 }
 
 .page {
-  width: 100%; max-width: 816px; margin: 0 auto;
+  width: 100%; max-width: 1050px; margin: 0 auto;
   background: var(--panel);
   border: 2px solid var(--cyan);
   box-shadow: 0 0 0 1px rgba(217,119,6,0.1), 0 0 40px rgba(217,119,6,0.08), inset 0 0 60px rgba(255,255,255,0.8);
@@ -647,17 +833,6 @@ input.tiny  { width: 40px; min-width: 40px; text-align: center; }
 input.med   { width: 120px; min-width: 80px; }
 input.long  { flex: 1; min-width: 100px; }
 
-/* Remove spinners from all number inputs */
-input[type="number"]::-webkit-inner-spin-button,
-input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-input[type="number"] { -moz-appearance: textfield; appearance: textfield; }
-
-#elec_run_ft  { width: 5ch !important; min-width: 5ch !important; }
-#num_panels,
-#num_ts       { width: 4ch !important; min-width: 4ch !important; }
-#circuits_60a,
-#circuits_100a { width: 3ch !important; min-width: 3ch !important; }
-
 textarea { width: 100%; resize: vertical; border: 1px solid rgba(217,119,6,0.2); padding: var(--pd-phone-textarea); margin-top: 3px; min-height: 44px; height: 44px; background: var(--panel); color: var(--text); transition: all 0.3s ease; box-sizing: border-box; }
 body.dark-mode textarea { background: rgba(10,14,39,0.6); border-color: rgba(0,255,200,0.15); color: #E0F7FF; }
 textarea:focus { border-color: var(--cyan); box-shadow: 0 0 8px rgba(217,119,6,0.1); }
@@ -798,6 +973,117 @@ body.dark-mode::-webkit-scrollbar-thumb:hover { background: linear-gradient(180d
   .company-name { font-size: 0.8rem !important; }
   .btn { flex: 1 1 calc(33% - 6px); }
   .check-item { flex: 1 1 calc(50% - 4px); min-width: 80px; }
+}
+
+body.mobile-safari { -webkit-print-color-adjust: exact; }
+
+@media print {
+  @page { size: 8.5in 11in; margin: 0.05in 0.05in 0.05in 0.05in; }
+  * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; animation: none !important; animation-play-state: paused !important; transition: none !important; }
+  .toolbar, .action-bar, #save-status, #theme-toggle-btn, #offline-banner, #address-suggestions, #gps-status, #gps-btn { display: none !important; }
+  .header::after { display: none !important; }
+  body::before, body::after, body[class*="seasonal-"]::before, body[class*="seasonal-"]::after { display: none !important; content: none !important; }
+  html { zoom: 0.758; margin: 0 !important; padding: 0 !important; }
+  body { margin: 0 auto !important; padding: 0 !important; width: 1050px !important; max-width: none !important; background: #ffffff !important; background-image: none !important; color: #1F2937 !important; --icon-color-section: #D97706 !important; --cyan: #D97706 !important; }
+  .page { width: 1050px !important; max-width: none !important; height: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; box-sizing: border-box !important; display: flex !important; flex-direction: column !important; overflow: visible !important; background: #ffffff !important; border: 1.5pt solid #D97706 !important; box-shadow: none !important; position: static !important; outline: none !important; }
+  .content { flex: 1 !important; min-height: 0 !important; overflow: visible !important; padding: var(--pd-print-phone-content) !important; background: #ffffff !important; display: flex !important; flex-direction: column !important; gap: 0 !important; justify-content: space-between !important; height: 0 !important; }
+  .page::before, .page::after, .page-corner-bl, .page-corner-br { display: none !important; }
+  .header { background: #ffffff !important; border-bottom: 1px solid #D97706 !important; padding: var(--pd-print-phone-header) !important; min-height: auto !important; height: auto !important; display: flex !important; align-items: center !important; justify-content: space-between !important; flex-shrink: 0 !important; }
+  .logo-img { width: var(--logo-size-print) !important; height: var(--logo-size-print) !important; }
+  .company-name { font-size: var(--fs-print-phone-company-name) !important; color: #D97706 !important; text-shadow: none !important; }
+  .doc-title { font-size: var(--fs-print-phone-doc-title) !important; color: #D97706 !important; text-shadow: none !important; }
+  .top-grid { display: grid !important; grid-template-columns: 1fr 1fr !important; background: #ffffff !important; border: 1px solid #D97706 !important; margin-bottom: 0 !important; flex-shrink: 0 !important; flex-grow: 0 !important; }
+  .top-grid::before { background: none !important; }
+  .top-col { padding: var(--pd-print-phone-top-col) !important; background: #ffffff !important; border-color: #D97706 !important; }
+  .top-col:first-child { border-right: 1px solid #D97706 !important; border-bottom: none !important; }
+  .col-label { display: inline-flex !important; background: #f5f5f5 !important; border-color: #D97706 !important; border-left-color: #D97706 !important; color: #D97706 !important; text-shadow: none !important; margin-bottom: 4px !important; font-size: var(--fs-print-phone-col-label) !important; padding: var(--pd-print-phone-col-label) !important; }
+  .col-label::before { background: #D97706 !important; box-shadow: none !important; animation: none !important; }
+  .col-label svg, .col-label svg * { stroke: #D97706 !important; color: #D97706 !important; }
+  .flood-bar { display: flex !important; background: #ffffff !important; border: 1px solid #D97706 !important; border-top: none !important; margin-bottom: 0 !important; flex-shrink: 0 !important; }
+  .flood-item { border-right-color: #D97706 !important; background: #ffffff !important; padding: var(--pd-print-phone-flood-item) !important; }
+  .section { background: #ffffff !important; border: 1px solid #D97706 !important; margin-bottom: 0 !important; flex-shrink: 0 !important; flex-grow: 0 !important; page-break-inside: avoid !important; break-inside: avoid !important; }
+  .section::before { background: none !important; }
+  .section-header { background: #f5f5f5 !important; color: #D97706 !important; border-bottom: 1px solid #D97706 !important; text-shadow: none !important; padding: var(--pd-print-phone-section-header) !important; font-size: var(--fs-print-phone-section-header) !important; }
+  .section-header::before { background: #D97706 !important; box-shadow: none !important; animation: none !important; }
+  .col-label::before { background: #D97706 !important; box-shadow: none !important; animation: none !important; }
+  body[class*="seasonal-"] .section-header::before,
+  body[class*="seasonal-"] .col-label::before { background: #D97706 !important; box-shadow: none !important; animation: none !important; animation-play-state: paused !important; }
+  .section-header svg, .section-header svg * { stroke: #D97706 !important; color: #D97706 !important; }
+  .section-body { background: #ffffff !important; padding: var(--pd-print-phone-section-body) !important; }
+  .grid-2 { display: grid !important; grid-template-columns: 1fr 1fr !important; gap: var(--grid23-gap-print) !important; margin-bottom: 4px !important; }
+  .grid-3 { display: grid !important; grid-template-columns: 1fr 1fr 1fr !important; gap: var(--grid23-gap-print) !important; margin-bottom: 4px !important; }
+  .grid-4 { display: grid !important; grid-template-columns: repeat(4, 1fr) !important; gap: var(--grid4-gap-print) !important; margin-bottom: 4px !important; }
+  .grid-4 .yn-group, .grid-3 .yn-group, .grid-2 .yn-group { width: fit-content !important; min-width: 0 !important; align-self: flex-start !important; }
+  .grid-4 .field-block, .grid-3 .field-block, .grid-2 .field-block { min-width: 0 !important; overflow: hidden !important; }
+  .field-row { margin-bottom: 2px !important; flex-wrap: nowrap !important; min-height: var(--h-print-phone-field-row) !important; }
+  .inline-row { margin-bottom: 2px !important; flex-wrap: wrap !important; min-height: var(--h-print-phone-inline-row) !important; }
+  label { color: #6B7280 !important; font-size: var(--fs-print-phone-label) !important; white-space: nowrap !important; }
+  .inline-label { color: #6B7280 !important; white-space: nowrap !important; font-size: var(--fs-print-phone-inline-label) !important; }
+  input[type="text"], input[type="email"], input[type="tel"], input[type="date"], input[type="number"] { background: #ffffff !important; border-bottom: 2px solid #D97706 !important; border-top: none !important; border-left: none !important; border-right: none !important; color: #1F2937 !important; padding: var(--pd-print-phone-input) !important; min-height: var(--h-print-phone-input) !important; height: var(--h-print-phone-input) !important; font-size: var(--fs-print-phone-input) !important; box-shadow: none !important; }
+  input::placeholder, textarea::placeholder { color: transparent !important; opacity: 0 !important; }
+  input::-webkit-input-placeholder, textarea::-webkit-input-placeholder { color: transparent !important; opacity: 0 !important; }
+  input::-moz-placeholder, textarea::-moz-placeholder { color: transparent !important; opacity: 0 !important; }
+  #address { padding-right: 6px !important; }
+  input[type="date"] { min-width: 145px !important; width: 145px !important; }
+  textarea { border: 1px solid #D97706 !important; resize: none !important; overflow: hidden !important; padding: var(--pd-print-phone-textarea) !important; margin-top: 3px !important; font-size: var(--fs-print-phone-input) !important; background: #ffffff !important; color: #1F2937 !important; box-shadow: none !important; }
+  #gen_notes  { min-height: var(--h-print-phone-gen-notes) !important; height: var(--h-print-phone-gen-notes) !important; max-height: var(--h-print-phone-gen-notes) !important; }
+  #pad_notes  { min-height: var(--h-print-phone-pad-notes) !important; height: var(--h-print-phone-pad-notes) !important; max-height: var(--h-print-phone-pad-notes) !important; }
+  #gas_notes  { min-height: var(--h-print-phone-gas-notes) !important; height: var(--h-print-phone-gas-notes) !important; max-height: var(--h-print-phone-gas-notes) !important; }
+  #ready_notes{ min-height: var(--h-print-phone-ready-notes) !important; height: var(--h-print-phone-ready-notes) !important; max-height: var(--h-print-phone-ready-notes) !important; width: 100% !important; box-sizing: border-box !important; margin-top: 2px !important; }
+  .yn-group { display: inline-flex !important; border: 1px solid #D97706 !important; background: #ffffff !important; box-shadow: none !important; }
+  .yn-group .yn-label { min-height: var(--h-print-phone-yn-label) !important; height: var(--h-print-phone-yn-label) !important; padding: var(--pd-print-phone-yn-label) !important; color: #6B7280 !important; background: transparent !important; font-size: var(--fs-print-phone-yn-label) !important; line-height: var(--h-print-phone-yn-label) !important; }
+  .yn-group .yn-label:first-of-type { border-right: 1px solid #D97706 !important; }
+  .yn-group .yn-y:checked + .yn-label-y { background: #34d399 !important; color: #064e3b !important; text-shadow: none !important; box-shadow: none !important; }
+  .yn-group .yn-n:checked + .yn-label-n { background: #fca5a5 !important; color: #7f1d1d !important; text-shadow: none !important; box-shadow: none !important; }
+  .check-group { display: flex !important; flex-wrap: wrap !important; gap: 4px !important; }
+  .check-item { min-height: var(--h-print-phone-check-item) !important; height: var(--h-print-phone-check-item) !important; padding: var(--pd-print-phone-check-item) !important; background: #ffffff !important; border: 1px solid #D97706 !important; box-shadow: none !important; display: flex !important; align-items: center !important; gap: 4px !important; }
+  .check-item input[type="checkbox"], .check-item input[type="radio"] { width: 13px !important; height: 13px !important; min-height: 13px !important; min-width: 13px !important; margin: 0 !important; padding: 0 !important; border: none !important; border-bottom: none !important; flex-shrink: 0 !important; accent-color: #D97706 !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+  body.dark-mode .check-item input[type="checkbox"], body.dark-mode .check-item input[type="radio"] { accent-color: #D97706 !important; }
+  .check-item:has(input:checked) { background: #fde68a !important; border-color: #D97706 !important; box-shadow: none !important; }
+  .check-item span { color: #1F2937 !important; text-shadow: none !important; font-size: var(--fs-print-phone-check-item) !important; line-height: 1 !important; }
+  .check-item:has(input:checked) { background: #fde68a !important; border-color: #D97706 !important; box-shadow: none !important; }
+  .check-item:has(input:checked) span { color: #92400E !important; }
+  .divider { border-top: 1px solid #D97706 !important; background: #ffffff !important; margin: var(--divider-margin-print) !important; }
+  .divider::before { background: #ffffff !important; color: #D97706 !important; }
+  .gas-appliances-box { background: #ffffff !important; border-color: #D97706 !important; padding: var(--pd-print-phone-gas-box) !important; margin-bottom: 3px !important; }
+  .gas-appliances-box::before { background: none !important; }
+  .gas-appliances-label { color: #6B7280 !important; font-size: var(--fs-print-phone-gas-label) !important; margin-bottom: 3px !important; }
+  #install-difficulty-row { flex-shrink: 0 !important; margin-top: 0 !important; }
+  #install-difficulty-row .inline-row { margin: 0 !important; }
+  #install-difficulty-row .section-body { padding-top: 2px !important; }
+  /* Zero out bottom padding of Fuel Tank section so Install Details butts up with just a hair */
+  #install-difficulty-row + * { margin-top: 0 !important; }
+  .section:has(+ #install-difficulty-row) .section-body { padding-bottom: 2px !important; }
+  #address-suggestions, #gps-status { display: none !important; }
+  #install_days { padding: 2px 5px !important; min-height: var(--h-print-phone-input) !important; height: var(--h-print-phone-input) !important; }
+  #elec_run_ft { width: 9ch !important; min-width: 9ch !important; max-width: 9ch !important; flex-shrink: 0 !important; }
+  #gen_size { width: 15ch !important; min-width: 15ch !important; max-width: 15ch !important; flex-shrink: 0 !important; }
+  #circuits_60a, #circuits_100a { width: 5ch !important; min-width: 5ch !important; max-width: 5ch !important; flex-shrink: 0 !important; }
+  .footer { background: #ffffff !important; border-top: 1px solid #D97706 !important; padding: var(--pd-print-phone-footer) !important; margin-top: auto !important; display: flex !important; justify-content: space-between !important; align-items: center !important; flex-shrink: 0 !important; width: 100% !important; min-height: auto !important; height: auto !important; }
+  .footer-text { color: #D97706 !important; text-shadow: none !important; font-size: var(--fs-print-phone-footer) !important; }
+  #ver-span { color: #9CA3AF !important; font-size: var(--fs-print-phone-ver-span) !important; text-shadow: none !important; }
+  body.dark-mode .page, body.dark-mode .header, body.dark-mode .section, body.dark-mode .section-header,
+  body.dark-mode .top-grid, body.dark-mode .top-col, body.dark-mode .content,
+  body.dark-mode .flood-bar, body.dark-mode .flood-item, body.dark-mode .footer,
+  body.dark-mode .col-label, body.dark-mode input, body.dark-mode textarea,
+  body.dark-mode label, body.dark-mode .check-item, body.dark-mode .yn-group,
+  body.dark-mode .yn-label, body.dark-mode .inline-label,
+  body.dark-mode .gas-appliances-box, body.dark-mode .gas-appliances-label {
+    background: #ffffff !important; color: #1F2937 !important; text-shadow: none !important; box-shadow: none !important; border-color: #D97706 !important;
+  }
+  body.dark-mode .footer-text { color: #D97706 !important; text-shadow: none !important; }
+  body.dark-mode #ver-span { color: #9CA3AF !important; text-shadow: none !important; }
+  body.dark-mode .doc-title { color: #D97706 !important; text-shadow: none !important; letter-spacing: 4px !important; }
+  body.dark-mode .company-name { color: #D97706 !important; text-shadow: none !important; }
+  body[class*="seasonal-"] { background: #ffffff !important; color: #1F2937 !important; }
+  body[class*="seasonal-"] .page { border-color: #D97706 !important; box-shadow: none !important; }
+  body[class*="seasonal-"] .section-header, body[class*="seasonal-"] .col-label { color: #D97706 !important; text-shadow: none !important; }
+  body[class*="seasonal-"] .section-header::before,
+  body[class*="seasonal-"] .col-label::before { background: #D97706 !important; box-shadow: none !important; animation: none !important; animation-play-state: paused !important; }
+  body[class*="seasonal-"] .section-header svg, body[class*="seasonal-"] .section-header svg *,
+  body[class*="seasonal-"] .col-label svg, body[class*="seasonal-"] .col-label svg * { stroke: #D97706 !important; color: #D97706 !important; }
+  .confirm-modal-backdrop { display: none !important; }
+  #seasonal-canvas { display: none !important; }
 }
 
 
@@ -979,235 +1265,109 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
   .flood-item            { padding: var(--pd-desktop-flood-item) !important; }
 }
 
-/* =====================================================
-   PRINT — 8.5 × 11  (no zoom, no JS required)
-   ===================================================== */
-@media print {
-
-  /* ── Page setup ── */
-  @page { size: 8.5in 11in; margin: 0.1in; }
-
-  /* ── Stop all motion, force color rendering ── */
-  * {
-    -webkit-print-color-adjust: exact !important;
-    print-color-adjust: exact !important;
-    animation: none !important;
-    animation-play-state: paused !important;
-    transition: none !important;
-  }
-
-  /* ── Hide screen-only chrome ── */
-  .action-bar, #save-status, .toolbar, .theme-toggle-btn,
-  #gps-btn, #gps-status, #gps-live, #address-suggestions,
-  #seasonal-canvas, .confirm-modal-backdrop { display: none !important; }
-
-  /* ── Kill decorative pseudo-elements ── */
-  .header::after,
-  .section::before,
-  body::before, body::after { display: none !important; content: none !important; }
-
-  /* ── Reset body layout ── */
-  html, body {
-    background: #ffffff !important;
-    max-width: 100% !important;
-    width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  /* ── Page wrapper ── */
-  .page {
-    min-height: 0 !important;
-    overflow: visible !important;
-    padding-top: 0 !important;   /* clears JS-injected action-bar clearance */
-    border: 1.5pt solid #D97706 !important;
-    background: #ffffff !important;
-    box-shadow: none !important;
-  }
-  .page::before, .page::after,
-  .page-corner-bl, .page-corner-br { display: none !important; }
-
-  /* ── Unlock the scroll container — the #1 print-clipping bug ── */
-  .content {
-    overflow: visible !important;
-    overflow-y: visible !important;
-    flex: none !important;
-    padding: 6px 10px !important;
-  }
-
-  /* ── Header ── */
-  .header {
-    background: #ffffff !important;
-    border-bottom: 1px solid rgba(217,119,6,0.4) !important;
-    box-shadow: none !important;
-    padding: 6px 16px !important;
-    min-height: 52px !important;
-  }
-  .company-name, body.dark-mode .company-name { color: #D97706 !important; text-shadow: none !important; }
-  .doc-title,    body.dark-mode .doc-title    { color: #D97706 !important; text-shadow: none !important; }
-
-  /* ── Sections ── */
-  .section { margin-bottom: 2px !important; background: #ffffff !important; box-shadow: none !important; }
-  .section-header {
-    background: #f5f5f5 !important;
-    color: #D97706 !important;
-    text-shadow: none !important;
-    padding: 2px 10px !important;
-    font-size: 0.58rem !important;
-  }
-  .section-header::before {
-    background: #D97706 !important; box-shadow: none !important; animation: none !important;
-  }
-  .section-header svg, .section-header svg * { stroke: #D97706 !important; color: #D97706 !important; }
-  .col-label svg, .col-label svg * { stroke: #D97706 !important; color: #D97706 !important; }
-  .section-body { background: #ffffff !important; padding: 3px 8px !important; }
-
-  /* ── Top grid ── */
-  .top-grid { display: grid !important; grid-template-columns: 1fr 1fr !important; margin-bottom: 0 !important; background: #ffffff !important; box-shadow: none !important; }
-  .top-col:first-child { border-right: 1px solid rgba(217,119,6,0.35) !important; border-bottom: none !important; }
-  .top-col  { padding: 5px 8px !important; background: #ffffff !important; }
-  .col-label {
-    color: #D97706 !important; background: #f5f5f5 !important;
-    text-shadow: none !important; font-size: 0.58rem !important;
-    padding: 2px 8px 2px 6px !important; margin-bottom: 2px !important;
-  }
-  .col-label::before { background: #D97706 !important; box-shadow: none !important; animation: none !important; }
-
-  /* ── Labels ── */
-  label        { color: #6B7280 !important; font-size: 0.58rem !important; white-space: nowrap !important; }
-  .inline-label { color: #6B7280 !important; font-size: 0.58rem !important; white-space: nowrap !important; }
-
-  /* ── Text inputs ── */
+/* ===== iPAD PRINT — all elements ===== */
+@media print and (min-width: 768px) {
+  html { font-size: var(--fs-print-desktop-base) !important; }
+  @page { margin-bottom: 0in !important; }
+  .company-name          { font-size: var(--fs-print-ipad-company-name) !important; }
+  .doc-title             { font-size: var(--fs-print-ipad-doc-title) !important; }
+  .section-header        { font-size: var(--fs-print-ipad-section-header) !important; padding: var(--pd-print-ipad-section-header) !important; }
+  .col-label             { font-size: var(--fs-print-ipad-col-label) !important; padding: var(--pd-print-ipad-col-label) !important; }
+  label                  { font-size: var(--fs-print-ipad-label) !important; }
+  .inline-label          { font-size: var(--fs-print-ipad-inline-label) !important; }
   input[type="text"], input[type="email"], input[type="tel"],
-  input[type="date"], input[type="number"] {
-    background: #ffffff !important;
-    border: none !important;
-    border-bottom: 1.5px solid #D97706 !important;
-    color: #1F2937 !important;
-    font-size: 0.82rem !important;
-    padding: 1px 4px !important;
-    min-height: 22px !important; height: 22px !important;
-    box-shadow: none !important;
-  }
-  input::placeholder, textarea::placeholder { color: transparent !important; opacity: 0 !important; }
-  input::-webkit-input-placeholder, textarea::-webkit-input-placeholder { color: transparent !important; }
-
-  /* ── Textareas — fixed heights so they don't blow the page ── */
-  textarea {
-    background: #ffffff !important;
-    border: 1px solid rgba(217,119,6,0.4) !important;
-    color: #1F2937 !important;
-    font-size: 0.75rem !important;
-    padding: 3px 5px !important;
-    box-shadow: none !important;
-    resize: none !important;
-    overflow: hidden !important;
-  }
-  #gen_notes   { height: 34px !important; min-height: 34px !important; max-height: 34px !important; }
-  #pad_notes   { height: 26px !important; min-height: 26px !important; max-height: 26px !important; }
-  #gas_notes   { height: 34px !important; min-height: 34px !important; max-height: 34px !important; }
-  #ready_notes { height: 26px !important; min-height: 26px !important; max-height: 26px !important;
-                 width: 100% !important; box-sizing: border-box !important; }
-  /* Pull pad_notes wrapper tight against the checkboxes above it */
-  .field-block:has(#pad_notes) { margin-top: 2px !important; }
-  /* Pull gas_notes wrapper tight against the appliances checkboxes above it */
-  .field-block:has(#gas_notes) { margin-top: 2px !important; }
-
-  /* ── Y/N toggles ── */
-  .yn-group { display: inline-flex !important; border: 1px solid #D97706 !important; background: #ffffff !important; box-shadow: none !important; }
-  .yn-group .yn-label {
-    min-height: 20px !important; height: 20px !important;
-    padding: 0 8px !important; color: #6B7280 !important;
-    background: transparent !important; font-size: 0.6rem !important;
-    line-height: 20px !important; text-shadow: none !important; box-shadow: none !important;
-  }
-  .yn-group .yn-label:first-of-type { border-right: 1px solid #D97706 !important; }
-  .yn-group .yn-y:checked + .yn-label-y { background: #34d399 !important; color: #064e3b !important; box-shadow: none !important; text-shadow: none !important; }
-  .yn-group .yn-n:checked + .yn-label-n { background: #fca5a5 !important; color: #7f1d1d !important; box-shadow: none !important; text-shadow: none !important; }
-
-  /* ── Checkboxes / radios ── */
-  .check-group { display: flex !important; flex-wrap: wrap !important; gap: 3px !important; }
-  .check-item {
-    min-height: 20px !important; height: 20px !important;
-    padding: 0 5px 0 4px !important;
-    background: #ffffff !important; border: 1px solid rgba(217,119,6,0.45) !important;
-    box-shadow: none !important; display: flex !important; align-items: center !important; gap: 3px !important;
-  }
-  .check-item input[type="checkbox"], .check-item input[type="radio"] {
-    width: 11px !important; height: 11px !important;
-    min-width: 11px !important; min-height: 11px !important;
-    margin: 0 !important; padding: 0 !important;
-    border: none !important; flex-shrink: 0 !important;
-    accent-color: #D97706 !important;
-    -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important;
-  }
-  .check-item:has(input:checked) { background: #fde68a !important; border-color: #D97706 !important; box-shadow: none !important; }
-  .check-item span { color: #1F2937 !important; text-shadow: none !important; font-size: 0.56rem !important; line-height: 1 !important; }
-  .check-item:has(input:checked) span { color: #92400E !important; }
-
-  #circuits_60a, #circuits_100a,
-  #num_panels, #num_ts { width: 4ch !important; min-width: 4ch !important; max-width: 4ch !important; }
-  #circuits_60a, #circuits_100a { width: 3ch !important; min-width: 3ch !important; max-width: 3ch !important; }
-  #elec_run_ft { width: 5ch !important; min-width: 5ch !important; flex-shrink: 0 !important; }
-  .field-row  { margin-bottom: 1px !important; min-height: 24px !important; flex-wrap: nowrap !important; }
-  .inline-row { margin-bottom: 1px !important; min-height: 22px !important; }
-
-  /* ── Flood bar ── */
-  .flood-bar  { padding: 0 8px !important; margin-bottom: 0 !important; }
-  .flood-item { padding: 2px 8px !important; }
-  /* Pull Generator section tight against flood bar */
-  .flood-bar + .section { margin-top: 2px !important; }
-
-  /* ── Gas appliances ── */
-  .gas-appliances-box { background: #ffffff !important; border-color: rgba(217,119,6,0.35) !important; padding: 3px 6px !important; margin-bottom: 2px !important; }
-  .gas-appliances-box::before { background: none !important; }
-  .gas-appliances-label { color: #6B7280 !important; font-size: 0.56rem !important; margin-bottom: 2px !important; }
-
-  /* ── Dividers ── */
-  .divider { border-top: 1px solid rgba(217,119,6,0.3) !important; background: #ffffff !important; margin: 2px 0 !important; }
-
-  /* ── Force light mode — overrides dark-mode class on body ── */
-  body.dark-mode .page, body.dark-mode .header, body.dark-mode .section,
-  body.dark-mode .section-header, body.dark-mode .top-grid, body.dark-mode .top-col,
-  body.dark-mode .content, body.dark-mode .flood-bar, body.dark-mode .flood-item,
-  body.dark-mode .footer, body.dark-mode .col-label, body.dark-mode input,
-  body.dark-mode textarea, body.dark-mode label, body.dark-mode .inline-label,
-  body.dark-mode .check-item, body.dark-mode .yn-group, body.dark-mode .yn-label,
-  body.dark-mode .gas-appliances-box, body.dark-mode .gas-appliances-label {
-    background: #ffffff !important; color: #1F2937 !important;
-    text-shadow: none !important; box-shadow: none !important;
-    border-color: rgba(217,119,6,0.35) !important;
-  }
-  body.dark-mode .footer-text { color: #9CA3AF !important; text-shadow: none !important; }
-  body.dark-mode #ver-span    { color: #9CA3AF !important; text-shadow: none !important; }
-
-  /* ── Footer ── */
-  .footer {
-    background: #ffffff !important; border-top: 1px solid rgba(217,119,6,0.3) !important;
-    padding: 3px 16px !important; margin-top: 1px !important;
-    display: flex !important; justify-content: space-between !important;
-    align-items: center !important;
-  }
-  .footer-text { color: #9CA3AF !important; text-shadow: none !important; font-size: 0.5rem !important; }
-  #ver-span    { color: #9CA3AF !important; text-shadow: none !important; font-size: 0.62rem !important; }
-
-  /* ── Seasonal: strip decorative theming for clean print ── */
-  body[class*="seasonal-"] { background: #ffffff !important; }
-  body[class*="seasonal-"] .page   { border-color: #D97706 !important; box-shadow: none !important; }
-  body[class*="seasonal-"] .header { background: #ffffff !important; }
-  body[class*="seasonal-"] .section-header { background: #f5f5f5 !important; color: #D97706 !important; }
-  body[class*="seasonal-"] .section-header::before,
-  body[class*="seasonal-"] .col-label::before {
-    background: #D97706 !important; box-shadow: none !important;
-    animation: none !important; animation-play-state: paused !important;
-  }
-  body[class*="seasonal-"] .doc-title::after,
-  body[class*="seasonal-"] .company-name::after { content: "" !important; }
-  body[class*="seasonal-"] input,
-  body[class*="seasonal-"] textarea { background: #ffffff !important; color: #1F2937 !important; }
-
+  input[type="date"], input[type="number"]              { font-size: var(--fs-print-ipad-input) !important; padding: var(--pd-print-ipad-input) !important; }
+  textarea               { font-size: var(--fs-print-ipad-input) !important; padding: var(--pd-print-ipad-textarea) !important; }
+  .yn-group .yn-label    { font-size: var(--fs-print-ipad-yn-label) !important; padding: var(--pd-print-ipad-yn-label) !important; }
+  .check-item            { padding: var(--pd-print-ipad-check-item) !important; min-height: var(--h-print-ipad-check-item) !important; height: var(--h-print-ipad-check-item) !important; }
+  .check-item span       { font-size: var(--fs-print-ipad-check-item) !important; }
+  input[type="text"], input[type="email"], input[type="tel"],
+  input[type="date"], input[type="number"] { min-height: var(--h-print-ipad-input) !important; height: var(--h-print-ipad-input) !important; }
+  .yn-group .yn-label    { min-height: var(--h-print-ipad-yn-label) !important; height: var(--h-print-ipad-yn-label) !important; line-height: var(--h-print-ipad-yn-label) !important; }
+  .field-row             { min-height: var(--h-print-ipad-field-row) !important; }
+  .inline-row            { min-height: var(--h-print-ipad-inline-row) !important; }
+  .gas-appliances-label  { font-size: var(--fs-print-ipad-gas-label) !important; }
+  .gas-appliances-box    { padding: var(--pd-print-ipad-gas-box) !important; }
+  .header                { padding: var(--pd-print-ipad-header) !important; }
+  .content               { padding: var(--pd-print-ipad-content) !important; }
+  .section-body          { padding: var(--pd-print-ipad-section-body) !important; }
+  .top-col               { padding: var(--pd-print-ipad-top-col) !important; }
+  .flood-item            { padding: var(--pd-print-ipad-flood-item) !important; }
+  .footer                { padding: var(--pd-print-ipad-footer) !important; }
+  .footer-text           { font-size: var(--fs-print-ipad-footer) !important; }
+  #ver-span              { font-size: var(--fs-print-ipad-ver-span) !important; }
+  #gen_notes   { min-height: var(--h-print-ipad-gen-notes) !important; height: var(--h-print-ipad-gen-notes) !important; max-height: var(--h-print-ipad-gen-notes) !important; }
+  #pad_notes   { min-height: var(--h-print-ipad-pad-notes) !important; height: var(--h-print-ipad-pad-notes) !important; max-height: var(--h-print-ipad-pad-notes) !important; }
+  #gas_notes   { min-height: var(--h-print-ipad-gas-notes) !important; height: var(--h-print-ipad-gas-notes) !important; max-height: var(--h-print-ipad-gas-notes) !important; }
+  #ready_notes { min-height: var(--h-print-ipad-ready-notes) !important; height: var(--h-print-ipad-ready-notes) !important; max-height: var(--h-print-ipad-ready-notes) !important; }
+  /* ---- misc overrides : iPad print ---- */
+  .logo-img { width: var(--logo-size-print-ipad) !important; height: var(--logo-size-print-ipad) !important; }
+  .grid-2 { gap: var(--grid23-gap-print-ipad) !important; }
+  .grid-3 { gap: var(--grid23-gap-print-ipad) !important; }
+  .grid-4 { gap: var(--grid4-gap-print-ipad) !important; }
+  .divider { margin: var(--divider-margin-print-ipad) !important; }
+  #gen_size { width: var(--w-print-ipad-gen-size) !important; min-width: var(--w-print-ipad-gen-size) !important; }
+  #num_panels { width: var(--w-print-ipad-num-panels) !important; min-width: var(--w-print-ipad-num-panels) !important; }
+  #num_ts { width: var(--w-print-ipad-num-ts) !important; min-width: var(--w-print-ipad-num-ts) !important; }
+  #ts_type_desc { width: var(--w-print-ipad-ts-type) !important; }
+  #ts_placement { width: var(--w-print-ipad-ts-placement) !important; min-width: var(--w-print-ipad-ts-placement) !important; }
+  #circuits_60a, #circuits_100a { width: var(--w-print-ipad-circuits) !important; min-width: var(--w-print-ipad-circuits) !important; }
+  #stand_height { width: var(--w-print-ipad-stand-height) !important; min-width: var(--w-print-ipad-stand-height) !important; }
+  #new_tank_size, #existing_tank_size { width: var(--w-print-ipad-tank-size) !important; min-width: var(--w-print-ipad-tank-size) !important; }
+  #install_days { width: var(--w-print-ipad-install-days) !important; }
+  .inline-row            { flex-wrap: nowrap !important; }
+  .field-row             { flex-wrap: nowrap !important; }
+  .inline-row .check-group { flex-wrap: nowrap !important; }
 }
 
+/* ===== DESKTOP PRINT — all elements ===== */
+@media print and (min-width: 1361px) {
+  .company-name          { font-size: var(--fs-print-desktop-company-name) !important; }
+  .doc-title             { font-size: var(--fs-print-desktop-doc-title) !important; }
+  .section-header        { font-size: var(--fs-print-desktop-section-header) !important; padding: var(--pd-print-desktop-section-header) !important; }
+  .col-label             { font-size: var(--fs-print-desktop-col-label) !important; padding: var(--pd-print-desktop-col-label) !important; }
+  label                  { font-size: var(--fs-print-desktop-label) !important; }
+  .inline-label          { font-size: var(--fs-print-desktop-inline-label) !important; }
+  input[type="text"], input[type="email"], input[type="tel"],
+  input[type="date"], input[type="number"]              { font-size: var(--fs-print-desktop-input) !important; padding: var(--pd-print-desktop-input) !important; }
+  textarea               { font-size: var(--fs-print-desktop-input) !important; padding: var(--pd-print-desktop-textarea) !important; }
+  .yn-group .yn-label    { font-size: var(--fs-print-desktop-yn-label) !important; padding: var(--pd-print-desktop-yn-label) !important; }
+  .check-item            { padding: var(--pd-print-desktop-check-item) !important; min-height: var(--h-print-desktop-check-item) !important; height: var(--h-print-desktop-check-item) !important; }
+  .check-item span       { font-size: var(--fs-print-desktop-check-item) !important; }
+  input[type="text"], input[type="email"], input[type="tel"],
+  input[type="date"], input[type="number"] { min-height: var(--h-print-desktop-input) !important; height: var(--h-print-desktop-input) !important; }
+  .yn-group .yn-label    { min-height: var(--h-print-desktop-yn-label) !important; height: var(--h-print-desktop-yn-label) !important; line-height: var(--h-print-desktop-yn-label) !important; }
+  .field-row             { min-height: var(--h-print-desktop-field-row) !important; }
+  .inline-row            { min-height: var(--h-print-desktop-inline-row) !important; }
+  .gas-appliances-label  { font-size: var(--fs-print-desktop-gas-label) !important; }
+  .gas-appliances-box    { padding: var(--pd-print-desktop-gas-box) !important; }
+  .header                { padding: var(--pd-print-desktop-header) !important; }
+  .content               { padding: var(--pd-print-desktop-content) !important; }
+  .section-body          { padding: var(--pd-print-desktop-section-body) !important; }
+  .top-col               { padding: var(--pd-print-desktop-top-col) !important; }
+  .flood-item            { padding: var(--pd-print-desktop-flood-item) !important; }
+  .footer                { padding: var(--pd-print-desktop-footer) !important; }
+  .footer-text           { font-size: var(--fs-print-desktop-footer) !important; }
+  #ver-span              { font-size: var(--fs-print-desktop-ver-span) !important; }
+  #gen_notes   { min-height: var(--h-print-desktop-gen-notes) !important; height: var(--h-print-desktop-gen-notes) !important; max-height: var(--h-print-desktop-gen-notes) !important; }
+  #pad_notes   { min-height: var(--h-print-desktop-pad-notes) !important; height: var(--h-print-desktop-pad-notes) !important; max-height: var(--h-print-desktop-pad-notes) !important; }
+  #gas_notes   { min-height: var(--h-print-desktop-gas-notes) !important; height: var(--h-print-desktop-gas-notes) !important; max-height: var(--h-print-desktop-gas-notes) !important; }
+  #ready_notes { min-height: var(--h-print-desktop-ready-notes) !important; height: var(--h-print-desktop-ready-notes) !important; max-height: var(--h-print-desktop-ready-notes) !important; }
+  /* ---- misc overrides : desktop print ---- */
+  .logo-img { width: var(--logo-size-print-desktop) !important; height: var(--logo-size-print-desktop) !important; }
+  .grid-2 { gap: var(--grid23-gap-print-desktop) !important; }
+  .grid-3 { gap: var(--grid23-gap-print-desktop) !important; }
+  .grid-4 { gap: var(--grid4-gap-print-desktop) !important; }
+  .divider { margin: var(--divider-margin-print-desktop) !important; }
+  #gen_size { width: var(--w-print-desktop-gen-size) !important; min-width: var(--w-print-desktop-gen-size) !important; }
+  #num_panels { width: var(--w-print-desktop-num-panels) !important; min-width: var(--w-print-desktop-num-panels) !important; }
+  #num_ts { width: var(--w-print-desktop-num-ts) !important; min-width: var(--w-print-desktop-num-ts) !important; }
+  #ts_type_desc { width: var(--w-print-desktop-ts-type) !important; }
+  #ts_placement { width: var(--w-print-desktop-ts-placement) !important; min-width: var(--w-print-desktop-ts-placement) !important; }
+  #circuits_60a, #circuits_100a { width: var(--w-print-desktop-circuits) !important; min-width: var(--w-print-desktop-circuits) !important; }
+  #stand_height { width: var(--w-print-desktop-stand-height) !important; min-width: var(--w-print-desktop-stand-height) !important; }
+  #new_tank_size, #existing_tank_size { width: var(--w-print-desktop-tank-size) !important; min-width: var(--w-print-desktop-tank-size) !important; }
+  #install_days { width: var(--w-print-desktop-install-days) !important; }
 </style>
 </head>
 
@@ -1263,6 +1423,7 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
   </div>
 
 
+
   <div class="content">
 
     <div class="top-grid">
@@ -1307,6 +1468,7 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
           <input type="text" id="sqft" name="sqft" title="Home square footage — e.g. 2000" class="med" placeholder="e.g. 2000"
                  inputmode="numeric" autocomplete="off" aria-label="Square footage">
         </div>
+        <div class="field-row"><label for="gas">Natural Gas / Propane</label><input type="text" id="gas" name="gas" title="Fuel type available at property — e.g. Natural Gas, Propane, None" class="long" autocomplete="off" aria-label="Natural gas or propane"></div>
         <div class="field-row"><label for="financing">Financing</label><input type="text" id="financing" name="financing" title="Financing option discussed — e.g. Yes, No, Applied, GreenSky" class="long" autocomplete="off" aria-label="Financing option"></div>
         <div class="field-row">
           <fieldset style="border:none;padding:0;margin:0;display:contents;">
@@ -1359,7 +1521,7 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
         </div>
         <div class="inline-row">
           <span class="inline-label">Elec. Run Footage</span>
-          <input type="text" id="elec_run_ft" name="elec_run_ft" title="Total electrical conduit run in feet from transfer switch to generator" class="short" placeholder="ft" inputmode="numeric" autocomplete="off" aria-label="Electrical run footage">
+          <input type="number" id="elec_run_ft" name="elec_run_ft" title="Total electrical conduit run in feet from transfer switch to generator" class="short" placeholder="ft" inputmode="numeric" autocomplete="off" aria-label="Electrical run footage">
           <div class="check-group" role="group" aria-label="Run type">
             <label class="check-item"><input type="checkbox" name="run" value="undergrnd"><span>Under Grnd</span></label>
             <label class="check-item"><input type="checkbox" name="run" value="abovegrnd"><span>Above Grnd</span></label>
@@ -1417,7 +1579,7 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
             <label class="check-item"><input type="radio" name="ts_type" value="ASE"><span>SE</span></label>
             <label class="check-item"><input type="radio" name="ts_type" value="NonASE"><span>Non-SE</span></label>
           </div>
-          <span class="inline-label" style="margin-left:var(--gap-phone-label-lg);">Load Shedding</span>
+          <span class="inline-label" style="margin-left:var(--gap-phone-label-lg);">Load Shed Needed</span>
           <div class="yn-group" role="group" aria-label="Load shed needed">
             <input type="radio" name="loadshed" id="ls_y" value="Y" class="yn-y"><label class="yn-label yn-label-y" for="ls_y">Y</label>
             <input type="radio" name="loadshed" id="ls_n" value="N" class="yn-n"><label class="yn-label yn-label-n" for="ls_n">N</label>
@@ -1568,6 +1730,7 @@ function applyTheme(theme) {
     document.documentElement.setAttribute('data-theme', 'dark');
   } else {
     document.body.classList.remove('dark-mode');
+  _printDebugLog('dark-mode removed — still dark:' + document.body.classList.contains('dark-mode'));
     document.documentElement.setAttribute('data-theme', 'light');
   }
   document.documentElement.classList.remove('dark-mode-pending');
@@ -2015,6 +2178,7 @@ function printForm() {
     '  --glow: none !important; --icon-color-primary: #D97706 !important; --icon-color-section: #D97706 !important;',
     '}',
     'input[type=radio],input[type=checkbox],.check-item input[type=radio],.check-item input[type=checkbox] { accent-color:#D97706!important; }',
+    '@media print {',
     '  *, *::before, *::after { background:white!important;color:#1F2937!important;box-shadow:none!important;text-shadow:none!important;border-color:rgba(217,119,6,0.4)!important;animation:none!important;animation-play-state:paused!important;transition:none!important; }',
     '  svg, svg * { background:transparent!important; }',
     '  .doc-title,.company-name { color:#D97706!important;text-shadow:none!important; }',
@@ -2041,75 +2205,30 @@ function printForm() {
   // ── Viewport fix for Mobile Safari ──
   var vp = document.querySelector('meta[name=viewport]');
   var origViewport = vp ? vp.getAttribute('content') : null;
-
-  // ── Detect iPad vs iPhone ──
-  var isIPad   = /iPad/.test(ua) || (/Macintosh/.test(ua) && 'ontouchend' in document);
-  var isIPhone = isMobileSafari && !isIPad;
-
   if (isMobileSafari && vp) {
-    // Set viewport wider than paper — Safari auto-scales content to fit paper width
-    // 960px viewport → 816px paper = 0.85 scale, fits content on one page
-    vp.setAttribute('content', 'width=960, initial-scale=1.0');
-
+    // Don't change viewport width — causes right-edge cutoff on phone
+    // vp.setAttribute('content', 'width=1050, initial-scale=1.0');
     var safariPageFix = document.createElement('style');
     safariPageFix.id = 'safari-page-fix';
     safariPageFix.textContent = [
-      // Fix gas appliances — tighten gap so Pool Heater stays on first row
-      '.gas-appliances-box .check-group { gap:1px!important; }',
-      // Page setup
-      '@page { size: 8.5in 11in; margin: 0.1in; }',
-      // Unlock overflow containers
-      '.page { overflow:visible!important; padding-top:0!important; min-height:0!important; border:1.5pt solid #D97706!important; box-shadow:none!important; }',
-      '.content { overflow:visible!important; overflow-y:visible!important; flex:none!important; padding:4px 8px!important; }',
-      // Force two-column layout
-      '.top-grid { display:grid!important; grid-template-columns:1fr 1fr!important; margin-bottom:0!important; box-shadow:none!important; }',
-      '.top-col { padding:2px 6px!important; }',
-      '.top-col:first-child { border-right:1px solid rgba(217,119,6,0.35)!important; border-bottom:none!important; }',
-      // Header
-      '.header { padding:4px 12px!important; min-height:44px!important; box-shadow:none!important; }',
-      '.company-name { font-size:0.9rem!important; }',
-      '.doc-title { font-size:0.9rem!important; }',
-      '.logo-img { width:36px!important; height:36px!important; }',
-      // Section titles & col-labels
-      '.section-header { padding:2px 8px!important; font-size:0.55rem!important; }',
-      '.col-label { font-size:0.55rem!important; padding:1px 6px 1px 5px!important; margin-bottom:1px!important; }',
-      // Section spacing
-      '.section { margin-bottom:1px!important; box-shadow:none!important; }',
-      '.section-body { padding:2px 6px!important; }',
-      '.flood-bar { margin-bottom:0!important; padding:0 6px!important; }',
-      '.flood-item { padding:1px 6px!important; }',
-      '.flood-bar + .section { margin-top:1px!important; }',
-      // Labels
-      'label { font-size:0.55rem!important; }',
-      '.inline-label { font-size:0.55rem!important; }',
-      // Rows
-      '.field-row  { min-height:18px!important; flex-wrap:nowrap!important; margin-bottom:1px!important; }',
-      '.inline-row { min-height:18px!important; flex-wrap:wrap!important; margin-bottom:1px!important; }',
-      // Inputs
-      'input[type=text],input[type=email],input[type=tel],input[type=date],input[type=number] { min-height:16px!important; height:16px!important; font-size:0.72rem!important; padding:0 3px!important; }',
-      'input[type=date] { min-width:0!important; flex-shrink:1!important; width:auto!important; }',
-      // Y/N toggles
-      '.yn-group .yn-label { height:16px!important; min-height:16px!important; line-height:16px!important; font-size:0.55rem!important; padding:0 6px!important; }',
-      // Check items
-      '.check-item { height:16px!important; min-height:16px!important; padding:0 4px 0 3px!important; }',
-      '.check-item span { font-size:0.52rem!important; }',
-      '.check-item input[type=checkbox],.check-item input[type=radio] { width:10px!important; height:10px!important; min-width:10px!important; min-height:10px!important; }',
-      // Gas appliances
-      '.gas-appliances-box { padding:2px 5px!important; }',
-      '.gas-appliances-label { font-size:0.52rem!important; margin-bottom:1px!important; }',
-      // Textareas
-      '#gen_notes   { height:28px!important; min-height:28px!important; max-height:28px!important; }',
-      '#pad_notes   { height:22px!important; min-height:22px!important; max-height:22px!important; }',
-      '#gas_notes   { height:28px!important; min-height:28px!important; max-height:28px!important; }',
-      '#ready_notes { height:22px!important; min-height:22px!important; max-height:22px!important; width:100%!important; box-sizing:border-box!important; }',
-      // Specific input widths
-      '#circuits_60a,#circuits_100a,#num_panels,#num_ts { width:4ch!important; min-width:4ch!important; max-width:4ch!important; }',
-      '#circuits_60a,#circuits_100a { width:3ch!important; min-width:3ch!important; max-width:3ch!important; }',
-      '#elec_run_ft { width:5ch!important; min-width:5ch!important; flex-shrink:0!important; }',
-      // Footer
-      '.footer { margin-top:1px!important; padding:2px 12px!important; }',
-      '.footer-text { font-size:0.45rem!important; }',
-      '#ver-span { font-size:0.55rem!important; }'
+      '@page { size: 8.5in 10.2in; margin: 0.1in; }',
+      '@media print {',
+      '  .field-row,.inline-row { min-height:var(--h-print-ipad-field-row)!important; }',
+      '  .field-row { flex-wrap:nowrap!important; }',
+      '  .inline-row { flex-wrap:nowrap!important; overflow:visible!important; }',
+      '  .inline-row .inline-label { white-space:nowrap!important; flex-shrink:0!important; }',
+      '  .inline-row input[type=text],.inline-row input[type=number] { min-width:0!important;flex-shrink:1!important; }',
+      '  .inline-row .yn-group { flex-shrink:0!important; }',
+      '  .section-body,.section,.page { overflow:visible!important; }',
+      '  input[type=date] { min-width:0!important;flex-shrink:1!important;width:auto!important; }',
+      '  input[type=text],input[type=email],input[type=tel],input[type=date],input[type=number] { min-height:var(--h-print-ipad-input)!important;height:var(--h-print-ipad-input)!important;font-size:var(--fs-print-ipad-input)!important; }',
+      '  .yn-group,.yn-group .yn-label { height:var(--h-print-ipad-yn-label)!important;min-height:var(--h-print-ipad-yn-label)!important;line-height:var(--h-print-ipad-yn-label)!important; }',
+      '  .check-item { height:var(--h-print-ipad-check-item)!important;min-height:var(--h-print-ipad-check-item)!important; }',
+      '  #gen_notes  { height:var(--h-print-ipad-gen-notes)!important;min-height:var(--h-print-ipad-gen-notes)!important;max-height:var(--h-print-ipad-gen-notes)!important; }',
+      '  #pad_notes  { height:var(--h-print-ipad-pad-notes)!important;min-height:var(--h-print-ipad-pad-notes)!important;max-height:var(--h-print-ipad-pad-notes)!important; }',
+      '  #gas_notes  { height:var(--h-print-ipad-gas-notes)!important;min-height:var(--h-print-ipad-gas-notes)!important;max-height:var(--h-print-ipad-gas-notes)!important; }',
+      '  #ready_notes { height:var(--h-print-ipad-ready-notes)!important;min-height:var(--h-print-ipad-ready-notes)!important;max-height:var(--h-print-ipad-ready-notes)!important;width:100%!important;margin-top:2px!important;box-sizing:border-box!important; }',
+      '}'
     ].join('\n');
     document.head.appendChild(safariPageFix);
   }
@@ -2130,13 +2249,11 @@ function printForm() {
     el = document.getElementById('force-print-light'); if (el) el.remove();
     el = document.getElementById('safari-page-fix');  if (el) el.remove();
     el = document.getElementById('no-transitions');   if (el) el.remove();
-    el = document.getElementById('safari-print-debug'); if (el) el.remove();
 if (wasDark) document.body.classList.add('dark-mode');
     _printSeasonalClasses.forEach(function(c) { document.body.classList.add(c); });
     if (_printSeasonalCanvas) _printSeasonalCanvas.style.display = '';
     if (_seasonalSheet) setTimeout(function() { document.head.appendChild(_seasonalSheet); }, 500);
     // Viewport not changed — no restore needed
-    if (origViewport && vp) vp.setAttribute('content', origViewport);
     document.title = prevTitle;
   }
 
@@ -2166,57 +2283,15 @@ if (wasDark) document.body.classList.add('dark-mode');
   // ── Flush layout then print ──
   void document.body.offsetHeight;
 
-  // ── Safari Print Debug Overlay ──
-  if (isMobileSafari) {
-    var page   = document.getElementById('page');
-    var content = document.querySelector('.content');
-    var dbg = document.createElement('div');
-    dbg.id = 'safari-print-debug';
-    dbg.style.cssText = [
-      'position:fixed', 'bottom:0', 'left:0', 'right:0', 'z-index:999999',
-      'background:rgba(0,0,0,0.85)', 'color:#00FF88', 'font-family:monospace',
-      'font-size:11px', 'padding:8px 12px', 'line-height:1.6',
-      '-webkit-print-color-adjust:exact', 'print-color-adjust:exact'
-    ].join('!important;') + '!important;';
-
-    var vw        = window.innerWidth;
-    var vh        = window.innerHeight;
-    var pageH     = page  ? page.scrollHeight  : 'n/a';
-    var contentH  = content ? content.scrollHeight : 'n/a';
-    var contentOF = content ? window.getComputedStyle(content).overflow      : 'n/a';
-    var contentOY = content ? window.getComputedStyle(content).overflowY     : 'n/a';
-    var pagePT    = page    ? window.getComputedStyle(page).paddingTop        : 'n/a';
-    var pageOF    = page    ? window.getComputedStyle(page).overflow          : 'n/a';
-    var vpContent = vp ? vp.getAttribute('content') : 'n/a';
-    var dpr       = window.devicePixelRatio || 1;
-    var paperPx   = Math.round(8.5 * 96);
-    var scaleEst  = (paperPx / vw).toFixed(3);
-
-    dbg.innerHTML = [
-      '<b style="color:#FFD700">── Safari Print Debug ──</b>',
-      'Viewport:       ' + vw + ' × ' + vh + 'px  (dpr:' + dpr + ')',
-      'VP meta:        ' + vpContent,
-      'Scale estimate: ' + scaleEst + '  (paper=' + paperPx + 'px / vw=' + vw + ')',
-      'page.scrollH:   ' + pageH + 'px  (padTop:' + pagePT + '  overflow:' + pageOF + ')',
-      'content.scrollH:' + contentH + 'px  (overflow:' + contentOF + '  overflowY:' + contentOY + ')',
-      'Paper budget:   ' + Math.round(10.8 * 96) + 'px (11in - 0.1in margins × 2)',
-      'Fits on 1 page: ' + (Math.round(pageH * parseFloat(scaleEst)) <= Math.round(10.8 * 96) ? '✅ YES' : '❌ NO — est. ' + Math.round(pageH * parseFloat(scaleEst)) + 'px scaled')
-    ].join('<br>');
-
-    document.body.appendChild(dbg);
-  }
-
   // ── Restore triggers ──
-  // iPhone/iPad Safari: afterprint fires immediately on iOS 16+ before dialog closes — delay restore
-  // Mac Safari + all others: standard afterprint
   if (isMobileSafari) {
+    // afterprint fires immediately on iOS 26 — wait 5s before restoring
     window.addEventListener('afterprint', function _iosAfter() {
       window.removeEventListener('afterprint', _iosAfter);
       setTimeout(restore, 300);
     });
     setTimeout(function() { window.print(); }, 800);
   } else {
-    // Mac Safari, Chrome, Firefox, Edge, desktop
     window.addEventListener('afterprint', function _onAfterPrint() {
       window.removeEventListener('afterprint', _onAfterPrint);
       restore();
@@ -2273,7 +2348,7 @@ function capturePageToCanvas() {
     var prevOverflow = page.style.overflow;
     var prevBodyPad  = document.body.style.padding;
 
-    var CAPTURE_W = 816;
+    var CAPTURE_W = 1050;
     var PAPER_H   = Math.round(CAPTURE_W * 11 / 8.5);
 
     page.style.width     = CAPTURE_W + 'px';
@@ -3752,7 +3827,17 @@ function injectSeasonalStyles() {
     '@media screen { body.seasonal-christmas:not(.dark-mode) .col-label::before { animation:christmas-pulse 1.5s ease-in-out infinite !important; } }',
     '@keyframes christmas-pulse { 0%,100%{background:#DC2626;box-shadow:0 0 8px #DC2626;} 50%{background:#16A34A;box-shadow:0 0 8px #16A34A;} }',
     'body.seasonal-christmas .doc-title::after { content:" 🎄"; }',
-    'body.seasonal-christmas .company-name::after { content:" ❄"; font-size:0.8em; opacity:0.6; }'
+    'body.seasonal-christmas .company-name::after { content:" ❄"; font-size:0.8em; opacity:0.6; }',
+    '@media print {',
+    '  #seasonal-canvas { display:none !important; }',
+    '  body[class*="seasonal-"] .section-header::before, body[class*="seasonal-"] .col-label::before { background:#D97706 !important; box-shadow:none !important; animation:none !important; animation-play-state:paused !important; }',
+    '  body[class*="seasonal-"] { background:#ffffff !important; }',
+    '  body[class*="seasonal-"] .page { border-color:#D97706 !important; box-shadow:none !important; }',
+    '  body[class*="seasonal-"] .section-header { background:#f5f5f5 !important; color:#D97706 !important; }',
+    '  body[class*="seasonal-"] .header { background:#ffffff !important; }',
+    '  body[class*="seasonal-"] .doc-title::after, body[class*="seasonal-"] .company-name::after { content:"" !important; }',
+    '  body[class*="seasonal-"] input, body[class*="seasonal-"] textarea { background:#ffffff !important; color:#1F2937 !important; }',
+    '}'
   ].join('\n');
   document.head.appendChild(s);
 }
