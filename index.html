@@ -120,16 +120,17 @@
   --fs-desktop-address-suggestion: 0.78rem;  /* address autocomplete dropdown items              */
 
   /* ---- PRINT : PHONE ---- */
-  --fs-print-phone-company-name:   1.3rem;  /* "Always On Generators" in PDF                   */
+  --fs-print-phone-company-name:   1.2rem;  /* "Always On Generators" in PDF                   */
   --fs-print-phone-doc-title:      1.2rem;  /* "Generator Installation Estimate" in PDF         */
-  --fs-print-phone-section-header: 0.8rem;  /* section title bars in PDF                        */
-  --fs-print-phone-col-label:      0.8rem;  /* column label pills in PDF                        */
-  --fs-print-phone-label:          0.8rem;  /* field labels in PDF (Name, Phone, Best Email…)   */
-  --fs-print-phone-inline-label:   0.75rem;  /* inline labels in PDF                             */
-  --fs-print-phone-input:          1rem;  /* text inside input fields in PDF                  */
-  --fs-print-phone-yn-label:       0.75rem;  /* Y / N toggle buttons in PDF                      */
-  --fs-print-phone-check-item:     0.75rem;  /* checkbox & radio options in PDF                  */
-  --fs-print-phone-gas-label:      0.7rem;  /* gas appliances label in PDF                      */
+  --fs-print-phone-section-header: 0.9rem;  /* section title bars in PDF                        */
+  --fs-print-phone-col-label:      0.9rem;  /* column label pills in PDF                        */
+  --fs-print-phone-label:          0.85rem;  /* field labels in PDF (Name, Phone, Best Email…)   */
+  --fs-print-phone-inline-label:   0.85rem;  /* inline labels in PDF                             */
+  --fs-print-phone-input:          1.2rem;  /* text inside input fields in PDF                  */
+  --fs-print-phone-notes:          1.2rem;  /* text inside note boxes (gen/pad/gas/ready) in PDF */
+  --fs-print-phone-yn-label:       0.8rem;  /* Y / N toggle buttons in PDF                      */
+  --fs-print-phone-check-item:     0.8rem;  /* checkbox & radio options in PDF                  */
+  --fs-print-phone-gas-label:      0.75rem;  /* gas appliances label in PDF                      */
 
   /* ---- PRINT : iPAD ---- */
   --fs-print-ipad-company-name:    1.05rem;  /* "Always On Generators" in iPad PDF               */
@@ -139,6 +140,7 @@
   --fs-print-ipad-label:           0.8rem;  /* field labels in iPad PDF                         */
   --fs-print-ipad-inline-label:    0.8rem;  /* inline labels in iPad PDF                        */
   --fs-print-ipad-input:            1.5rem;  /* text inside input fields in iPad PDF             */
+  --fs-print-ipad-notes:           1.5rem;  /* text inside note boxes (gen/pad/gas/ready) in iPad PDF */
   --fs-print-ipad-yn-label:        0.75rem;  /* Y / N toggle buttons in iPad PDF                 */
   --fs-print-ipad-check-item:      0.75rem;  /* checkbox & radio options in iPad PDF             */
   --fs-print-ipad-gas-label:       0.7rem;  /* gas appliances label in iPad PDF                 */
@@ -151,6 +153,7 @@
   --fs-print-desktop-label:          0.8rem;  /* field labels in desktop PDF                      */
   --fs-print-desktop-inline-label:   0.8rem;  /* inline labels in desktop PDF                     */
   --fs-print-desktop-input:          0.88rem;  /* text inside input fields in desktop PDF          */
+  --fs-print-desktop-notes:         0.88rem;  /* text inside note boxes (gen/pad/gas/ready) in desktop PDF */
   --fs-print-desktop-yn-label:       0.75rem;  /* Y / N toggle buttons in desktop PDF              */
   --fs-print-desktop-check-item:     0.75rem;  /* checkbox & radio options in desktop PDF          */
   --fs-print-desktop-gas-label:      0.65rem;  /* gas appliances label in desktop PDF              */
@@ -262,8 +265,8 @@
      ============================================= */
 
   /* ---- SCREEN HEIGHTS : PHONE ---- */
-  --h-phone-input:        35px;   /* text fields (Name, Address, Phone, Best Email…) */
-  --h-phone-input-date:   35px;   /* date fields (Today's Date, Est. Done On)        */
+  --h-phone-input:        36px;   /* text fields (Name, Address, Phone, Best Email…) */
+  --h-phone-input-date:   36px;   /* date fields (Today's Date, Est. Done On)        */
   --w-phone-today:         145px;  /* Today's Date width (phone)                      */
   --w-phone-est-date:      145px;  /* Estimate Date width (phone)                     */
   --w-phone-est-done-on:   145px;  /* Estimate Done On width (phone)                  */
@@ -308,11 +311,11 @@
   --h-print-phone-field-row:    31px;   /* row container in PDF                          */
   --h-print-phone-inline-row:   31px;   /* inline row in PDF                             */
   --h-print-phone-yn-label:     27px;   /* Y/N button height in PDF                      */
-  --h-print-phone-check-item:   27px;   /* checkbox/radio pill height in PDF             */
+  --h-print-phone-check-item:   26px;   /* checkbox/radio pill height in PDF             */
   --h-print-phone-gen-notes:    40px;   /* Generator notes text box height in PDF        */
-  --h-print-phone-pad-notes:    40px;   /* Precast Pad notes text box height in PDF      */
+  --h-print-phone-pad-notes:    32px;   /* Precast Pad notes text box height in PDF      */
   --h-print-phone-gas-notes:    40px;   /* Fuel Tank / gas appliances notes box in PDF   */
-  --h-print-phone-ready-notes:  40px;   /* Install Details ready/notes box in PDF        */
+  --h-print-phone-ready-notes:  38px;   /* Install Details ready/notes box in PDF        */
 
   /* ---- PRINT HEIGHTS : iPAD ---- */
   --h-print-ipad-input:         35px;  /* text fields in iPad PDF                          */
@@ -347,20 +350,20 @@
   --fs-phone-ver-span:             0.72rem;   /* "Ver. 1.1" version number                        */
 
   /* ---- SCREEN FOOTER : iPAD ---- */
-  --fs-ipad-footer:                0.72rem;  /* "GENERATOR INSTALLATION ESTIMATE · CONFIDENTIAL" */
+  --fs-ipad-footer:                0.55rem;  /* "GENERATOR INSTALLATION ESTIMATE · CONFIDENTIAL" */
   --fs-ipad-ver-span:              0.72rem;  /* "Ver. 1.1" version number                        */
 
   /* ---- SCREEN FOOTER : DESKTOP ---- */
-  --fs-desktop-footer:             0.72rem;  /* "GENERATOR INSTALLATION ESTIMATE · CONFIDENTIAL" */
+  --fs-desktop-footer:             0.55rem;  /* "GENERATOR INSTALLATION ESTIMATE · CONFIDENTIAL" */
   --fs-desktop-ver-span:           0.72rem;  /* "Ver. 1.1" version number                        */
 
   /* ---- PRINT FOOTER : PHONE ---- */
-  --fs-print-phone-footer:         0.72rem;  /* confidential text in phone PDF                   */
+  --fs-print-phone-footer:         0.55rem;  /* confidential text in phone PDF                   */
   --fs-print-phone-ver-span:       0.72rem;  /* "Ver. 1.1" in phone PDF                          */
 
   /* ---- PRINT FOOTER : iPAD ---- */
-  --fs-print-ipad-footer:          0.72rem;  /* confidential text in iPad PDF                    */
-  --fs-print-ipad-ver-span:        0.72rem;  /* "Ver. 1.1" in iPad PDF                           */
+  --fs-print-ipad-footer:          0.3rem;  /* confidential text in iPad PDF                    */
+  --fs-print-ipad-ver-span:        0.3rem;  /* "Ver. 1.1" in iPad PDF                           */
 
   /* ---- PRINT FOOTER : DESKTOP ---- */
   --fs-print-desktop-footer:       0.55rem;  /* confidential text in desktop PDF                 */
@@ -376,16 +379,16 @@
   --logo-size-screen:            40px;   /* AOG logo square size on screen (phone)           */
   --logo-size-screen-ipad:       40px;   /* AOG logo square size on screen (iPad)            */
   --logo-size-screen-desktop:    40px;   /* AOG logo square size on screen (desktop)         */
-  --logo-size-print:             50px;   /* AOG logo square size in PDF (phone)              */
-  --logo-size-print-ipad:        50px;   /* AOG logo square size in PDF (iPad)               */
-  --logo-size-print-desktop:     50px;   /* AOG logo square size in PDF (desktop)            */
+  --logo-size-print:             48px;   /* AOG logo square size in PDF (phone)              */
+  --logo-size-print-ipad:        48px;   /* AOG logo square size in PDF (iPad)               */
+  --logo-size-print-desktop:     48px;   /* AOG logo square size in PDF (desktop)            */
 
   /* ---- FUEL LABEL (Underground / Above Ground / Attic) ---- */
   --fs-fuel-label:               0.75rem; /* phone — "Underground (ft)" / "Above Ground (ft)" / "Attic (ft)" */
   --fs-fuel-label-ipad:          0.75rem; /* iPad                                             */
   --fs-fuel-label-desktop:       0.75rem; /* desktop                                          */
-  --fs-fuel-label-print:         0.65rem; /* phone PDF                                        */
-  --fs-fuel-label-print-ipad:    0.65rem; /* iPad PDF                                         */
+  --fs-fuel-label-print:         0.75rem; /* phone PDF                                        */
+  --fs-fuel-label-print-ipad:    0.75rem; /* iPad PDF                                         */
   --fs-fuel-label-print-desktop: 0.75rem; /* desktop PDF                                      */
 
   /* ---- DIVIDER ---- */
@@ -567,16 +570,16 @@
   --mb-pad-notes-phone:        4px;   /* space below Precast Pad notes box to section border (phone screen)   */
   --mb-pad-notes-ipad:         4px;   /* space below Precast Pad notes box to section border (iPad screen)    */
   --mb-pad-notes-desktop:      4px;   /* space below Precast Pad notes box to section border (desktop screen) */
-  --mb-pad-notes-print:        1px;   /* space below Precast Pad notes box to section border (iPhone PDF)     */
-  --mb-pad-notes-print-ipad:   1px;   /* space below Precast Pad notes box to section border (iPad PDF)       */
+  --mb-pad-notes-print:        4px;   /* space below Precast Pad notes box to section border (iPhone PDF)     */
+  --mb-pad-notes-print-ipad:   4px;   /* space below Precast Pad notes box to section border (iPad PDF)       */
   --mb-pad-notes-print-desktop:4px;   /* space below Precast Pad notes box to section border (desktop PDF)    */
 
   /* ---- FUEL RUN ROW BOTTOM MARGIN ---- */
   --mb-fuel-run-phone:        4px;   /* space below Underground/Above Ground/Attic row to section border (phone screen)   */
   --mb-fuel-run-ipad:         4px;   /* space below Underground/Above Ground/Attic row to section border (iPad screen)    */
   --mb-fuel-run-desktop:      4px;   /* space below Underground/Above Ground/Attic row to section border (desktop screen) */
-  --mb-fuel-run-print:        1px;   /* space below Underground/Above Ground/Attic row to section border (iPhone PDF)     */
-  --mb-fuel-run-print-ipad:   1px;   /* space below Underground/Above Ground/Attic row to section border (iPad PDF)       */
+  --mb-fuel-run-print:        4px;   /* space below Underground/Above Ground/Attic row to section border (iPhone PDF)     */
+  --mb-fuel-run-print-ipad:   4px;   /* space below Underground/Above Ground/Attic row to section border (iPad PDF)       */
   --mb-fuel-run-print-desktop:4px;   /* space below Underground/Above Ground/Attic row to section border (desktop PDF)    */
 
   --icon-color-primary: #D97706;
@@ -1065,7 +1068,7 @@ body.mobile-safari { -webkit-print-color-adjust: exact; }
   #est_date { width: var(--w-print-ipad-est-date) !important; min-width: var(--w-print-ipad-est-date) !important; }
   #est_done_on { width: var(--w-print-ipad-est-done-on) !important; min-width: var(--w-print-ipad-est-done-on) !important; }
   body.mobile-safari input[type="date"] { min-width: 0 !important; width: auto !important; flex-shrink: 1 !important; }
-  textarea { border: 1px solid #D97706 !important; resize: none !important; overflow: hidden !important; padding: var(--pd-print-phone-textarea) !important; margin-top: 3px !important; font-size: var(--fs-print-phone-input) !important; background: #ffffff !important; color: #1F2937 !important; box-shadow: none !important; }
+  textarea { border: 1px solid #D97706 !important; resize: none !important; overflow: hidden !important; padding: var(--pd-print-phone-textarea) !important; margin-top: 3px !important; font-size: var(--fs-print-phone-notes) !important; background: #ffffff !important; color: #1F2937 !important; box-shadow: none !important; }
   #gen_notes  { min-height: var(--h-print-phone-gen-notes) !important; height: var(--h-print-phone-gen-notes) !important; max-height: var(--h-print-phone-gen-notes) !important; }
   #pad_notes  { min-height: var(--h-print-phone-pad-notes) !important; height: var(--h-print-phone-pad-notes) !important; max-height: var(--h-print-phone-pad-notes) !important; }
   #pad_notes { margin-bottom: var(--mb-pad-notes-print) !important; }
@@ -1325,7 +1328,7 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
   .inline-label          { font-size: var(--fs-print-ipad-inline-label) !important; }
   input[type="text"], input[type="email"], input[type="tel"],
   input[type="date"], input[type="number"]              { font-size: var(--fs-print-ipad-input) !important; padding: var(--pd-print-ipad-input) !important; }
-  textarea               { font-size: var(--fs-print-ipad-input) !important; padding: var(--pd-print-ipad-textarea) !important; }
+  textarea               { font-size: var(--fs-print-ipad-notes) !important; padding: var(--pd-print-ipad-textarea) !important; }
   .yn-group .yn-label    { font-size: var(--fs-print-ipad-yn-label) !important; padding: var(--pd-print-ipad-yn-label) !important; }
   .check-item            { padding: var(--pd-print-ipad-check-item) !important; min-height: var(--h-print-ipad-check-item) !important; height: var(--h-print-ipad-check-item) !important; }
   .check-item span       { font-size: var(--fs-print-ipad-check-item) !important; }
@@ -1389,7 +1392,7 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
   .inline-label          { font-size: var(--fs-print-desktop-inline-label) !important; }
   input[type="text"], input[type="email"], input[type="tel"],
   input[type="date"], input[type="number"]              { font-size: var(--fs-print-desktop-input) !important; padding: var(--pd-print-desktop-input) !important; }
-  textarea               { font-size: var(--fs-print-desktop-input) !important; padding: var(--pd-print-desktop-textarea) !important; }
+  textarea               { font-size: var(--fs-print-desktop-notes) !important; padding: var(--pd-print-desktop-textarea) !important; }
   .yn-group .yn-label    { font-size: var(--fs-print-desktop-yn-label) !important; padding: var(--pd-print-desktop-yn-label) !important; }
   .check-item            { padding: var(--pd-print-desktop-check-item) !important; min-height: var(--h-print-desktop-check-item) !important; height: var(--h-print-desktop-check-item) !important; }
   .check-item span       { font-size: var(--fs-print-desktop-check-item) !important; }
