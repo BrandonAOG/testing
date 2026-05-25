@@ -143,7 +143,7 @@
   --fs-print-ipad-notes:           0.8rem;  /* text inside note boxes (gen/pad/gas/ready) in iPad PDF */
   --fs-print-ipad-yn-label:        0.8rem;  /* Y / N toggle buttons in iPad PDF                 */
   --fs-print-ipad-check-item:      0.8rem;  /* checkbox & radio options in iPad PDF             */
-  --fs-print-ipad-gas-label:       0.7rem;  /* gas appliances label in iPad PDF                 */
+  --fs-print-ipad-gas-label:       0.75rem;  /* gas appliances label in iPad PDF                 */
 
   /* ---- PRINT : DESKTOP ---- */
   --fs-print-desktop-company-name:   1.05rem;  /* "Always On Generators" in desktop PDF            */
@@ -232,7 +232,7 @@
   --pd-print-ipad-content:           4px 14px;        /* outer page margins in iPad PDF                       */
   --pd-print-ipad-section-header:    4px 12px;        /* section title bars in iPad PDF                       */
   --pd-print-ipad-section-body:      4px 12px;        /* inside section content in iPad PDF                   */
-  --pd-print-ipad-top-col:           6px 12px 0 12px;        /* Customer Info & Property Info columns in iPad PDF     */
+  --pd-print-ipad-top-col:           6px 12px;        /* Customer Info & Property Info columns in iPad PDF     */
   --pd-print-ipad-col-label:         2px 10px 2px 7px; /* column label pill in iPad PDF                       */
   --pd-print-ipad-input:             2px 5px;         /* inside text fields in iPad PDF                       */
   --pd-print-ipad-textarea:          5px 8px;         /* inside note boxes in iPad PDF                        */
@@ -240,7 +240,7 @@
   --pd-print-ipad-check-item:        0 8px 0 6px;     /* checkbox/radio pills in iPad PDF                     */
   --pd-print-ipad-flood-item:        3px 12px;        /* flood bar items in iPad PDF                          */
   --pd-print-ipad-gas-box:           4px 8px;         /* gas appliances box in iPad PDF                       */
-  --pd-print-ipad-footer:            2px 20px;        /* footer bar in iPad PDF                               */
+  --pd-print-ipad-footer:            4px 20px;        /* footer bar in iPad PDF                               */
 
   /* ---- PRINT PADDING : DESKTOP ---- */
   --pd-print-desktop-header:         10px 28px;       /* header bar in desktop PDF                            */
@@ -318,10 +318,10 @@
   --h-print-phone-ready-notes:  38px;   /* Install Details ready/notes box in PDF        */
 
   /* ---- PRINT HEIGHTS : iPAD ---- */
-  --h-print-ipad-input:         35px;  /* text fields in iPad PDF                          */
-  --h-print-ipad-field-row:     35px;  /* row container in iPad PDF                        */
-  --h-print-ipad-inline-row:    32px;  /* inline row in iPad PDF                           */
-  --h-print-ipad-yn-label:      26px;  /* Y/N button height in iPad PDF                    */
+  --h-print-ipad-input:         31px;  /* text fields in iPad PDF                          */
+  --h-print-ipad-field-row:     31px;  /* row container in iPad PDF                        */
+  --h-print-ipad-inline-row:    31px;  /* inline row in iPad PDF                           */
+  --h-print-ipad-yn-label:      27px;  /* Y/N button height in iPad PDF                    */
   --h-print-ipad-check-item:    26px;  /* checkbox/radio pill height in iPad PDF           */
   --h-print-ipad-gen-notes:     40px;   /* Generator notes text box height in PDF        */
   --h-print-ipad-pad-notes:     32px;   /* Precast Pad notes text box height in PDF      */
@@ -362,8 +362,8 @@
   --fs-print-phone-ver-span:       0.72rem;  /* "Ver. 1.1" in phone PDF                          */
 
   /* ---- PRINT FOOTER : iPAD ---- */
-  --fs-print-ipad-footer:          0.3rem;  /* confidential text in iPad PDF                    */
-  --fs-print-ipad-ver-span:        0.3rem;  /* "Ver. 1.1" in iPad PDF                           */
+  --fs-print-ipad-footer:          0.55rem;  /* confidential text in iPad PDF                    */
+  --fs-print-ipad-ver-span:        0.72rem;  /* "Ver. 1.1" in iPad PDF                           */
 
   /* ---- PRINT FOOTER : DESKTOP ---- */
   --fs-print-desktop-footer:       0.55rem;  /* confidential text in desktop PDF                 */
@@ -430,7 +430,7 @@
 
   /* ---- DESKTOP PRINT BASE FONT ---- */
   --fs-print-phone-base:         13.08px; /* base html font-size for phone print             */
-  --fs-print-ipad-base:          12.9px; /* base html font-size for iPad print              */
+  --fs-print-ipad-base:          13.08px; /* base html font-size for iPad print              */
   --fs-print-desktop-base:       13.08px; /* base html font-size for desktop print           */
 
   /* ---- INPUT FIELD WIDTHS — PHONE ---- */
@@ -1373,7 +1373,7 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
   .section-body          { padding: var(--pd-print-ipad-section-body) !important; }
   .top-col               { padding: var(--pd-print-ipad-top-col) !important; }
   .flood-item            { padding: var(--pd-print-ipad-flood-item) !important; }
-  .footer                { padding: var(--pd-print-ipad-footer) !important; }
+  .footer                { padding: var(--pd-print-ipad-footer) !important; position: relative !important; z-index: 50 !important; }
   .footer-text           { font-size: var(--fs-print-ipad-footer) !important; }
   #ver-span              { font-size: var(--fs-print-ipad-ver-span) !important; }
   #gen_notes   { min-height: var(--h-print-ipad-gen-notes) !important; height: var(--h-print-ipad-gen-notes) !important; max-height: var(--h-print-ipad-gen-notes) !important; }
