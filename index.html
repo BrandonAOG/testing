@@ -2422,23 +2422,21 @@ function printForm() {
     safariPageFix.id = 'safari-page-fix';
     safariPageFix.textContent = [
       '@page { size: 8.5in 11.1in; margin: 0.0in; }',
-      '@media print {',
-      '  .field-row,.inline-row { min-height:var(--h-print-ipad-field-row)!important; }',
-      '  .field-row { flex-wrap:nowrap!important; }',
-      '  .inline-row { flex-wrap:wrap!important; overflow:visible!important; }',
-      '  .section-body,.section,.page { overflow:visible!important; }',
-      '  .section-body { padding:var(--pd-print-ipad-section-body)!important; }',
-      '  #transfer-switch-row .section-body { padding:4px 12px var(--pd-ts-bottom-print-ipad) 12px!important; }',
-      '  #transfer-switch-row .inline-row:last-child { min-height:0!important;margin-bottom:0!important; }',
-      '  input[type=date] { min-width:0!important;flex-shrink:1!important;width:auto!important; }',
-      '  input[type=text],input[type=email],input[type=tel],input[type=date],input[type=number] { min-height:var(--h-print-ipad-input)!important;height:var(--h-print-ipad-input)!important;font-size:20px!important; }',
-      '  .yn-group,.yn-group .yn-label { height:var(--h-print-ipad-yn-label)!important;min-height:var(--h-print-ipad-yn-label)!important;line-height:var(--h-print-ipad-yn-label)!important; }',
-      '  .check-item { height:var(--h-print-ipad-check-item)!important;min-height:var(--h-print-ipad-check-item)!important; }',
-      '  #gen_notes  { height:var(--h-print-ipad-gen-notes)!important;min-height:var(--h-print-ipad-gen-notes)!important;max-height:var(--h-print-ipad-gen-notes)!important; }',
-      '  #pad_notes  { height:var(--h-print-ipad-pad-notes)!important;min-height:var(--h-print-ipad-pad-notes)!important;max-height:var(--h-print-ipad-pad-notes)!important; }',
-      '  #gas_notes  { height:var(--h-print-ipad-gas-notes)!important;min-height:var(--h-print-ipad-gas-notes)!important;max-height:var(--h-print-ipad-gas-notes)!important; }',
-      '  #ready_notes { height:var(--h-print-ipad-ready-notes)!important;min-height:var(--h-print-ipad-ready-notes)!important;max-height:var(--h-print-ipad-ready-notes)!important;width:100%!important;margin-top:2px!important;box-sizing:border-box!important; }',
-      '}'
+      '.field-row,.inline-row { min-height:var(--h-print-ipad-field-row)!important; }',
+      '.field-row { flex-wrap:nowrap!important; }',
+      '.inline-row { flex-wrap:wrap!important; overflow:visible!important; }',
+      '.section-body,.section,.page { overflow:visible!important; }',
+      '.section-body { padding:var(--pd-print-ipad-section-body)!important; }',
+      '#transfer-switch-row .section-body { padding:4px 12px var(--pd-ts-bottom-print-ipad) 12px!important; }',
+      '#transfer-switch-row .inline-row:last-child { min-height:0!important;margin-bottom:0!important; }',
+      'input[type=date] { min-width:0!important;flex-shrink:1!important;width:auto!important; }',
+      'input[type=text],input[type=email],input[type=tel],input[type=date],input[type=number] { min-height:var(--h-print-ipad-input)!important;height:var(--h-print-ipad-input)!important;font-size:20px!important; }',
+      '.yn-group,.yn-group .yn-label { height:var(--h-print-ipad-yn-label)!important;min-height:var(--h-print-ipad-yn-label)!important;line-height:var(--h-print-ipad-yn-label)!important; }',
+      '.check-item { height:var(--h-print-ipad-check-item)!important;min-height:var(--h-print-ipad-check-item)!important; }',
+      '#gen_notes  { height:var(--h-print-ipad-gen-notes)!important;min-height:var(--h-print-ipad-gen-notes)!important;max-height:var(--h-print-ipad-gen-notes)!important; }',
+      '#pad_notes  { height:var(--h-print-ipad-pad-notes)!important;min-height:var(--h-print-ipad-pad-notes)!important;max-height:var(--h-print-ipad-pad-notes)!important; }',
+      '#gas_notes  { height:var(--h-print-ipad-gas-notes)!important;min-height:var(--h-print-ipad-gas-notes)!important;max-height:var(--h-print-ipad-gas-notes)!important; }',
+      '#ready_notes { height:var(--h-print-ipad-ready-notes)!important;min-height:var(--h-print-ipad-ready-notes)!important;max-height:var(--h-print-ipad-ready-notes)!important;width:100%!important;margin-top:2px!important;box-sizing:border-box!important; }'
     ].join('\n');
     document.head.appendChild(safariPageFix);
     void document.body.offsetHeight;
