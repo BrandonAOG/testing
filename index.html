@@ -1342,6 +1342,12 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
   .inline-row            { flex-wrap: wrap !important; }
   .field-row             { flex-wrap: nowrap !important; }
   .inline-row .check-group { flex-wrap: wrap !important; }
+  /* Tight section spacing — match phone print */
+  #install-difficulty-row .section-body { padding-top: 2px !important; }
+  #install-difficulty-row + * { margin-top: 0 !important; }
+  .section:has(+ #install-difficulty-row) .section-body { padding-bottom: 2px !important; }
+  #precast-pad-row .section-body { padding-bottom: 2px !important; }
+  .section:has(+ #precast-pad-row) .section-body { padding-bottom: 2px !important; }
 }
 
 /* ===== DESKTOP PRINT — all elements ===== */
