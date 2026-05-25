@@ -2674,6 +2674,43 @@ function capturePageToCanvas() {
             var seasonalSt = clonedDoc.getElementById('seasonal-styles');
             if (seasonalSt) seasonalSt.parentNode.removeChild(seasonalSt);
 
+            // Replace textareas with divs — html2canvas renders textarea value as one long
+            // single line regardless of wrapping. A div with the same computed styles and
+            // white-space:pre-wrap will wrap exactly as the user sees on screen.
+            clonedDoc.querySelectorAll('textarea').forEach(function(ta) {
+              var computed = window.getComputedStyle(ta);
+              var div = clonedDoc.createElement('div');
+              // Copy geometry / box model
+              div.style.cssText = [
+                'width:'          + computed.width,
+                'min-height:'     + computed.height,
+                'height:'         + computed.height,
+                'max-height:'     + computed.maxHeight,
+                'padding:'        + computed.padding,
+                'margin:'         + computed.margin,
+                'margin-top:'     + computed.marginTop,
+                'margin-bottom:'  + computed.marginBottom,
+                'border:'         + computed.border,
+                'border-radius:'  + computed.borderRadius,
+                'box-sizing:'     + computed.boxSizing,
+                'font-family:'    + computed.fontFamily,
+                'font-size:'      + computed.fontSize,
+                'font-weight:'    + computed.fontWeight,
+                'line-height:'    + computed.lineHeight,
+                'color:'          + computed.color,
+                'background:'     + computed.backgroundColor,
+                'box-shadow:'     + computed.boxShadow,
+                // Critical: allow text to wrap the same way it does on screen
+                'white-space:pre-wrap',
+                'word-wrap:break-word',
+                'overflow-wrap:break-word',
+                'overflow:hidden',
+                'display:block'
+              ].join(';') + ';';
+              div.textContent = ta.value;
+              ta.parentNode.replaceChild(div, ta);
+            });
+
             // Replace checkboxes/radios with amber spans — html2canvas ignores accent-color
             clonedDoc.querySelectorAll('.check-item input[type=checkbox], .check-item input[type=radio]').forEach(function(input) {
               var isChecked = input.checked;
