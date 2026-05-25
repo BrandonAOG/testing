@@ -134,26 +134,26 @@
   /* ---- PRINT : iPAD ---- */
   --fs-print-ipad-company-name:    1.05rem;  /* "Always On Generators" in iPad PDF               */
   --fs-print-ipad-doc-title:       1.05rem;  /* "Generator Installation Estimate" in iPad PDF    */
-  --fs-print-ipad-section-header:  0.9rem;  /* section title bars in iPad PDF                   */
-  --fs-print-ipad-col-label:       0.85rem;  /* column label pills in iPad PDF                   */
-  --fs-print-ipad-label:           0.85rem;  /* field labels in iPad PDF                         */
-  --fs-print-ipad-inline-label:    0.85rem;  /* inline labels in iPad PDF                        */
-  --fs-print-ipad-input:            1.5rem;  /* text inside input fields in iPad PDF             */
-  --fs-print-ipad-yn-label:        0.75rem;  /* Y / N toggle buttons in iPad PDF                 */
-  --fs-print-ipad-check-item:      0.75rem;  /* checkbox & radio options in iPad PDF             */
-  --fs-print-ipad-gas-label:       0.75rem;  /* gas appliances label in iPad PDF                 */
+  --fs-print-ipad-section-header:  0.69rem;  /* section title bars in iPad PDF                   */
+  --fs-print-ipad-col-label:       0.62rem;  /* column label pills in iPad PDF                   */
+  --fs-print-ipad-label:           0.62rem;  /* field labels in iPad PDF                         */
+  --fs-print-ipad-inline-label:    0.7rem;  /* inline labels in iPad PDF                        */
+  --fs-print-ipad-input:              1rem;  /* text inside input fields in iPad PDF             */
+  --fs-print-ipad-yn-label:        0.65rem;  /* Y / N toggle buttons in iPad PDF                 */
+  --fs-print-ipad-check-item:      0.65rem;  /* checkbox & radio options in iPad PDF             */
+  --fs-print-ipad-gas-label:       0.6rem;  /* gas appliances label in iPad PDF                 */
 
   /* ---- PRINT : DESKTOP ---- */
   --fs-print-desktop-company-name:   1.05rem;  /* "Always On Generators" in desktop PDF            */
   --fs-print-desktop-doc-title:      1.05rem;  /* "Generator Installation Estimate" in desktop PDF */
-  --fs-print-desktop-section-header: 0.69rem;  /* section title bars in desktop PDF                */
-  --fs-print-desktop-col-label:      0.62rem;  /* column label pills in desktop PDF                */
-  --fs-print-desktop-label:          0.62rem;  /* field labels in desktop PDF                      */
-  --fs-print-desktop-inline-label:   0.62rem;  /* inline labels in desktop PDF                     */
+  --fs-print-desktop-section-header: 0.8rem;  /* section title bars in desktop PDF                */
+  --fs-print-desktop-col-label:      0.8rem;  /* column label pills in desktop PDF                */
+  --fs-print-desktop-label:          0.8rem;  /* field labels in desktop PDF                      */
+  --fs-print-desktop-inline-label:   0.8rem;  /* inline labels in desktop PDF                     */
   --fs-print-desktop-input:          0.88rem;  /* text inside input fields in desktop PDF          */
-  --fs-print-desktop-yn-label:       0.67rem;  /* Y / N toggle buttons in desktop PDF              */
-  --fs-print-desktop-check-item:     0.62rem;  /* checkbox & radio options in desktop PDF          */
-  --fs-print-desktop-gas-label:      0.57rem;  /* gas appliances label in desktop PDF              */
+  --fs-print-desktop-yn-label:       0.75rem;  /* Y / N toggle buttons in desktop PDF              */
+  --fs-print-desktop-check-item:     0.75rem;  /* checkbox & radio options in desktop PDF          */
+  --fs-print-desktop-gas-label:      0.65rem;  /* gas appliances label in desktop PDF              */
 
   /* =============================================
      PADDING — edit any value to adjust spacing.
@@ -262,7 +262,7 @@
      ============================================= */
 
   /* ---- SCREEN HEIGHTS : PHONE ---- */
-  --h-phone-input:        32px;   /* text fields (Name, Address, Phone, Best Email…) */
+  --h-phone-input:        34px;   /* text fields (Name, Address, Phone, Best Email…) */
   --h-phone-input-date:   34px;   /* date fields (Today's Date, Est. Done On)        */
   --w-phone-today:         145px;  /* Today's Date width (phone)                      */
   --w-phone-est-date:      145px;  /* Estimate Date width (phone)                     */
@@ -276,9 +276,9 @@
   --w-print-phone-today:        145px;  /* Today's Date width (phone print)           */
   --w-print-phone-est-date:     145px;  /* Estimate Date width (phone print)          */
   --w-print-phone-est-done-on:  145px;  /* Estimate Done On width (phone print)       */
-  --w-print-ipad-today:         175px;  /* Today's Date width (iPad print)            */
-  --w-print-ipad-est-date:      175px;  /* Estimate Date width (iPad print)           */
-  --w-print-ipad-est-done-on:   175px;  /* Estimate Done On width (iPad print)        */
+  --w-print-ipad-today:         200px;  /* Today's Date width (iPad print)            */
+  --w-print-ipad-est-date:      200px;  /* Estimate Date width (iPad print)           */
+  --w-print-ipad-est-done-on:   200px;  /* Estimate Done On width (iPad print)        */
   --h-phone-field-row:    32px;   /* row container holding label + input              */
   --h-phone-inline-row:   30px;   /* inline row container (Coverage, Difficulty…)    */
   --h-phone-yn-group:     22px;   /* Y/N toggle group box                            */
@@ -1505,9 +1505,10 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
         <hr class="divider">
         <div class="field-row">
           <label for="est_date">Estimate Date</label><input type="date" id="est_date" name="est_date" title="Date of the estimate appointment" class="med" autocomplete="off" aria-label="Estimate date" style="width:var(--w-phone-est-date);min-width:var(--w-phone-est-date);">
+        </div>
+        <div class="field-row">
           <label for="est_time">Time</label><input type="text" id="est_time" name="est_time" title="Appointment time window — e.g. 10-11 or 2pm" class="short" placeholder="10-11" autocomplete="off" aria-label="Estimate time">
         </div>
-        <div class="field-row"><label for="estimator">Estimator</label><input type="text" id="estimator" name="estimator" title="Name of the estimator performing the site visit" class="long" autocomplete="off" aria-label="Estimator name"></div>
       </div>
     </div>
 
@@ -1515,7 +1516,7 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
       <div class="flood-item"><label for="flood_zone">Flood Zone / Footage</label><input type="text" id="flood_zone" name="flood_zone" title="FEMA flood zone and base flood elevation — e.g. AH 8.5 or X" placeholder="e.g. AH 8.5" autocomplete="off"></div>
       <div class="flood-item"><label for="parcel">Parcel / Municipality</label><input type="text" id="parcel" name="parcel" title="Property parcel ID or municipality — e.g. 35-44-24-C4-00010.0010" autocomplete="off"></div>
       <div class="flood-item"><label for="est_done_on">Estimate Done On</label><input type="date" id="est_done_on" name="est_done_on" title="Date the estimate was completed and submitted" autocomplete="off" style="width:var(--w-phone-est-done-on);min-width:var(--w-phone-est-done-on);"></div>
-      <div class="flood-item"></div>
+      <div class="flood-item"><label for="estimator">Estimator</label><input type="text" id="estimator" name="estimator" title="Name of the estimator performing the site visit" class="long" autocomplete="off" aria-label="Estimator name"></div>
     </div>
 
     <!-- Generator -->
