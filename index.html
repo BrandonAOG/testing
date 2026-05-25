@@ -585,7 +585,7 @@
   /* ---- TRANSFER SWITCH BOTTOM PADDING ---- */
   --pd-ts-bottom-screen:           1px;   /* bottom padding of Transfer Switch section body (screen)        */
   --pd-ts-bottom-print:            1px;   /* bottom padding of Transfer Switch section body (phone print)   */
-  --pd-ts-bottom-print-ipad:       0.5px;   /* bottom padding of Transfer Switch section body (iPad print)    */
+  --pd-ts-bottom-print-ipad:       0px;   /* bottom padding of Transfer Switch section body (iPad print)    */
 
   /* ---- PAD NOTES BOTTOM MARGIN ---- */
   --mb-pad-notes-phone:        4px;   /* space below Precast Pad notes box to section border (phone screen)   */
@@ -1433,8 +1433,8 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
   #gen_notes, #pad_notes, #gas_notes, #ready_notes { margin-bottom: 0 !important; }
   /* Transfer Switch — bottom padding only */
   #transfer-switch-row .section-body,
-  body.mobile-safari #transfer-switch-row .section-body { padding: 4px 12px var(--pd-ts-bottom-print-ipad) 12px !important; }
- #transfer-switch-row .inline-row:last-child { min-height: 0 !important; height: auto !important; margin-bottom: 0 !important; padding-bottom: 0 !important; }
+  body.mobile-safari #transfer-switch-row .section-body { padding: 4px 12px 0px 12px !important; }
+  #transfer-switch-row .inline-row:last-child { min-height: 0 !important; height: auto !important; max-height: fit-content !important; margin-bottom: 0 !important; padding-bottom: 0 !important; }
 }
 
 /* ===== DESKTOP PRINT — all elements ===== */
@@ -2448,8 +2448,8 @@ function printForm() {
       '.inline-row { flex-wrap:wrap!important; overflow:visible!important; }',
       '.section-body,.section,.page { overflow:visible!important; }',
       '.section-body { padding:var(--pd-print-ipad-section-body)!important; }',
-      '#transfer-switch-row .section-body { padding:4px 12px var(--pd-ts-bottom-print-ipad) 12px!important; }',
-      '#transfer-switch-row .inline-row:last-child { min-height:0!important;height:auto!important;margin-bottom:0!important;padding-bottom:0!important; }',
+      '#transfer-switch-row .section-body { padding:4px 12px 0px 12px!important; }',
+      '#transfer-switch-row .inline-row:last-child { min-height:0!important;height:auto!important;max-height:fit-content!important;margin-bottom:0!important;padding-bottom:0!important; }',
       'input[type=date] { min-width:0!important;flex-shrink:1!important;width:auto!important; }',
       'input[type=text],input[type=email],input[type=tel],input[type=number] { min-height:var(--h-print-ipad-input)!important;height:var(--h-print-ipad-input)!important; }',
       'input[type=date] { min-height:var(--h-print-ipad-input)!important;height:var(--h-print-ipad-input)!important;font-size:var(--fs-print-ipad-date)!important; }',
