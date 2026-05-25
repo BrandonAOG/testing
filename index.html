@@ -1351,7 +1351,8 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
   #precast-pad-row .section-body { padding-bottom: 2px !important; }
   .section:has(+ #precast-pad-row) .section-body { padding-bottom: 2px !important; }
   /* Transfer Switch — 1px bottom padding only */
-  #transfer-switch-row .section-body { padding-bottom: 1px !important; }
+  #transfer-switch-row .section-body,
+  body.mobile-safari #transfer-switch-row .section-body { padding: 4px 12px 1px 12px !important; }
 }
 
 /* ===== DESKTOP PRINT — all elements ===== */
