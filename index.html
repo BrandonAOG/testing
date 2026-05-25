@@ -1434,7 +1434,7 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
   /* Transfer Switch — bottom padding only */
   #transfer-switch-row .section-body,
   body.mobile-safari #transfer-switch-row .section-body { padding: 4px 12px var(--pd-ts-bottom-print-ipad) 12px !important; }
-  #transfer-switch-row .inline-row:last-child { min-height: 0 !important; margin-bottom: 0 !important; }
+ #transfer-switch-row .inline-row:last-child { min-height: 0 !important; height: auto !important; margin-bottom: 0 !important; padding-bottom: 0 !important; }
 }
 
 /* ===== DESKTOP PRINT — all elements ===== */
@@ -2449,7 +2449,7 @@ function printForm() {
       '.section-body,.section,.page { overflow:visible!important; }',
       '.section-body { padding:var(--pd-print-ipad-section-body)!important; }',
       '#transfer-switch-row .section-body { padding:4px 12px var(--pd-ts-bottom-print-ipad) 12px!important; }',
-      '#transfer-switch-row .inline-row:last-child { min-height:0!important;margin-bottom:0!important; }',
+      '#transfer-switch-row .inline-row:last-child { min-height:0!important;height:auto!important;margin-bottom:0!important;padding-bottom:0!important; }',
       'input[type=date] { min-width:0!important;flex-shrink:1!important;width:auto!important; }',
       'input[type=text],input[type=email],input[type=tel],input[type=number] { min-height:var(--h-print-ipad-input)!important;height:var(--h-print-ipad-input)!important; }',
       'input[type=date] { min-height:var(--h-print-ipad-input)!important;height:var(--h-print-ipad-input)!important;font-size:var(--fs-print-ipad-date)!important; }',
