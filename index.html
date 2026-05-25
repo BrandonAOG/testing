@@ -134,13 +134,13 @@
   /* ---- PRINT : iPAD ---- */
   --fs-print-ipad-company-name:    1.05rem;  /* "Always On Generators" in iPad PDF               */
   --fs-print-ipad-doc-title:       1.05rem;  /* "Generator Installation Estimate" in iPad PDF    */
-  --fs-print-ipad-section-header:  0.9rem;  /* section title bars in iPad PDF                   */
-  --fs-print-ipad-col-label:       0.9rem;  /* column label pills in iPad PDF                   */
-  --fs-print-ipad-label:           0.9rem;  /* field labels in iPad PDF                         */
-  --fs-print-ipad-inline-label:    0.9rem;  /* inline labels in iPad PDF                        */
-  --fs-print-ipad-input:           1.5rem;  /* text inside input fields in iPad PDF             */
-  --fs-print-ipad-yn-label:        0.7rem;  /* Y / N toggle buttons in iPad PDF                 */
-  --fs-print-ipad-check-item:      0.7rem;  /* checkbox & radio options in iPad PDF             */
+  --fs-print-ipad-section-header:  0.69rem;  /* section title bars in iPad PDF                   */
+  --fs-print-ipad-col-label:       0.62rem;  /* column label pills in iPad PDF                   */
+  --fs-print-ipad-label:           0.62rem;  /* field labels in iPad PDF                         */
+  --fs-print-ipad-inline-label:    0.7rem;  /* inline labels in iPad PDF                        */
+  --fs-print-ipad-input:              1rem;  /* text inside input fields in iPad PDF             */
+  --fs-print-ipad-yn-label:        0.65rem;  /* Y / N toggle buttons in iPad PDF                 */
+  --fs-print-ipad-check-item:      0.65rem;  /* checkbox & radio options in iPad PDF             */
   --fs-print-ipad-gas-label:       0.6rem;  /* gas appliances label in iPad PDF                 */
 
   /* ---- PRINT : DESKTOP ---- */
@@ -264,6 +264,21 @@
   /* ---- SCREEN HEIGHTS : PHONE ---- */
   --h-phone-input:        32px;   /* text fields (Name, Address, Phone, Best Email…) */
   --h-phone-input-date:   34px;   /* date fields (Today's Date, Est. Done On)        */
+  --w-phone-today:         145px;  /* Today's Date width (phone)                      */
+  --w-phone-est-date:      145px;  /* Estimate Date width (phone)                     */
+  --w-phone-est-done-on:   145px;  /* Estimate Done On width (phone)                  */
+  --w-ipad-today:          145px;  /* Today's Date width (iPad)                       */
+  --w-ipad-est-date:       145px;  /* Estimate Date width (iPad)                      */
+  --w-ipad-est-done-on:    145px;  /* Estimate Done On width (iPad)                   */
+  --w-desktop-today:       145px;  /* Today's Date width (desktop)                    */
+  --w-desktop-est-date:    145px;  /* Estimate Date width (desktop)                   */
+  --w-desktop-est-done-on: 145px;  /* Estimate Done On width (desktop)                */
+  --w-print-phone-today:        145px;  /* Today's Date width (phone print)           */
+  --w-print-phone-est-date:     145px;  /* Estimate Date width (phone print)          */
+  --w-print-phone-est-done-on:  145px;  /* Estimate Done On width (phone print)       */
+  --w-print-ipad-today:         145px;  /* Today's Date width (iPad print)            */
+  --w-print-ipad-est-date:      145px;  /* Estimate Date width (iPad print)           */
+  --w-print-ipad-est-done-on:   145px;  /* Estimate Done On width (iPad print)        */
   --h-phone-field-row:    32px;   /* row container holding label + input              */
   --h-phone-inline-row:   30px;   /* inline row container (Coverage, Difficulty…)    */
   --h-phone-yn-group:     22px;   /* Y/N toggle group box                            */
@@ -1027,7 +1042,9 @@ body.mobile-safari { -webkit-print-color-adjust: exact; }
   input::-webkit-input-placeholder, textarea::-webkit-input-placeholder { color: transparent !important; opacity: 0 !important; }
   input::-moz-placeholder, textarea::-moz-placeholder { color: transparent !important; opacity: 0 !important; }
   #address { padding-right: 6px !important; }
-  input[type="date"] { min-width: 145px !important; width: 145px !important; }
+  #today { width: var(--w-ipad-today) !important; min-width: var(--w-ipad-today) !important; }
+  #est_date { width: var(--w-ipad-est-date) !important; min-width: var(--w-ipad-est-date) !important; }
+  #est_done_on { width: var(--w-ipad-est-done-on) !important; min-width: var(--w-ipad-est-done-on) !important; }
   body.mobile-safari input[type="date"] { min-width: 0 !important; width: auto !important; flex-shrink: 1 !important; }
   textarea { border: 1px solid #D97706 !important; resize: none !important; overflow: hidden !important; padding: var(--pd-print-phone-textarea) !important; margin-top: 3px !important; font-size: var(--fs-print-phone-input) !important; background: #ffffff !important; color: #1F2937 !important; box-shadow: none !important; }
   #gen_notes  { min-height: var(--h-print-phone-gen-notes) !important; height: var(--h-print-phone-gen-notes) !important; max-height: var(--h-print-phone-gen-notes) !important; }
@@ -1456,7 +1473,7 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
         <div class="field-row"><label for="hoa">Community/HOA</label><input type="text" id="hoa" name="hoa" title="Community or HOA name — e.g. Cape Coral Estates" class="long" autocomplete="off" aria-label="Community or HOA name"></div>
         <div class="field-row"><label for="phone">Phone #</label><input type="tel" id="phone" name="phone" title="Best contact phone number — e.g. 239-555-0100" class="long" autocomplete="tel" aria-label="Phone number" pattern="[0-9\-\(\)\s]*"></div>
         <div class="field-row"><label for="email">Best Email</label><input type="email" id="email" name="email" title="Best email address for sending the estimate" class="long" autocomplete="email" aria-label="Email address"></div>
-        <div class="field-row"><label for="today">Today's Date</label><input type="date" id="today" name="today" title="Today's date — auto-filled on load" class="med" autocomplete="off" aria-label="Today's date"></div>
+        <div class="field-row"><label for="today">Today's Date</label><input type="date" id="today" name="today" title="Today's date — auto-filled on load" class="med" autocomplete="off" aria-label="Today's date" style="width:var(--w-phone-today);min-width:var(--w-phone-today);"></div>
       </div>
 
       <div class="top-col">
@@ -1487,7 +1504,7 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
         </div>
         <hr class="divider">
         <div class="field-row">
-          <label for="est_date">Estimate Date</label><input type="date" id="est_date" name="est_date" title="Date of the estimate appointment" class="med" autocomplete="off" aria-label="Estimate date">
+          <label for="est_date">Estimate Date</label><input type="date" id="est_date" name="est_date" title="Date of the estimate appointment" class="med" autocomplete="off" aria-label="Estimate date" style="width:var(--w-phone-est-date);min-width:var(--w-phone-est-date);">
           <label for="est_time">Time</label><input type="text" id="est_time" name="est_time" title="Appointment time window — e.g. 10-11 or 2pm" class="short" placeholder="10-11" autocomplete="off" aria-label="Estimate time">
         </div>
         <div class="field-row"><label for="estimator">Estimator</label><input type="text" id="estimator" name="estimator" title="Name of the estimator performing the site visit" class="long" autocomplete="off" aria-label="Estimator name"></div>
@@ -1497,7 +1514,7 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
     <div class="flood-bar">
       <div class="flood-item"><label for="flood_zone">Flood Zone / Footage</label><input type="text" id="flood_zone" name="flood_zone" title="FEMA flood zone and base flood elevation — e.g. AH 8.5 or X" placeholder="e.g. AH 8.5" autocomplete="off"></div>
       <div class="flood-item"><label for="parcel">Parcel / Municipality</label><input type="text" id="parcel" name="parcel" title="Property parcel ID or municipality — e.g. 35-44-24-C4-00010.0010" autocomplete="off"></div>
-      <div class="flood-item"><label for="est_done_on">Estimate Done On</label><input type="date" id="est_done_on" name="est_done_on" title="Date the estimate was completed and submitted" autocomplete="off"></div>
+      <div class="flood-item"><label for="est_done_on">Estimate Done On</label><input type="date" id="est_done_on" name="est_done_on" title="Date the estimate was completed and submitted" autocomplete="off" style="width:var(--w-phone-est-done-on);min-width:var(--w-phone-est-done-on);"></div>
       <div class="flood-item"></div>
     </div>
 
