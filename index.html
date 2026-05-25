@@ -2411,6 +2411,9 @@ function printForm() {
     var safariPageFix = document.createElement('style');
     safariPageFix.id = 'safari-page-fix';
     safariPageFix.textContent = [
+      'html, body { height:auto !important; min-height:0 !important; overflow:visible !important; }',
+      '#page { min-height:0 !important; }',
+      '.content { height:auto !important; flex:0 0 auto !important; justify-content:flex-start !important; }',
       '@page { size: 8.5in 11in; margin: 0.05in; }',
       '@media print {',
       '  .field-row { flex-wrap:nowrap!important; }',
@@ -2445,6 +2448,9 @@ function printForm() {
     var safariPageFix = document.createElement('style');
     safariPageFix.id = 'safari-page-fix';
     safariPageFix.textContent = [
+      'html, body { height:auto !important; min-height:0 !important; overflow:visible !important; }',
+      '#page { min-height:0 !important; }',
+      '.content { height:auto !important; flex:0 0 auto !important; justify-content:flex-start !important; }',
       '@page { size: 8.5in 11in; margin: 0.0in; }',
       '.field-row,.inline-row { min-height:var(--h-print-ipad-field-row)!important; }',
       '.field-row { flex-wrap:nowrap!important; }',
@@ -2469,6 +2475,7 @@ function printForm() {
     armRestoreAndPrint(true);
     return;
   }
+
 
   // ══════════════════════════════════════════
   // ── DESKTOP SAFARI / NON-SAFARI — print path ──
