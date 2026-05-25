@@ -853,11 +853,17 @@ body.dark-mode label { color: #7DD3FC; }
 body.dark-mode .survey-legend { color: #7DD3FC; }
 
 input[type="text"], input[type="email"], input[type="tel"], input[type="date"], input[type="number"], textarea, select {
-  font-family: var(--font-mono); font-size: var(--fs-phone-input); color: var(--text); background: var(--panel);
+  font-family: var(--font-mono); font-size: var(--fs-phone-input); color: var(--text); background: rgba(255,255,255,0.55);
   border: none; border-bottom: 2px solid rgba(217,119,6,0.25); padding: var(--pd-phone-input);
   outline: none; width: 100%; transition: all 0.2s; border-radius: 0;
   min-height: var(--h-phone-input); height: var(--h-phone-input); -webkit-appearance: none; appearance: none;
   caret-color: var(--cyan); box-sizing: border-box;
+}
+input[type="text"]:-webkit-autofill, input[type="email"]:-webkit-autofill,
+input[type="tel"]:-webkit-autofill, input[type="number"]:-webkit-autofill {
+  -webkit-box-shadow: 0 0 0px 1000px rgba(255,255,255,0.55) inset !important;
+  -webkit-text-fill-color: var(--text) !important;
+  transition: background-color 9999s ease-in-out 0s;
 }
 
 body.dark-mode input[type="text"], body.dark-mode input[type="email"], body.dark-mode input[type="tel"],
@@ -889,7 +895,7 @@ input.tiny  { width: 40px; min-width: 40px; text-align: center; }
 input.med   { width: 120px; min-width: 80px; }
 input.long  { flex: 1; min-width: 100px; }
 
-textarea { width: 100%; resize: vertical; border: 1px solid rgba(217,119,6,0.2); padding: var(--pd-phone-textarea); margin-top: 3px; min-height: 44px; height: 44px; background: var(--panel); color: var(--text); transition: all 0.3s ease; box-sizing: border-box; }
+textarea { width: 100%; resize: vertical; border: 1px solid rgba(217,119,6,0.2); padding: var(--pd-phone-textarea); margin-top: 3px; min-height: 44px; height: 44px; background: rgba(255,255,255,0.55); color: var(--text); transition: all 0.3s ease; box-sizing: border-box; }
 body.dark-mode textarea { background: rgba(10,14,39,0.6); border-color: rgba(0,255,200,0.15); color: #E0F7FF; }
 textarea:focus { border-color: var(--cyan); box-shadow: 0 0 8px rgba(217,119,6,0.1); }
 body.dark-mode textarea:focus { border-color: #00FFC8; box-shadow: 0 0 8px rgba(0,255,200,0.2); }
