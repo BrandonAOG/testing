@@ -139,8 +139,8 @@
   --fs-print-ipad-col-label:       0.9rem;  /* column label pills in iPad PDF                   */
   --fs-print-ipad-label:           0.85rem;  /* field labels in iPad PDF                         */
   --fs-print-ipad-inline-label:    0.85rem;  /* inline labels in iPad PDF                        */
-  --fs-print-ipad-input:           1.4rem;   /* text inside input fields in iPad PDF             */
-  --fs-print-ipad-notes:           1.25rem;  /* text inside note boxes (gen/pad/gas/ready) in iPad PDF */
+  --fs-print-ipad-input:           0.9rem;   /* text inside input fields in iPad PDF             */
+  --fs-print-ipad-notes:           0.9rem;  /* text inside note boxes (gen/pad/gas/ready) in iPad PDF */
   --fs-print-ipad-yn-label:        0.8rem;  /* Y / N toggle buttons in iPad PDF                 */
   --fs-print-ipad-check-item:      0.8rem;  /* checkbox & radio options in iPad PDF             */
   --fs-print-ipad-gas-label:       0.75rem;  /* gas appliances label in iPad PDF                 */
@@ -1090,9 +1090,9 @@ body.mobile-safari { -webkit-print-color-adjust: exact; }
   input::-webkit-input-placeholder, textarea::-webkit-input-placeholder { color: transparent !important; opacity: 0 !important; }
   input::-moz-placeholder, textarea::-moz-placeholder { color: transparent !important; opacity: 0 !important; }
   #address { padding-right: 6px !important; }
-  #today { width: auto !important; min-width: 0 !important; align-self: flex-start !important; }
-  #est_date { width: auto !important; min-width: 0 !important; align-self: flex-start !important; }
-  #est_done_on { width: auto !important; min-width: 0 !important; align-self: flex-start !important; }
+  #today { width: auto !important; min-width: 0 !important; align-self: flex-start !important; font-size: var(--fs-print-phone-input) !important; }
+  #est_date { width: auto !important; min-width: 0 !important; align-self: flex-start !important; font-size: var(--fs-print-phone-input) !important; }
+  #est_done_on { width: auto !important; min-width: 0 !important; align-self: flex-start !important; font-size: var(--fs-print-phone-input) !important; }
   body.mobile-safari input[type="date"] { min-width: 0 !important; width: auto !important; flex-shrink: 1 !important; }
   textarea { border: 1px solid #D97706 !important; resize: none !important; overflow: hidden !important; padding: var(--pd-print-phone-textarea) !important; margin-top: 3px !important; font-size: var(--fs-print-phone-notes) !important; background: #ffffff !important; color: #1F2937 !important; box-shadow: none !important; }
   #gen_notes  { min-height: var(--h-print-phone-gen-notes) !important; height: var(--h-print-phone-gen-notes) !important; max-height: var(--h-print-phone-gen-notes) !important; }
@@ -1384,7 +1384,9 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
   .top-col               { padding: var(--pd-print-ipad-top-col) !important; }
   .flood-item            { padding: var(--pd-print-ipad-flood-item) !important; align-items: flex-start !important; }
   .flood-item label      { align-self: flex-start !important; }
-  #est_done_on           { width: auto !important; min-width: 0 !important; align-self: flex-start !important; }
+  #est_done_on           { width: auto !important; min-width: 0 !important; align-self: flex-start !important; font-size: var(--fs-print-ipad-input) !important; }
+  #today                 { font-size: var(--fs-print-ipad-input) !important; }
+  #est_date              { font-size: var(--fs-print-ipad-input) !important; }
   .footer                { padding: var(--pd-print-ipad-footer) !important; position: relative !important; z-index: 50 !important; }
   .footer-text           { font-size: var(--fs-print-ipad-footer) !important; }
   #ver-span              { font-size: var(--fs-print-ipad-ver-span) !important; }
