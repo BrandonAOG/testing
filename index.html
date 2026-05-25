@@ -1078,6 +1078,8 @@ body.mobile-safari { -webkit-print-color-adjust: exact; }
   /* Precast Pad — match Transfer Switch bottom tightness */
   #precast-pad-row .section-body { padding-bottom: 2px !important; }
   .section:has(+ #precast-pad-row) .section-body { padding-bottom: 2px !important; }
+  /* Transfer Switch — 1px bottom padding only */
+  #transfer-switch-row .section-body { padding-bottom: 1px !important; }
   #address-suggestions, #gps-status { display: none !important; }
   #install_days { padding: 2px 5px !important; min-height: var(--h-print-phone-input) !important; height: var(--h-print-phone-input) !important; }
   #elec_run_ft { width: 9ch !important; min-width: 9ch !important; max-width: 9ch !important; flex-shrink: 0 !important; }
@@ -1348,6 +1350,8 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
   .section:has(+ #install-difficulty-row) .section-body { padding-bottom: 2px !important; }
   #precast-pad-row .section-body { padding-bottom: 2px !important; }
   .section:has(+ #precast-pad-row) .section-body { padding-bottom: 2px !important; }
+  /* Transfer Switch — 1px bottom padding only */
+  #transfer-switch-row .section-body { padding-bottom: 1px !important; }
 }
 
 /* ===== DESKTOP PRINT — all elements ===== */
@@ -1576,7 +1580,7 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
     </div>
 
     <!-- Transfer Switch -->
-    <div class="section">
+    <div class="section" id="transfer-switch-row">
       <div class="section-header">
         <svg width="20" height="20" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg" class="icon-themed" style="flex-shrink:0;" aria-hidden="true"><line x1="10" y1="30" x2="30" y2="30" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><line x1="70" y1="30" x2="90" y2="30" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><rect x="35" y="20" width="30" height="40" rx="3" stroke="currentColor" stroke-width="2" fill="none"/><path d="M58 45 L65 45 M62 42 L65 45 L62 48" stroke="currentColor" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Transfer Switch
