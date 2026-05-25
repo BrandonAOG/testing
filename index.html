@@ -567,16 +567,16 @@
   --mb-pad-notes-phone:        4px;   /* space below Precast Pad notes box to section border (phone screen)   */
   --mb-pad-notes-ipad:         4px;   /* space below Precast Pad notes box to section border (iPad screen)    */
   --mb-pad-notes-desktop:      4px;   /* space below Precast Pad notes box to section border (desktop screen) */
-  --mb-pad-notes-print:        1px;   /* space below Precast Pad notes box to section border (iPhone PDF)     */
-  --mb-pad-notes-print-ipad:   1px;   /* space below Precast Pad notes box to section border (iPad PDF)       */
+  --mb-pad-notes-print:        4px;   /* space below Precast Pad notes box to section border (iPhone PDF)     */
+  --mb-pad-notes-print-ipad:   4px;   /* space below Precast Pad notes box to section border (iPad PDF)       */
   --mb-pad-notes-print-desktop:4px;   /* space below Precast Pad notes box to section border (desktop PDF)    */
 
   /* ---- FUEL RUN ROW BOTTOM MARGIN ---- */
   --mb-fuel-run-phone:        4px;   /* space below Underground/Above Ground/Attic row to section border (phone screen)   */
   --mb-fuel-run-ipad:         4px;   /* space below Underground/Above Ground/Attic row to section border (iPad screen)    */
   --mb-fuel-run-desktop:      4px;   /* space below Underground/Above Ground/Attic row to section border (desktop screen) */
-  --mb-fuel-run-print:        1px;   /* space below Underground/Above Ground/Attic row to section border (iPhone PDF)     */
-  --mb-fuel-run-print-ipad:   1px;   /* space below Underground/Above Ground/Attic row to section border (iPad PDF)       */
+  --mb-fuel-run-print:        4px;   /* space below Underground/Above Ground/Attic row to section border (iPhone PDF)     */
+  --mb-fuel-run-print-ipad:   4px;   /* space below Underground/Above Ground/Attic row to section border (iPad PDF)       */
   --mb-fuel-run-print-desktop:4px;   /* space below Underground/Above Ground/Attic row to section border (desktop PDF)    */
 
   --icon-color-primary: #D97706;
@@ -1068,9 +1068,8 @@ body.mobile-safari { -webkit-print-color-adjust: exact; }
   textarea { border: 1px solid #D97706 !important; resize: none !important; overflow: hidden !important; padding: var(--pd-print-phone-textarea) !important; margin-top: 3px !important; font-size: var(--fs-print-phone-input) !important; background: #ffffff !important; color: #1F2937 !important; box-shadow: none !important; }
   #gen_notes  { min-height: var(--h-print-phone-gen-notes) !important; height: var(--h-print-phone-gen-notes) !important; max-height: var(--h-print-phone-gen-notes) !important; }
   #pad_notes  { min-height: var(--h-print-phone-pad-notes) !important; height: var(--h-print-phone-pad-notes) !important; max-height: var(--h-print-phone-pad-notes) !important; }
-  #pad_notes + *, #precast-pad-row .field-block:has(#pad_notes) { margin-bottom: var(--mb-pad-notes-print) !important; }
-  #precast-pad-row .field-block:last-child { margin-bottom: var(--mb-pad-notes-print) !important; }
-  .section:has(+ #install-difficulty-row) .section-body .inline-row:last-child { margin-bottom: var(--mb-fuel-run-print) !important; }
+  #pad_notes { margin-bottom: var(--mb-pad-notes-print) !important; }
+  #fuel-run-row { margin-bottom: var(--mb-fuel-run-print) !important; }
   #gas_notes  { min-height: var(--h-print-phone-gas-notes) !important; height: var(--h-print-phone-gas-notes) !important; max-height: var(--h-print-phone-gas-notes) !important; }
   #ready_notes{ min-height: var(--h-print-phone-ready-notes) !important; height: var(--h-print-phone-ready-notes) !important; max-height: var(--h-print-phone-ready-notes) !important; width: 100% !important; box-sizing: border-box !important; margin-top: 2px !important; }
   .yn-group { display: inline-flex !important; border: 1px solid #D97706 !important; background: #ffffff !important; box-shadow: none !important; }
@@ -1347,8 +1346,8 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
   #ver-span              { font-size: var(--fs-print-ipad-ver-span) !important; }
   #gen_notes   { min-height: var(--h-print-ipad-gen-notes) !important; height: var(--h-print-ipad-gen-notes) !important; max-height: var(--h-print-ipad-gen-notes) !important; }
   #pad_notes   { min-height: var(--h-print-ipad-pad-notes) !important; height: var(--h-print-ipad-pad-notes) !important; max-height: var(--h-print-ipad-pad-notes) !important; }
-  #precast-pad-row .field-block:last-child { margin-bottom: var(--mb-pad-notes-print-ipad) !important; }
-  .section:has(+ #install-difficulty-row) .section-body .inline-row:last-child { margin-bottom: var(--mb-fuel-run-print-ipad) !important; }
+  #pad_notes { margin-bottom: var(--mb-pad-notes-print-ipad) !important; }
+  #fuel-run-row { margin-bottom: var(--mb-fuel-run-print-ipad) !important; }
   #gas_notes   { min-height: var(--h-print-ipad-gas-notes) !important; height: var(--h-print-ipad-gas-notes) !important; max-height: var(--h-print-ipad-gas-notes) !important; }
   #ready_notes { min-height: var(--h-print-ipad-ready-notes) !important; height: var(--h-print-ipad-ready-notes) !important; max-height: var(--h-print-ipad-ready-notes) !important; }
   /* ---- misc overrides : iPad print ---- */
@@ -1686,7 +1685,7 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
             <label class="check-item"><input type="checkbox" name="pad" value="existing"><span>Existing</span></label>
           </div>
         </div>
-        <div class="field-block" style="margin-top:var(--mt-notes-box-phone);margin-bottom:var(--mb-pad-notes-phone);"><textarea id="pad_notes" rows="1" style="resize:none;overflow:hidden;" name="pad_notes" title="Additional pad notes — soil type, slope, existing pad condition" placeholder="Additional pad notes…" aria-label="Pad notes"></textarea></div>
+        <div class="field-block" style="margin-top:var(--mt-notes-box-phone);"><textarea id="pad_notes" rows="1" style="resize:none;overflow:hidden;" name="pad_notes" title="Additional pad notes — soil type, slope, existing pad condition" placeholder="Additional pad notes…" aria-label="Pad notes"></textarea></div>
       </div>
     </div>
 
@@ -1721,7 +1720,7 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
           </div>
           <div class="field-block" style="margin-top:var(--mt-notes-box-phone);"><textarea id="gas_notes" rows="1" style="resize:none;overflow:hidden;" name="gas_notes" title="Gas appliance notes — list unlisted appliances, BTU load concerns, meter size" placeholder="List other gas appliances or notes…" aria-label="Gas appliance notes"></textarea></div>
         </div>
-        <div class="inline-row" style="margin-bottom:var(--mb-fuel-run-phone);flex-wrap:wrap;gap:8px 16px;">
+        <div class="inline-row" id="fuel-run-row" style="margin-bottom:var(--mb-fuel-run-phone);flex-wrap:wrap;gap:8px 16px;">
           <div class="field-block" style="flex:1;min-width:80px;"><label for="fuel_underground" style="margin-bottom:-20px;font-size:var(--fs-fuel-label);">Underground (ft)</label><input type="number" id="fuel_underground" name="fuel_underground" title="Underground gas line run in feet from tank/meter to generator" inputmode="numeric" autocomplete="off" aria-label="Underground fuel run in feet"></div>
           <div class="field-block" style="flex:1;min-width:80px;"><label for="fuel_aboveground" style="margin-bottom:-20px;font-size:var(--fs-fuel-label);">Above Ground (ft)</label><input type="number" id="fuel_aboveground" name="fuel_aboveground" title="Above-ground gas line run in feet" inputmode="numeric" autocomplete="off" aria-label="Above ground fuel run in feet"></div>
           <div class="field-block" style="flex:1;min-width:80px;"><label for="fuel_attic" style="margin-bottom:-20px;font-size:var(--fs-fuel-label);">Attic (ft)</label><input type="number" id="fuel_attic" name="fuel_attic" title="Gas line run through attic in feet" inputmode="numeric" autocomplete="off" aria-label="Attic fuel run in feet"></div>
