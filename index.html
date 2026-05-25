@@ -1049,11 +1049,12 @@ body.mobile-safari { -webkit-print-color-adjust: exact; }
   .toolbar, .action-bar, #save-status, #theme-toggle-btn, #offline-banner, #address-suggestions, #gps-status, #gps-btn { display: none !important; }
   .header::after { display: none !important; }
   body::before, body::after, body[class*="seasonal-"]::before, body[class*="seasonal-"]::after { display: none !important; content: none !important; }
-  html { zoom: 0.758; margin: 0 !important; padding: 0 !important; }
-  html, body { height: auto !important; min-height: 0 !important; }
-  body { margin: 0 auto !important; padding: 0 !important; width: 1050px !important; max-width: none !important; background: #ffffff !important; background-image: none !important; color: #1F2937 !important; --icon-color-section: #D97706 !important; --cyan: #D97706 !important; }
-  .page { width: 1050px !important; max-width: none !important; height: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; box-sizing: border-box !important; display: flex !important; flex-direction: column !important; overflow: visible !important; background: #ffffff !important; border: 1.5pt solid #D97706 !important; box-shadow: none !important; position: static !important; outline: none !important; }
-  .content { flex: 0 0 auto !important; min-height: 0 !important; overflow: visible !important; padding: var(--pd-print-phone-content) !important; padding-bottom: var(--pb-content-print-phone) !important; background: #ffffff !important; display: flex !important; flex-direction: column !important; gap: 0 !important; justify-content: flex-start !important; height: auto !important; }
+  html { zoom: 0.758; margin: 0 !important; padding: 0 !important; overflow: hidden !important; }
+  body { margin: 0 auto !important; padding: 0 !important; width: 1050px !important; max-width: none !important; background: #ffffff !important; background-image: none !important; color: #1F2937 !important; --icon-color-section: #D97706 !important; --cyan: #D97706 !important; overflow: hidden !important; }
+  .page { width: 1050px !important; max-width: none !important; height: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; box-sizing: border-box !important; display: flex !important; flex-direction: column !important; overflow: hidden !important; background: #ffffff !important; border: 1.5pt solid #D97706 !important; border-bottom: none !important; box-shadow: none !important; position: static !important; outline: none !important; page-break-after: avoid !important; break-after: avoid !important; }
+  /* Safari iOS: footer carries the bottom border so .page never bleeds past the page edge */
+  .footer { border-bottom: 1.5pt solid #D97706 !important; page-break-after: avoid !important; break-after: avoid !important; }
+  .content { flex: 1 !important; min-height: 0 !important; overflow: visible !important; padding: var(--pd-print-phone-content) !important; padding-bottom: var(--pb-content-print-phone) !important; background: #ffffff !important; display: flex !important; flex-direction: column !important; gap: 0 !important; justify-content: space-between !important; height: 0 !important; }
   .page::before, .page::after, .page-corner-bl, .page-corner-br { display: none !important; }
   .header { background: #ffffff !important; border-bottom: 1px solid #D97706 !important; padding: var(--pd-print-phone-header) !important; min-height: auto !important; height: auto !important; display: flex !important; align-items: center !important; justify-content: space-between !important; flex-shrink: 0 !important; }
   .logo-img { width: var(--logo-size-print) !important; height: var(--logo-size-print) !important; }
@@ -1361,9 +1362,9 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
 
 /* ===== iPAD PRINT — all elements ===== */
 @media print and (min-width: 768px) {
-  html { font-size: var(--fs-print-ipad-base) !important; zoom: 0.777; margin: 0 !important; padding: 0 !important; }
-  body { width: 1050px !important; max-width: none !important; }
-  .page { width: 1050px !important; max-width: none !important; border-left: none !important; border-right: none !important; }
+  html { font-size: var(--fs-print-ipad-base) !important; zoom: 0.777; margin: 0 !important; padding: 0 !important; overflow: hidden !important; }
+  body { width: 1050px !important; max-width: none !important; overflow: hidden !important; }
+  .page { width: 1050px !important; max-width: none !important; border-bottom: none !important; overflow: hidden !important; page-break-after: avoid !important; break-after: avoid !important; }
   @page { margin: 0in !important; }
   .company-name          { font-size: var(--fs-print-ipad-company-name) !important; }
   .doc-title             { font-size: var(--fs-print-ipad-doc-title) !important; }
@@ -1390,9 +1391,7 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
   .content               { padding: var(--pd-print-ipad-content) !important; padding-bottom: var(--pb-content-print-ipad) !important; }
   .section-body          { padding: var(--pd-print-ipad-section-body) !important; }
   .top-col               { padding: var(--pd-print-ipad-top-col) !important; }
-  .top-grid              { margin-bottom: 0 !important; }
-  .flood-bar             { display: flex !important; flex-wrap: wrap !important; border: 1px solid #D97706 !important; border-top: none !important; margin-bottom: 0 !important; flex-shrink: 0 !important; background: #ffffff !important; }
-  .flood-item            { padding: var(--pd-print-ipad-flood-item) !important; align-items: flex-start !important; border-right-color: #D97706 !important; background: #ffffff !important; }
+  .flood-item            { padding: var(--pd-print-ipad-flood-item) !important; align-items: flex-start !important; }
   .flood-item label      { align-self: flex-start !important; }
   #est_done_on           { width: auto !important; min-width: 0 !important; align-self: flex-start !important; font-size: var(--fs-print-ipad-date) !important; }
   #today                 { font-size: var(--fs-print-ipad-date) !important; }
@@ -2413,9 +2412,6 @@ function printForm() {
     var safariPageFix = document.createElement('style');
     safariPageFix.id = 'safari-page-fix';
     safariPageFix.textContent = [
-      'html, body { height:auto !important; min-height:0 !important; overflow:visible !important; }',
-      '#page { min-height:0 !important; }',
-      '.content { height:auto !important; flex:0 0 auto !important; justify-content:flex-start !important; }',
       '@page { size: 8.5in 11in; margin: 0.05in; }',
       '@media print {',
       '  .field-row { flex-wrap:nowrap!important; }',
@@ -2450,9 +2446,6 @@ function printForm() {
     var safariPageFix = document.createElement('style');
     safariPageFix.id = 'safari-page-fix';
     safariPageFix.textContent = [
-      'html, body { height:auto !important; min-height:0 !important; overflow:visible !important; }',
-      '#page { min-height:0 !important; }',
-      '.content { height:auto !important; flex:0 0 auto !important; justify-content:flex-start !important; }',
       '@page { size: 8.5in 11in; margin: 0.0in; }',
       '.field-row,.inline-row { min-height:var(--h-print-ipad-field-row)!important; }',
       '.field-row { flex-wrap:nowrap!important; }',
@@ -2477,7 +2470,6 @@ function printForm() {
     armRestoreAndPrint(true);
     return;
   }
-
 
   // ══════════════════════════════════════════
   // ── DESKTOP SAFARI / NON-SAFARI — print path ──
