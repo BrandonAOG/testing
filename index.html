@@ -2938,24 +2938,26 @@ function setupGpsButton() {
 
 // ── SEASONAL THEMES ──
 var SEASONAL_THEMES = {
+  // ── Specific holidays first (narrow ranges take priority over broad seasons) ──
   'newyear':     {'start':{month:1,day:1},'end':{month:1,day:7}},
   'valentines':  {'start':{month:2,day:1},'end':{month:2,day:28}},
   'stpatricks':  {'start':{month:3,day:1},'end':{month:3,day:31}},
-  'spring':      {'start':{month:3,day:20},'end':{month:6,day:20}},
-  'summer':      {'start':{month:6,day:21},'end':{month:9,day:22}},
-  'fourthofjuly':{'start':{month:7,day:1},'end':{month:7,day:31}},
   'easter':      {'start':{month:3,day:25},'end':{month:4,day:20}},
-  'memorialday': {'start':{month:5,day:25},'end':{month:5,day:31}},
   'mothersday':  {'start':{month:5,day:1},'end':{month:5,day:14}},
+  'memorialday': {'start':{month:5,day:25},'end':{month:5,day:31}},
   'fathersday':  {'start':{month:6,day:1},'end':{month:6,day:20}},
+  'fourthofjuly':{'start':{month:7,day:1},'end':{month:7,day:31}},
   'hotsummer':   {'start':{month:7,day:21},'end':{month:8,day:10}},
   'backtoschool':{'start':{month:8,day:11},'end':{month:8,day:31}},
-  'halloween':   {'start':{month:10,day:1},'end':{month:10,day:31}},
-  'fall':        {'start':{month:9,day:23},'end':{month:10,day:31}},
-  'thanksgiving':{'start':{month:11,day:1},'end':{month:11,day:30}},
   'laborday':    {'start':{month:9,day:1},'end':{month:9,day:7}},
+  'halloween':   {'start':{month:10,day:1},'end':{month:10,day:31}},
   'veteransday': {'start':{month:11,day:11},'end':{month:11,day:11}},
-  'christmas':   {'start':{month:12,day:1},'end':{month:12,day:31}}
+  'thanksgiving':{'start':{month:11,day:1},'end':{month:11,day:30}},
+  'christmas':   {'start':{month:12,day:1},'end':{month:12,day:31}},
+  // ── Broad seasons last (catch-all fallbacks) ──
+  'spring':      {'start':{month:3,day:20},'end':{month:6,day:20}},
+  'summer':      {'start':{month:6,day:21},'end':{month:9,day:22}},
+  'fall':        {'start':{month:9,day:23},'end':{month:10,day:31}}
 };
 function getCurrentSeasonalTheme() {
   var today=new Date(), month=today.getMonth()+1, date=today.getDate();
