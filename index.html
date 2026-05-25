@@ -1576,7 +1576,7 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
             </div>
           </div>
         </div>
-        <div class="field-block"><textarea id="gen_notes" name="gen_notes" title="Additional generator notes — placement obstacles, run routing, special conditions" placeholder="Additional notes on generator placement / run…" aria-label="Generator notes"></textarea></div>
+        <div class="field-block"><textarea id="gen_notes" rows="1" style="resize:none;overflow:hidden;" name="gen_notes" title="Additional generator notes — placement obstacles, run routing, special conditions" placeholder="Additional notes on generator placement / run…" aria-label="Generator notes"></textarea></div>
       </div>
     </div>
 
@@ -1662,7 +1662,7 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
             <label class="check-item"><input type="checkbox" name="pad" value="existing"><span>Existing</span></label>
           </div>
         </div>
-        <div class="field-block" style="margin-top:var(--mt-notes-box-phone);"><textarea id="pad_notes" name="pad_notes" title="Additional pad notes — soil type, slope, existing pad condition" placeholder="Additional pad notes…" aria-label="Pad notes"></textarea></div>
+        <div class="field-block" style="margin-top:var(--mt-notes-box-phone);"><textarea id="pad_notes" rows="1" style="resize:none;overflow:hidden;" name="pad_notes" title="Additional pad notes — soil type, slope, existing pad condition" placeholder="Additional pad notes…" aria-label="Pad notes"></textarea></div>
       </div>
     </div>
 
@@ -1695,7 +1695,7 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
             <label class="check-item"><input type="checkbox" name="gas_appliances" value="grill"><span>Grill</span></label>
             <label class="check-item"><input type="checkbox" name="gas_appliances" value="pool_heater"><span>Pool Heater</span></label>
           </div>
-          <div class="field-block" style="margin-top:var(--mt-notes-box-phone);"><textarea id="gas_notes" name="gas_notes" title="Gas appliance notes — list unlisted appliances, BTU load concerns, meter size" placeholder="List other gas appliances or notes…" aria-label="Gas appliance notes"></textarea></div>
+          <div class="field-block" style="margin-top:var(--mt-notes-box-phone);"><textarea id="gas_notes" rows="1" style="resize:none;overflow:hidden;" name="gas_notes" title="Gas appliance notes — list unlisted appliances, BTU load concerns, meter size" placeholder="List other gas appliances or notes…" aria-label="Gas appliance notes"></textarea></div>
         </div>
         <div class="inline-row" style="margin-bottom:0;flex-wrap:wrap;gap:8px 16px;">
           <div class="field-block" style="flex:1;min-width:80px;"><label for="fuel_underground" style="margin-bottom:-20px;font-size:var(--fs-fuel-label);">Underground (ft)</label><input type="number" id="fuel_underground" name="fuel_underground" title="Underground gas line run in feet from tank/meter to generator" inputmode="numeric" autocomplete="off" aria-label="Underground fuel run in feet"></div>
@@ -1734,7 +1734,7 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
             <input type="radio" name="new_build" id="nb_n" value="N" class="yn-n"><label class="yn-label yn-label-n" for="nb_n">N</label>
           </div>
         </div>
-        <textarea id="ready_notes" name="ready_notes" title="Site readiness notes — HOA approval needed, permit status, access notes, special instructions" placeholder="Ready/Notes…" rows="2" autocomplete="off" style="margin:0;display:block;" aria-label="Ready notes"></textarea>
+        <textarea id="ready_notes" rows="1" style="resize:none;overflow:hidden;" name="ready_notes" title="Site readiness notes — HOA approval needed, permit status, access notes, special instructions" placeholder="Ready/Notes…" rows="2" autocomplete="off" style="margin:0;display:block;" aria-label="Ready notes"></textarea>
       </div>
     </div>
 
@@ -3911,6 +3911,20 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 <script>
+// ── SINGLE-LINE NOTES — prevent Enter key wrapping to second line ──
+(function() {
+  var noteIds = ['gen_notes', 'pad_notes', 'gas_notes', 'ready_notes'];
+  document.addEventListener('DOMContentLoaded', function() {
+    noteIds.forEach(function(id) {
+      var el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') e.preventDefault();
+      });
+    });
+  });
+})();
+
 function adjustTopPadding() {
   var bar = document.getElementById('action-bar');
   var page = document.getElementById('page');
