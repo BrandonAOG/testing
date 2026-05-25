@@ -127,6 +127,7 @@
   --fs-print-phone-label:          0.85rem;  /* field labels in PDF (Name, Phone, Best Email…)   */
   --fs-print-phone-inline-label:   0.85rem;  /* inline labels in PDF                             */
   --fs-print-phone-input:          0.9rem;  /* text inside input fields in PDF                  */
+  --fs-print-phone-date:           0.8rem;  /* date fields (Today's Date, Estimate Date, Est. Done On) in PDF */
   --fs-print-phone-notes:          0.8rem;  /* text inside note boxes (gen/pad/gas/ready) in PDF */
   --fs-print-phone-yn-label:       0.8rem;  /* Y / N toggle buttons in PDF                      */
   --fs-print-phone-check-item:     0.8rem;  /* checkbox & radio options in PDF                  */
@@ -140,6 +141,7 @@
   --fs-print-ipad-label:           0.85rem;  /* field labels in iPad PDF                         */
   --fs-print-ipad-inline-label:    0.85rem;  /* inline labels in iPad PDF                        */
   --fs-print-ipad-input:           1.57rem;   /* text inside input fields in iPad PDF             */
+  --fs-print-ipad-date:            0.8rem;  /* date fields (Today's Date, Estimate Date, Est. Done On) in iPad PDF */
   --fs-print-ipad-notes:           1.25rem;  /* text inside note boxes (gen/pad/gas/ready) in iPad PDF */
   --fs-print-ipad-yn-label:        0.8rem;  /* Y / N toggle buttons in iPad PDF                 */
   --fs-print-ipad-check-item:      0.8rem;  /* checkbox & radio options in iPad PDF             */
@@ -153,6 +155,7 @@
   --fs-print-desktop-label:          0.8rem;  /* field labels in desktop PDF                      */
   --fs-print-desktop-inline-label:   0.8rem;  /* inline labels in desktop PDF                     */
   --fs-print-desktop-input:          0.88rem;  /* text inside input fields in desktop PDF          */
+  --fs-print-desktop-date:           0.75rem;  /* date fields (Today's Date, Estimate Date, Est. Done On) in desktop PDF */
   --fs-print-desktop-notes:         0.88rem;  /* text inside note boxes (gen/pad/gas/ready) in desktop PDF */
   --fs-print-desktop-yn-label:       0.75rem;  /* Y / N toggle buttons in desktop PDF              */
   --fs-print-desktop-check-item:     0.75rem;  /* checkbox & radio options in desktop PDF          */
@@ -1085,14 +1088,15 @@ body.mobile-safari { -webkit-print-color-adjust: exact; }
   label { color: #6B7280 !important; font-size: var(--fs-print-phone-label) !important; white-space: nowrap !important; }
   legend { font-size: var(--fs-print-phone-label) !important; color: #6B7280 !important; font-weight: 500 !important; font-family: var(--font-display) !important; letter-spacing: 1.5px !important; text-transform: uppercase !important; }
   .inline-label { color: #6B7280 !important; white-space: nowrap !important; font-size: var(--fs-print-phone-inline-label) !important; }
-  input[type="text"], input[type="email"], input[type="tel"], input[type="date"], input[type="number"] { background: #ffffff !important; border-bottom: 2px solid #D97706 !important; border-top: none !important; border-left: none !important; border-right: none !important; color: #1F2937 !important; padding: var(--pd-print-phone-input) !important; min-height: var(--h-print-phone-input) !important; height: var(--h-print-phone-input) !important; font-size: var(--fs-print-phone-input) !important; box-shadow: none !important; }
+  input[type="text"], input[type="email"], input[type="tel"], input[type="number"] { background: #ffffff !important; border-bottom: 2px solid #D97706 !important; border-top: none !important; border-left: none !important; border-right: none !important; color: #1F2937 !important; padding: var(--pd-print-phone-input) !important; min-height: var(--h-print-phone-input) !important; height: var(--h-print-phone-input) !important; font-size: var(--fs-print-phone-input) !important; box-shadow: none !important; }
+  input[type="date"] { background: #ffffff !important; border-bottom: 2px solid #D97706 !important; border-top: none !important; border-left: none !important; border-right: none !important; color: #1F2937 !important; padding: var(--pd-print-phone-input) !important; min-height: var(--h-print-phone-input) !important; height: var(--h-print-phone-input) !important; font-size: var(--fs-print-phone-date) !important; box-shadow: none !important; }
   input::placeholder, textarea::placeholder { color: transparent !important; opacity: 0 !important; }
   input::-webkit-input-placeholder, textarea::-webkit-input-placeholder { color: transparent !important; opacity: 0 !important; }
   input::-moz-placeholder, textarea::-moz-placeholder { color: transparent !important; opacity: 0 !important; }
   #address { padding-right: 6px !important; }
-  #today { width: auto !important; min-width: 0 !important; align-self: flex-start !important; font-size: var(--fs-print-phone-input) !important; }
-  #est_date { width: auto !important; min-width: 0 !important; align-self: flex-start !important; font-size: var(--fs-print-phone-input) !important; }
-  #est_done_on { width: auto !important; min-width: 0 !important; align-self: flex-start !important; font-size: var(--fs-print-phone-input) !important; }
+  #today { width: auto !important; min-width: 0 !important; align-self: flex-start !important; font-size: var(--fs-print-phone-date) !important; }
+  #est_date { width: auto !important; min-width: 0 !important; align-self: flex-start !important; font-size: var(--fs-print-phone-date) !important; }
+  #est_done_on { width: auto !important; min-width: 0 !important; align-self: flex-start !important; font-size: var(--fs-print-phone-date) !important; }
   body.mobile-safari input[type="date"] { min-width: 0 !important; width: auto !important; flex-shrink: 1 !important; }
   textarea { border: 1px solid #D97706 !important; resize: none !important; overflow: hidden !important; padding: var(--pd-print-phone-textarea) !important; margin-top: 3px !important; font-size: var(--fs-print-phone-notes) !important; background: #ffffff !important; color: #1F2937 !important; box-shadow: none !important; }
   #gen_notes  { min-height: var(--h-print-phone-gen-notes) !important; height: var(--h-print-phone-gen-notes) !important; max-height: var(--h-print-phone-gen-notes) !important; }
@@ -1366,7 +1370,8 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
   legend                 { font-size: var(--fs-print-ipad-label) !important; color: #6B7280 !important; font-weight: 500 !important; font-family: var(--font-display) !important; letter-spacing: 1.5px !important; text-transform: uppercase !important; }
   .inline-label          { font-size: var(--fs-print-ipad-inline-label) !important; }
   input[type="text"], input[type="email"], input[type="tel"],
-  input[type="date"], input[type="number"]              { font-size: var(--fs-print-ipad-input) !important; padding: var(--pd-print-ipad-input) !important; }
+  input[type="number"]              { font-size: var(--fs-print-ipad-input) !important; padding: var(--pd-print-ipad-input) !important; }
+  input[type="date"]                { font-size: var(--fs-print-ipad-date) !important; padding: var(--pd-print-ipad-input) !important; }
   textarea               { font-size: var(--fs-print-ipad-notes) !important; padding: var(--pd-print-ipad-textarea) !important; }
   .yn-group .yn-label    { font-size: var(--fs-print-ipad-yn-label) !important; padding: var(--pd-print-ipad-yn-label) !important; }
   .check-item            { padding: var(--pd-print-ipad-check-item) !important; min-height: var(--h-print-ipad-check-item) !important; height: var(--h-print-ipad-check-item) !important; }
@@ -1384,9 +1389,9 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
   .top-col               { padding: var(--pd-print-ipad-top-col) !important; }
   .flood-item            { padding: var(--pd-print-ipad-flood-item) !important; align-items: flex-start !important; }
   .flood-item label      { align-self: flex-start !important; }
-  #est_done_on           { width: auto !important; min-width: 0 !important; align-self: flex-start !important; font-size: var(--fs-print-ipad-input) !important; }
-  #today                 { font-size: var(--fs-print-ipad-input) !important; }
-  #est_date              { font-size: var(--fs-print-ipad-input) !important; }
+  #est_done_on           { width: auto !important; min-width: 0 !important; align-self: flex-start !important; font-size: var(--fs-print-ipad-date) !important; }
+  #today                 { font-size: var(--fs-print-ipad-date) !important; }
+  #est_date              { font-size: var(--fs-print-ipad-date) !important; }
   .footer                { padding: var(--pd-print-ipad-footer) !important; position: relative !important; z-index: 50 !important; }
   .footer-text           { font-size: var(--fs-print-ipad-footer) !important; }
   #ver-span              { font-size: var(--fs-print-ipad-ver-span) !important; }
@@ -1441,7 +1446,8 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
   label                  { font-size: var(--fs-print-desktop-label) !important; }
   .inline-label          { font-size: var(--fs-print-desktop-inline-label) !important; }
   input[type="text"], input[type="email"], input[type="tel"],
-  input[type="date"], input[type="number"]              { font-size: var(--fs-print-desktop-input) !important; padding: var(--pd-print-desktop-input) !important; }
+  input[type="number"]              { font-size: var(--fs-print-desktop-input) !important; padding: var(--pd-print-desktop-input) !important; }
+  input[type="date"]                { font-size: var(--fs-print-desktop-date) !important; padding: var(--pd-print-desktop-input) !important; }
   textarea               { font-size: var(--fs-print-desktop-notes) !important; padding: var(--pd-print-desktop-textarea) !important; }
   .yn-group .yn-label    { font-size: var(--fs-print-desktop-yn-label) !important; padding: var(--pd-print-desktop-yn-label) !important; }
   .check-item            { padding: var(--pd-print-desktop-check-item) !important; min-height: var(--h-print-desktop-check-item) !important; height: var(--h-print-desktop-check-item) !important; }
@@ -2411,7 +2417,8 @@ function printForm() {
       '  /* Counter iPad bleed — force phone values */',
       '  .field-row { min-height:var(--h-print-phone-field-row)!important; }',
       '  .inline-row { min-height:var(--h-print-phone-inline-row)!important; }',
-      '  input[type=text],input[type=email],input[type=tel],input[type=date],input[type=number] { min-height:var(--h-print-phone-input)!important;height:var(--h-print-phone-input)!important;font-size:var(--fs-print-phone-input)!important; }',
+      '  input[type=text],input[type=email],input[type=tel],input[type=number] { min-height:var(--h-print-phone-input)!important;height:var(--h-print-phone-input)!important;font-size:var(--fs-print-phone-input)!important; }',
+      '  input[type=date] { min-height:var(--h-print-phone-input)!important;height:var(--h-print-phone-input)!important;font-size:var(--fs-print-phone-date)!important; }',
       '  .yn-group,.yn-group .yn-label { height:var(--h-print-phone-yn-label)!important;min-height:var(--h-print-phone-yn-label)!important;line-height:var(--h-print-phone-yn-label)!important; }',
       '  .check-item { height:var(--h-print-phone-check-item)!important;min-height:var(--h-print-phone-check-item)!important; }',
       '  .section-body { padding:var(--pd-print-phone-section-body)!important; }',
@@ -2444,7 +2451,8 @@ function printForm() {
       '#transfer-switch-row .section-body { padding:4px 12px var(--pd-ts-bottom-print-ipad) 12px!important; }',
       '#transfer-switch-row .inline-row:last-child { min-height:0!important;margin-bottom:0!important; }',
       'input[type=date] { min-width:0!important;flex-shrink:1!important;width:auto!important; }',
-      'input[type=text],input[type=email],input[type=tel],input[type=date],input[type=number] { min-height:var(--h-print-ipad-input)!important;height:var(--h-print-ipad-input)!important; }',
+      'input[type=text],input[type=email],input[type=tel],input[type=number] { min-height:var(--h-print-ipad-input)!important;height:var(--h-print-ipad-input)!important; }',
+      'input[type=date] { min-height:var(--h-print-ipad-input)!important;height:var(--h-print-ipad-input)!important;font-size:var(--fs-print-ipad-date)!important; }',
       '.yn-group,.yn-group .yn-label { height:var(--h-print-ipad-yn-label)!important;min-height:var(--h-print-ipad-yn-label)!important;line-height:var(--h-print-ipad-yn-label)!important; }',
       '.check-item { height:var(--h-print-ipad-check-item)!important;min-height:var(--h-print-ipad-check-item)!important; }',
       '#gen_notes  { height:var(--h-print-ipad-gen-notes)!important;min-height:var(--h-print-ipad-gen-notes)!important;max-height:var(--h-print-ipad-gen-notes)!important; }',
