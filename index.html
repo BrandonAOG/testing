@@ -411,6 +411,8 @@
   --check-group-gap-desktop:     4px;    /* gap between checkbox/radio pills (desktop)       */
 
   /* ---- DESKTOP PRINT BASE FONT ---- */
+  --fs-print-phone-base:         13.08px; /* base html font-size for phone print             */
+  --fs-print-ipad-base:          13.08px; /* base html font-size for iPad print              */
   --fs-print-desktop-base:       13.08px; /* base html font-size for desktop print           */
 
   /* ---- INPUT FIELD WIDTHS — PHONE ---- */
@@ -978,6 +980,7 @@ body.dark-mode::-webkit-scrollbar-thumb:hover { background: linear-gradient(180d
 body.mobile-safari { -webkit-print-color-adjust: exact; }
 
 @media print {
+  html { font-size: var(--fs-print-phone-base) !important; }
   @page { size: 8.5in 11in; margin: 0.05in 0.05in 0.05in 0.05in; }
   * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; animation: none !important; animation-play-state: paused !important; transition: none !important; }
   .toolbar, .action-bar, #save-status, #theme-toggle-btn, #offline-banner, #address-suggestions, #gps-status, #gps-btn { display: none !important; }
@@ -1267,7 +1270,7 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
 
 /* ===== iPAD PRINT — all elements ===== */
 @media print and (min-width: 768px) {
-  html { font-size: var(--fs-print-desktop-base) !important; }
+  html { font-size: var(--fs-print-ipad-base) !important; }
   @page { margin-bottom: 0in !important; }
   .company-name          { font-size: var(--fs-print-ipad-company-name) !important; }
   .doc-title             { font-size: var(--fs-print-ipad-doc-title) !important; }
