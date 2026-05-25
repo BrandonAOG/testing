@@ -2301,20 +2301,13 @@ if (wasDark) document.body.classList.add('dark-mode');
   void document.body.offsetHeight;
 
   // ── Restore triggers ──
-  if (isMobileSafari) {
-    // afterprint fires immediately on iOS 26 — wait 5s before restoring
-    window.addEventListener('afterprint', function _iosAfter() {
-      window.removeEventListener('afterprint', _iosAfter);
-      setTimeout(restore, 300);
-    });
-    setTimeout(function() { window.print(); }, 800);
-  } else {
-    window.addEventListener('afterprint', function _onAfterPrint() {
-      window.removeEventListener('afterprint', _onAfterPrint);
-      restore();
-    });
-    window.print();
-  }
+  window.addEventListener('afterprint', function _onAfterPrint() {
+    window.removeEventListener('afterprint', _onAfterPrint);
+    setTimeout(restore, isMobileSafari ? 300 : 0);
+  });
+
+  // ── Print — must be called synchronously within user gesture on iOS ──
+  window.print();
 
 }
 
