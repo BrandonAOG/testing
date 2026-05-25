@@ -2611,6 +2611,9 @@ function capturePageToCanvas() {
       '.grid-4 { grid-template-columns: repeat(4, 1fr) !important; }',
       '.logo-img { width: 48px !important; height: 48px !important; object-fit: contain !important; display: block !important; }',
       '.section-header::before, .col-label::before { display: none !important; content: none !important; }',
+      '#transfer-switch-row .section-body { padding-bottom: 0px !important; }',
+      '#transfer-switch-row .inline-row:last-child { min-height: 0 !important; height: auto !important; max-height: fit-content !important; margin-bottom: 0 !important; padding-bottom: 0 !important; flex-wrap: nowrap !important; overflow: hidden !important; }',
+      '#precast-pad-row .section-body { padding-top: 0px !important; }',
     ].join('\n');
     document.head.appendChild(forceStyle);
 
