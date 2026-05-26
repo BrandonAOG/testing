@@ -603,6 +603,10 @@
   --mb-fuel-run-print-ipad:   2px;   /* space below Underground/Above Ground/Attic row to section border (iPad PDF)       */
   --mb-fuel-run-print-desktop:4px;   /* space below Underground/Above Ground/Attic row to section border (desktop PDF)    */
 
+  /* ---- READY NOTES BOTTOM PADDING (gap below Ready/Notes to section border) ---- */
+  --pb-ready-notes-print:      0px;  /* iPhone PDF  */
+  --pb-ready-notes-print-ipad: 0px;  /* iPad PDF    */
+
   --icon-color-primary: #D97706;
   --icon-color-section: #D97706;
   --icon-color-gps: #10B981;
@@ -2424,6 +2428,7 @@ function printForm() {
       '  .yn-group,.yn-group .yn-label { height:var(--h-print-phone-yn-label)!important;min-height:var(--h-print-phone-yn-label)!important;line-height:var(--h-print-phone-yn-label)!important; }',
       '  .check-item { height:var(--h-print-phone-check-item)!important;min-height:var(--h-print-phone-check-item)!important; }',
       '  .section-body { padding:var(--pd-print-phone-section-body)!important; }',
+      '  .section:has(#ready_notes) .section-body { padding-bottom:var(--pb-ready-notes-print)!important; }',
       '  #gen_notes  { height:var(--h-print-phone-gen-notes)!important;min-height:var(--h-print-phone-gen-notes)!important;max-height:var(--h-print-phone-gen-notes)!important; }',
       '  #pad_notes  { height:var(--h-print-phone-pad-notes)!important;min-height:var(--h-print-phone-pad-notes)!important;max-height:var(--h-print-phone-pad-notes)!important; }',
       '  #gas_notes  { height:var(--h-print-phone-gas-notes)!important;min-height:var(--h-print-phone-gas-notes)!important;max-height:var(--h-print-phone-gas-notes)!important; }',
@@ -2450,6 +2455,7 @@ function printForm() {
       '.inline-row { flex-wrap:wrap!important; overflow:visible!important; }',
       '.section-body,.section,.page { overflow:visible!important; }',
       '.section-body { padding:var(--pd-print-ipad-section-body)!important; }',
+      '.section:has(#ready_notes) .section-body { padding-bottom:var(--pb-ready-notes-print-ipad)!important; }',
       '#transfer-switch-row .section-body { padding:4px 12px 0px 12px!important; }',
       '#transfer-switch-row .inline-row:last-child { min-height:0!important;height:auto!important;max-height:fit-content!important;margin-bottom:0!important;padding-bottom:0!important;flex-wrap:nowrap!important;overflow:hidden!important; }',
       '#precast-pad-row .section-body { padding-top:0px!important; }',
