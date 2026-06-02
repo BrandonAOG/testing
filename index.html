@@ -5493,7 +5493,13 @@ let _nbrTimer=null, _nbrCtx=null;
 map.on('moveend zoomend', ()=>{
   if(!nbrNumOn || !_nbrCtx) return;
   clearTimeout(_nbrTimer);
-  _nbrTimer=setTimeout(()=>{ showNeighborNumbers(_nbrCtx.hn, _nbrCtx.lat, _nbrCtx.lng, _nbrCtx.pid); }, BOUNDS_DEBOUNCE);
+  _nbrTimer=setTimeout(()=>{
+    // anchor on the marker's CURRENT position (the subject lot) so the highlight tracks the snapped
+    // house, never the pre-snap drop point. Fall back to the stored ctx if the marker is gone.
+    let aLat=_nbrCtx.lat, aLng=_nbrCtx.lng;
+    try{ if(marker){ const ll=marker.getLatLng(); aLat=ll.lat; aLng=ll.lng; } }catch(e){}
+    showNeighborNumbers(_nbrCtx.hn, aLat, aLng, _nbrCtx.pid);
+  }, BOUNDS_DEBOUNCE);
 });
 
 /* Build the hover-tooltip markup for a parcel from {site, pid, owner} (any may be missing). */
@@ -5863,10 +5869,16 @@ async function runLookup(lat,lng,searchCtx){
         // expect to see on their house. Fall back to the matched parcel's address number for map
         // clicks (no search number).
         const _sHN = (searchCtx&&searchCtx.hn) || houseNum(det.site?pick(_a,det.site):'') || null;
-        const _sLat = liveRes.__ngLat!=null?liveRes.__ngLat:lat, _sLng=liveRes.__ngLng!=null?liveRes.__ngLng:lng;
+        const _sLat0 = liveRes.__ngLat!=null?liveRes.__ngLat:lat, _sLng0=liveRes.__ngLng!=null?liveRes.__ngLng:lng;
         const _sPid = det.pid?pick(_a,det.pid):null;
-        _nbrCtx={ hn:_sHN, lat:_sLat, lng:_sLng, pid:(_sPid!=null?String(_sPid):null) };
-        setTimeout(()=>showNeighborNumbers(_sHN,_sLat,_sLng,(_sPid!=null?String(_sPid):null)), 150);
+        _nbrCtx={ hn:_sHN, lat:_sLat0, lng:_sLng0, pid:(_sPid!=null?String(_sPid):null) };
+        setTimeout(()=>{
+          // read the marker's FINAL position at fire time (it may have snapped after this point)
+          let aLat=_sLat0, aLng=_sLng0;
+          try{ if(marker){ const ll=marker.getLatLng(); aLat=ll.lat; aLng=ll.lng; } }catch(e){}
+          _nbrCtx.lat=aLat; _nbrCtx.lng=aLng;
+          showNeighborNumbers(_sHN, aLat, aLng, (_sPid!=null?String(_sPid):null));
+        }, 200);
       }catch(e){}
     }
     { const _a=liveRes.features[0].attributes; const _ra=pick(_a,'TOTALACRES')||pick(_a,'ACREAGE')||pick(_a,'GIS_ACRES')||null;
@@ -5948,8 +5960,17 @@ async function runLookup(lat,lng,searchCtx){
     });
     try{
       const _sHN = houseNum(site||'') || (searchCtx&&searchCtx.hn) || null;
-      _nbrCtx={ hn:_sHN, lat:lat, lng:lng, pid:(pid!=null?String(pid):null) };
-      setTimeout(()=>showNeighborNumbers(_sHN, lat, lng, (pid!=null?String(pid):null)), 150);
+      const _sPid = (pid!=null?String(pid):null);
+      // Use the marker's FINAL position when the labels fire — the marker may snap to the correct
+      // house AFTER this point (address-point correction / setView), and we must highlight where it
+      // ends up, not where it first dropped. Read marker.getLatLng() at fire time.
+      _nbrCtx={ hn:_sHN, lat:lat, lng:lng, pid:_sPid };
+      setTimeout(()=>{
+        let aLat=lat, aLng=lng;
+        try{ if(marker){ const ll=marker.getLatLng(); aLat=ll.lat; aLng=ll.lng; } }catch(e){}
+        _nbrCtx.lat=aLat; _nbrCtx.lng=aLng;
+        showNeighborNumbers(_sHN, aLat, aLng, _sPid);
+      }, 200);
     }catch(e){}
     html += renderLotDimensions(parcel.features[0].geometry, pick(a,'TOTALACRES'));
     try{ const _dim=parcelDimensions(parcel.features[0].geometry); if(_dim&&_dim.areaSqft>0) parcelLotSqft=_dim.areaSqft;
