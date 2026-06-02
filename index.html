@@ -5370,6 +5370,7 @@ function clearNeighborNumbers(){ try{ nbrNumLayer.clearLayers(); if(map.hasLayer
 async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid){
   if(!nbrNumOn) return;
   const myRun = ++_nbrRunSeq;   // claim the latest-run slot
+  console.log(`[nbr] run #${myRun} START anchor=${subjLat&&subjLat.toFixed(5)},${subjLng&&subjLng.toFixed(5)} layerHad=${nbrNumLayer.getLayers().length}`);
   try{
     clearNeighborNumbers();
     if(map.getZoom() < 16) return;                       // too dense/zoomed-out to be legible
@@ -5431,6 +5432,7 @@ async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid){
       const icon=L.divIcon({ className:'', html:`<div class="nbr-num${isSubj?' subject':''}">${esc(L0.hn)}</div>`, iconSize:null });
       L.marker([L0.lat,L0.lng],{icon, interactive:false, keyboard:false, zIndexOffset:isSubj?1000:0}).addTo(nbrNumLayer);
     }
+    console.log(`[nbr] run #${myRun} RENDERED ${labels.length} labels, subjIdx=${subjIdx}, layerNow=${nbrNumLayer.getLayers().length}, isLatest=${myRun===_nbrRunSeq}`);
     if(labels.length){ nbrNumLayer.addTo(map); }
     // GAP-FILL for inside-tract / lean-feed homes: villa & condo units inside a shared tract often
     // carry NO address on the parcel layer, so PASS 2 skips them (you see numbers OUTSIDE the orange
