@@ -4647,55 +4647,55 @@ const ADDRPOINT_FEEDS = {
 };
 
 /* ============================================================================
-   STATIC ADDRESS-POINT TILES — for counties with NO live ArcGIS query endpoint.
-   Instead of a live server, the points live as pre-cut GeoJSON tiles shipped in
-   the repo (a folder next to this index.html). The app loads only the tiles that
-   intersect the current viewport, so it stays fast despite the full county being
-   present on disk.
+   HOSTED ADDRESS-POINT FILE — for counties with NO live ArcGIS query endpoint.
+   Instead of a live server, the entire county's points live in ONE compact file
+   hosted anywhere CORS-friendly (Cloudflare Pages/R2, GitHub Pages, etc.). The
+   app fetches it ONCE, caches it in memory, then filters to the viewport on each
+   pan — no per-tile requests, no 100-file repo upload.
+
+   File format (compact, minified to keep it tiny):
+     { "fmt":"lee-addr-v3", "lat0":.., "lon0":.., "scale":100000,
+       "streets":["ALABASTER ST", ...],
+       "rows":[[ix,iy,"506",streetIndex], ...] }
+   where lon = lon0 + ix/scale, lat = lat0 + iy/scale, and the address is
+   addrnum + " " + streets[streetIndex].
 
    Lee County has no public live address-point service (only a downloadable file
-   geodatabase), so Lee is served from local tiles generated from that FGDB.
+   geodatabase), so Lee is served from this one hosted file.
 
-   To add a tiled county:
-     1. Generate tiles into a folder: files named "<tx>_<ty>.geojson" where
-        tx=floor(lon/deg), ty=floor(lat/deg), plus a "manifest.json".
-     2. Add a row:  KEY: { dir:"<folder>/", deg:<deg> }
-        KEY = county name, caps, letters only (matched via norm()).
-   Tile features are GeoJSON; the loader converts them to the same shape the
-   gap-fill code expects, so no other code changes are needed.
+   To add a hosted-file county:
+     Add a row:  KEY: "https://your-host/the-file.json"  (or a repo-relative path)
+     KEY = county name, caps, letters only (matched via norm()).
    ============================================================================ */
-const ADDRPOINT_TILES = {
-  LEE: { dir: "lee_tiles/", deg: 0.025 }
+const ADDRPOINT_FILES = {
+  // Lee's full address-point set, served as one compact file sitting next to this
+  // index.html in your repo (no external host, no account needed). If you ever move
+  // it to a CDN, just swap this for the full https:// URL.
+  LEE: "lee_compact_v3.json"
 };
-// Cache so panning doesn't re-fetch the same tile. Keyed by "dir|tx_ty".
-const _tileCache = new Map();
-async function loadTileFeatures(cfg, b){
-  const deg=cfg.deg;
-  const x0=Math.floor(b.getWest()/deg),  x1=Math.floor(b.getEast()/deg);
-  const y0=Math.floor(b.getSouth()/deg), y1=Math.floor(b.getNorth()/deg);
-  // Guard against absurd ranges (e.g. world view) — only tile-load when zoomed in.
-  if((x1-x0)>6 || (y1-y0)>6) return [];
-  const jobs=[];
-  for(let tx=x0; tx<=x1; tx++){
-    for(let ty=y0; ty<=y1; ty++){
-      const key=cfg.dir+'|'+tx+'_'+ty;
-      if(_tileCache.has(key)){ jobs.push(Promise.resolve(_tileCache.get(key))); continue; }
-      const url=cfg.dir+tx+'_'+ty+'.geojson';
-      jobs.push(
-        fetch(url).then(r=> r.ok ? r.json() : null).then(j=>{
-          // Convert GeoJSON -> the Esri-shaped features the gap-fill code consumes.
-          const out=(j&&j.features)? j.features.map(f=>({
-            attributes: f.properties||{},
-            geometry: f.geometry ? { x:f.geometry.coordinates[0], y:f.geometry.coordinates[1] } : null
-          })) : [];
-          _tileCache.set(key,out); return out;
-        }).catch(()=>{ _tileCache.set(key,[]); return []; })
-      );
-    }
-  }
-  const chunks=await Promise.all(jobs);
-  let all=[]; for(const c of chunks) all=all.concat(c);
-  return all;
+// Cache the parsed rows per county-file URL so it's fetched only once per session.
+const _fileCache = new Map();
+async function loadHostedFileRows(url){
+  if(_fileCache.has(url)) return _fileCache.get(url);
+  // Store the in-flight promise so concurrent pans don't double-fetch.
+  const p = fetch(url).then(r=> r.ok ? r.json() : null).then(j=>{
+    if(!j || !Array.isArray(j.rows)) return [];
+    // Compact "v3" format: coords are integer offsets from (lon0,lat0) scaled by `scale`,
+    // and the street string is an index into a deduped `streets` table. Reconstruct each
+    // point into the Esri-shaped feature the gap-fill code expects.
+    const lat0=j.lat0||0, lon0=j.lon0||0, scale=j.scale||1, streets=j.streets||[];
+    return j.rows.map(r=>{
+      const num=r[2]||'';
+      const street=streets[r[3]]||'';
+      const full=(num+' '+street).trim();
+      return {
+        attributes: { ADDRNUM: num, FULLADDR: full },
+        geometry: { x: lon0 + r[0]/scale, y: lat0 + r[1]/scale }
+      };
+    });
+  }).catch(()=>[]);
+  _fileCache.set(url, p);
+  return p;
 }
 /* Build a readable address from an address-point's attributes, auto-detecting field names. */
 function formatAddrPoint(a){
@@ -5565,15 +5565,16 @@ async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid){
     // here — unlike the heavy parcel layer that needed a trimmed field list.
     try{
       const _county = (window.__lastCounty||'').toString();
-      const apUrl   = _county ? ADDRPOINT_FEEDS[norm(_county)] : null;
-      const tileCfg = _county ? ADDRPOINT_TILES[norm(_county)] : null;
-      if(apUrl || tileCfg){
+      const apUrl    = _county ? ADDRPOINT_FEEDS[norm(_county)] : null;
+      const fileUrl  = _county ? ADDRPOINT_FILES[norm(_county)] : null;
+      // Ignore an unconfigured placeholder URL so it never tries to fetch REPLACE-ME.
+      const fileCfg  = (fileUrl && fileUrl.indexOf('REPLACE-ME')<0) ? fileUrl : null;
+      if(apUrl || fileCfg){
         let aj=null;
-        if(tileCfg){
-          // STATIC TILES path: load the GeoJSON tiles intersecting the viewport and shape them
-          // like a query response. Only points actually inside the bounds are kept (tiles overhang
-          // the viewport edges). No network round-trip to a county server.
-          const feats=await loadTileFeatures(tileCfg, b);
+        if(fileCfg){
+          // HOSTED FILE path: fetch the whole county once (cached), then filter to the viewport.
+          // The full file is small (compact rows + gzip), so one load covers all panning/zooming.
+          const feats=await loadHostedFileRows(fileCfg);
           const W=b.getWest(),E=b.getEast(),S=b.getSouth(),N=b.getNorth();
           const inView=feats.filter(f=>{ const g=f.geometry; return g && g.x>=W && g.x<=E && g.y>=S && g.y<=N; });
           aj={ features: inView };
