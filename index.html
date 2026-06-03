@@ -259,6 +259,12 @@
     font-family:var(--mono);font-size:10px;font-weight:600;line-height:1;letter-spacing:.02em;padding:2px 4px;
     white-space:nowrap;text-align:center;box-shadow:0 1px 4px rgba(0,0,0,.45);pointer-events:none;transform:translate(-50%,-50%);
     display:flex;flex-direction:column;align-items:center;gap:1px}
+  /* Interactive neighbor labels: hovering pops the address. We keep the visual centering on .nbr-num
+     (its own translate(-50%,-50%)) and simply re-enable pointer events on the label and its Leaflet
+     container so hover/tooltip works. We do NOT override the container transform — Leaflet uses that
+     to position the marker at its lat/lng. */
+  .leaflet-marker-icon.nbr-hit{pointer-events:auto !important; cursor:help}
+  .nbr-hit .nbr-num{pointer-events:auto; cursor:help}
   .nbr-num .nbr-hn{font-weight:700}
   .nbr-num .nbr-st{font-size:8px;font-weight:500;opacity:.82;letter-spacing:.04em}
   .nbr-num.subject{background:#ffb000;color:#10151b;border-color:#ffd166;font-weight:700;font-size:11px;box-shadow:0 1px 6px rgba(255,176,0,.5)}
@@ -5588,8 +5594,12 @@ async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid){
     for(let i=0;i<labels.length;i++){
       const L0=labels[i]; const isSubj = (i===subjIdx);
       const labelHTML = numStreetLabelHTML(L0.txt, L0.hn);
-      const icon=L.divIcon({ className:'', html:`<div class="nbr-num${isSubj?' subject':''}">${labelHTML}</div>`, iconSize:null });
-      L.marker([L0.lat,L0.lng],{icon, interactive:false, keyboard:false, zIndexOffset:isSubj?1000:0}).addTo(nbrNumLayer);
+      const icon=L.divIcon({ className:'nbr-hit', html:`<div class="nbr-num${isSubj?' subject':''}">${labelHTML}</div>`, iconSize:null });
+      // interactive:true so hovering ANY neighbor label pops its own address (not just the searched one)
+      const mk=L.marker([L0.lat,L0.lng],{icon, interactive:true, keyboard:false, zIndexOffset:isSubj?1000:0}).addTo(nbrNumLayer);
+      const _pid = L0.feat ? pick(L0.feat.attributes||{},'PARCEL_ID','PARCELID','PARCEL','FOLIO','STRAP','PIN','PID') : null;
+      const tip = parcelTooltipHTML({ site:L0.txt, pid:(_pid!=null&&String(_pid).trim()!==''?String(_pid):null) });
+      if(tip) mk.bindTooltip(tip,{sticky:true,direction:'top',className:'parcel-tip',opacity:1});
     }
     if(labels.length){ nbrNumLayer.addTo(map); }
     // GAP-FILL for inside-tract / lean-feed homes: villa & condo units inside a shared tract often
@@ -5679,8 +5689,11 @@ async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid){
         for(let i=0;i<ptLabels.length;i++){
           const P=ptLabels[i]; const isSubj=(i===ptSubjIdx);
           const labelHTML = numStreetLabelHTML(P.addr||'', P.hn);
-          const icon=L.divIcon({ className:'', html:`<div class="nbr-num${isSubj?' subject':''}">${labelHTML}</div>`, iconSize:null });
-          L.marker([P.lat,P.lng],{icon, interactive:false, keyboard:false, zIndexOffset:isSubj?1000:0}).addTo(nbrNumLayer);
+          const icon=L.divIcon({ className:'nbr-hit', html:`<div class="nbr-num${isSubj?' subject':''}">${labelHTML}</div>`, iconSize:null });
+          // interactive:true so hovering this neighbor pops its own address
+          const mk=L.marker([P.lat,P.lng],{icon, interactive:true, keyboard:false, zIndexOffset:isSubj?1000:0}).addTo(nbrNumLayer);
+          const tip = parcelTooltipHTML({ site:P.addr });
+          if(tip) mk.bindTooltip(tip,{sticky:true,direction:'top',className:'parcel-tip',opacity:1});
           added++;
         }
         if(added && !map.hasLayer(nbrNumLayer)) nbrNumLayer.addTo(map);
