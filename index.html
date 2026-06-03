@@ -5522,25 +5522,32 @@ async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid){
       `&spatialRel=esriSpatialRelIntersects&where=1%3D1&outFields=${encodeURIComponent('PHY_ADDR1,PARCEL_ID')}`+
       `&returnGeometry=false&returnCentroid=true&outSR=4326&resultRecordCount=400&f=json`;
     const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),12000);
-    const r=await fetch(url,{signal:ctrl.signal}); clearTimeout(t);
-    if(!r.ok) return;
-    const j=await r.json();
-    if(j.error || !j.features || !j.features.length) return;
+    let j=null;
+    try{ const r=await fetch(url,{signal:ctrl.signal}); clearTimeout(t); if(r.ok) j=await r.json(); }
+    catch(e){ clearTimeout(t); }
+    // NOTE: a failed/empty live parcel fetch must NOT abort the function — the local address-point
+    // index (below) is the primary, complete neighbor source and works with no county server.
+    const liveFeatures = (j && !j.error && j.features) ? j.features : [];
     const want = subjectHN!=null ? String(subjectHN).trim() : null;
     const _pidDigits = s => (s==null?'':String(s).replace(/\D/g,''));
     const wantPidRaw = (subjPid!=null && String(subjPid).trim()!=='') ? String(subjPid).trim() : null;
     const wantPidDig = _pidDigits(wantPidRaw);
     const haveAnchor = isFinite(subjLat) && isFinite(subjLng);
-    // PASS 1: build the label list — EVERY parcel in view that has an address gets an entry, so all
-    // the house numbers show. (This is the simple, complete behavior.)
+    // The subject's STREET (from the address the user typed/clicked) — used to keep neighbor labels
+    // on the SAME street as the subject. Empty string => no street filter (show all, legacy behavior).
+    const wantStreet = (_nbrCtx && _nbrCtx.addr) ? String(_nbrCtx.addr) : '';
+    // PASS 1: build the label list from the live parcel layer. With a street known, keep only
+    // parcels on the SAME street as the subject (so you see the numeric run on your road, not every
+    // cross-street). Without a street (bare map click), keep all — the old complete behavior.
     const labels=[];   // {hn, lat, lng, feat}
     let seen=new Set();
-    for(const f of j.features){
+    for(const f of liveFeatures){
       if(labels.length>=200) break;                       // safety cap
       const a=f.attributes||{};
       const txt=parcelAddrText(a);                        // auto-detects SITEADDR/PHY_ADDR1/SITUS/etc.
       const hn=houseNum(txt);
       if(!hn) continue;
+      if(wantStreet && !sameStreet(wantStreet, txt)) continue;   // same-street filter
       // label position: server-provided centroid (fast). Fall back to feature centroid if absent.
       const ce=f.centroid;
       let cx = ce ? (ce.x!=null?ce.x:ce.X) : null, cy = ce ? (ce.y!=null?ce.y:ce.Y) : null;
@@ -5657,6 +5664,7 @@ async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid){
           const hn = houseNum(String(P.hn)) || (P.hn!=null?String(P.hn):null);
           const gx = P.lng, gy = P.lat;
           if(!hn || gx==null || gy==null) continue;
+          if(wantStreet && !sameStreet(wantStreet, P.addr)) continue;   // same-street filter
           // already have a parcel label for this spot? skip (avoids duplicating outside numbers).
           let dup=false;
           for(const L0 of labels){ const ddx=L0.lng-gx, ddy=L0.lat-gy; if(ddx*ddx+ddy*ddy < NEAR2){ dup=true; break; } }
