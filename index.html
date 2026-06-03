@@ -1910,7 +1910,7 @@ async function refreshParcelLines(){
   if(!parcelLinesOn) return;
   if(map.getZoom() < 16){ parcelLinesLayer.clearLayers(); parcelKey=''; return; }   // too dense zoomed out
   const b=map.getBounds();
-  // Parcels are dense and the server caps at 3000 records, so we must NOT enlarge the query
+  // Parcels are dense and the server caps responses at 700 records, so we must NOT enlarge the query
   // envelope (that would push on-screen parcels past the cap and leave the view empty). We do a
   // light same-view skip instead: only refetch once the view has shifted meaningfully.
   const key=[b.getWest(),b.getSouth(),b.getEast(),b.getNorth()].map(n=>n.toFixed(4)).join(',');
@@ -1919,7 +1919,7 @@ async function refreshParcelLines(){
   const env=`${b.getWest()},${b.getSouth()},${b.getEast()},${b.getNorth()}`;
   const url=PARCEL_FS+`?geometry=${encodeURIComponent(env)}&geometryType=esriGeometryEnvelope&inSR=4326`+
     `&spatialRel=esriSpatialRelIntersects&where=1%3D1&outFields=&returnGeometry=true&outSR=4326`+
-    `&resultRecordCount=3000&f=geojson`;
+    `&resultRecordCount=700&f=geojson`;
   try{
     const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),15000);
     const r=await fetch(url,{signal:ctrl.signal}); clearTimeout(t);
@@ -5524,14 +5524,30 @@ async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid){
     // polygons for ~400 parcels was the main delay (~1.5s); centroids are tiny, so this returns in a
     // few hundred ms. We only need a point to place each number; the centroid is plenty for a label.
     // Two fields (PHY_ADDR1, PARCEL_ID) both confirmed to exist on the statewide layer.
-    const url=PARCEL_FS+`?geometry=${encodeURIComponent(env)}&geometryType=esriGeometryEnvelope&inSR=4326`+
+    // The county/host rejects requests for more than 700 records, so we PAGE the query: fetch up to
+    // 700 at a time with an increasing resultOffset and stitch the pages together. A dense view can
+    // hold ~900-1000 parcels; paging lets us still get them all without ever asking for >700 at once.
+    // Capped at PAGE_MAX pages so it stays fast and can't loop forever.
+    const PAGE_SIZE=700, PAGE_MAX=3;
+    const baseUrl=PARCEL_FS+`?geometry=${encodeURIComponent(env)}&geometryType=esriGeometryEnvelope&inSR=4326`+
       `&spatialRel=esriSpatialRelIntersects&where=1%3D1&outFields=${encodeURIComponent('PHY_ADDR1,PARCEL_ID')}`+
-      `&returnGeometry=false&returnCentroid=true&outSR=4326&resultRecordCount=2000&f=json`;
-    const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),12000);
-    const r=await fetch(url,{signal:ctrl.signal}); clearTimeout(t);
-    if(!r.ok) return;
-    const j=await r.json();
-    if(j.error || !j.features || !j.features.length) return;
+      `&returnGeometry=false&returnCentroid=true&outSR=4326&resultRecordCount=${PAGE_SIZE}`;
+    let allFeatures=[]; let firstErr=null;
+    for(let page=0; page<PAGE_MAX; page++){
+      const url=baseUrl+`&resultOffset=${page*PAGE_SIZE}&f=json`;
+      const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),12000);
+      let j=null;
+      try{ const r=await fetch(url,{signal:ctrl.signal}); clearTimeout(t); if(r.ok) j=await r.json(); }
+      catch(e){ clearTimeout(t); }
+      if(!j){ break; }
+      if(j.error){ if(page===0) firstErr=true; break; }
+      const feats=j.features||[];
+      allFeatures=allFeatures.concat(feats);
+      // stop when the server says there's no more (or returned a short/empty page)
+      if(!j.exceededTransferLimit || feats.length<PAGE_SIZE) break;
+    }
+    if(firstErr || !allFeatures.length) return;
+    const j={ features: allFeatures };   // downstream PASS 1 iterates j.features as before
     const want = subjectHN!=null ? String(subjectHN).trim() : null;
     const _pidDigits = s => (s==null?'':String(s).replace(/\D/g,''));
     const wantPidRaw = (subjPid!=null && String(subjPid).trim()!=='') ? String(subjPid).trim() : null;
@@ -5638,7 +5654,7 @@ async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid){
         if(apUrl){
           const apEnv=`${b.getWest()},${b.getSouth()},${b.getEast()},${b.getNorth()}`;
           const apUrlFull=apUrl+`?geometry=${encodeURIComponent(apEnv)}&geometryType=esriGeometryEnvelope&inSR=4326`+
-            `&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=true&outSR=4326&resultRecordCount=800&f=json`;
+            `&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=true&outSR=4326&resultRecordCount=700&f=json`;
           const ac=new AbortController(); const at=setTimeout(()=>ac.abort(),12000);
           let aj=null;
           try{ const ar=await fetch(apUrlFull,{signal:ac.signal}); clearTimeout(at); if(ar.ok) aj=await ar.json(); }
