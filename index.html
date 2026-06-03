@@ -5534,12 +5534,10 @@ async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid, forceAn
       b = b.isValid() ? b.extend(aB) : aB;
     }
     const env=`${b.getWest()},${b.getSouth()},${b.getEast()},${b.getNorth()}`;
-    // SPEED: ask the server for CENTROIDS only — not full polygon geometry. Downloading/parsing
-    // polygons for ~400 parcels was the main delay (~1.5s); centroids are tiny, so this returns in a
-    // few hundred ms. We only need a point to place each number; the centroid is plenty for a label.
-    // Two fields (PHY_ADDR1, PARCEL_ID) both confirmed to exist on the statewide layer.
+    // Centroid-only query (no polygon geometry) keeps it fast. Fields: address + parcel id for the
+    // label/match, plus owner name (OWN_NAME) and living area (TOT_LVG_AR) for the hover tooltip.
     const url=PARCEL_FS+`?geometry=${encodeURIComponent(env)}&geometryType=esriGeometryEnvelope&inSR=4326`+
-      `&spatialRel=esriSpatialRelIntersects&where=1%3D1&outFields=${encodeURIComponent('PHY_ADDR1,PARCEL_ID')}`+
+      `&spatialRel=esriSpatialRelIntersects&where=1%3D1&outFields=${encodeURIComponent('PHY_ADDR1,PARCEL_ID,OWN_NAME,TOT_LVG_AR')}`+
       `&returnGeometry=false&returnCentroid=true&outSR=4326&resultRecordCount=400&f=json`;
     const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),12000);
     const r=await fetch(url,{signal:ctrl.signal}); clearTimeout(t);
@@ -5611,8 +5609,10 @@ async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid, forceAn
       const icon=L.divIcon({ className:'nbr-hit', html:`<div class="nbr-num${isSubj?' subject':''}">${labelHTML}</div>`, iconSize:null });
       const mk=L.marker([L0.lat,L0.lng],{icon, interactive:true, keyboard:false, zIndexOffset:isSubj?1000:0}).addTo(nbrNumLayer);
       try{ const _a=L0.feat.attributes||{};
+        const _liv=fmtNum(pick(_a,'TOT_LVG_AR','TOTLVGAR','HEATED_AREA','HEATEDAREA','LIVING_AREA','LIVINGAREA','BLDG_SQFT'));
         const _tip=parcelTooltipHTML({ site:L0.txt||parcelAddrText(_a),
-          pid:pick(_a,'PARCEL_ID','PARCELID','PARCEL','FOLIO','STRAP','PIN','PID'), owner:pick(_a,'OWN_NAME','OWNER','NAME1') });
+          pid:pick(_a,'PARCEL_ID','PARCELID','PARCEL','FOLIO','STRAP','PIN','PID'), owner:pick(_a,'OWN_NAME','OWNER','NAME1'),
+          sqft:_liv?_liv+' sq ft':null });
         if(_tip) mk.bindTooltip(_tip,{sticky:true,direction:'top',className:'parcel-tip',opacity:1});
       }catch(e){}
     }
@@ -5738,6 +5738,7 @@ function parcelTooltipHTML(info){
   add('Address', info.site);
   add('Parcel', info.pid);
   add('Owner', info.owner);
+  add('Living area', info.sqft);
   return rows.length ? rows.join('') : '';
 }
 
