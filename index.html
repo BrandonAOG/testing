@@ -4677,29 +4677,65 @@ const ADDRPOINT_FILES = {
   // this file ever fails to load.
   COLLIER: "collier_compact_v3.json"
 };
-// Cache the parsed rows per county-file URL so it's fetched only once per session.
+// Cache the parsed file per URL so it's fetched + indexed only once per session.
 const _fileCache = new Map();
-async function loadHostedFileRows(url){
+// SPEED: instead of decoding every point into a feature object up front (slow for 300k–700k
+// points), keep the raw compact arrays and build a coarse spatial grid index keyed by
+// 0.02° cells. A viewport query then only touches the handful of cells it overlaps, and we
+// build address strings lazily for just those few hundred points — not the whole county.
+const _GRID = 0.02;
+function _cellKey(cx,cy){ return cx+'_'+cy; }
+async function loadHostedFileIndex(url){
   if(_fileCache.has(url)) return _fileCache.get(url);
-  // Store the in-flight promise so concurrent pans don't double-fetch.
   const p = fetch(url).then(r=> r.ok ? r.json() : null).then(j=>{
-    if(!j || !Array.isArray(j.rows)) return [];
-    // Compact "v3" format: coords are integer offsets from (lon0,lat0) scaled by `scale`,
-    // and the street string is an index into a deduped `streets` table. Reconstruct each
-    // point into the Esri-shaped feature the gap-fill code expects.
+    if(!j || !Array.isArray(j.rows)) return null;
     const lat0=j.lat0||0, lon0=j.lon0||0, scale=j.scale||1, streets=j.streets||[];
-    return j.rows.map(r=>{
-      const num=r[2]||'';
-      const street=streets[r[3]]||'';
-      const full=(num+' '+street).trim();
-      return {
-        attributes: { ADDRNUM: num, FULLADDR: full },
-        geometry: { x: lon0 + r[0]/scale, y: lat0 + r[1]/scale }
-      };
-    });
-  }).catch(()=>[]);
+    const grid=new Map();
+    const rows=j.rows;
+    for(let i=0;i<rows.length;i++){
+      const r=rows[i];
+      const x=lon0 + r[0]/scale, y=lat0 + r[1]/scale;
+      const cx=Math.floor(x/_GRID), cy=Math.floor(y/_GRID);
+      const k=_cellKey(cx,cy);
+      let cell=grid.get(k); if(!cell){ cell=[]; grid.set(k,cell); }
+      // store decoded x,y + the row so we don't recompute coords on every query
+      cell.push([x,y,r[2]||'',r[3]]);
+    }
+    return { grid, streets };
+  }).catch(()=>null);
   _fileCache.set(url, p);
   return p;
+}
+// Return Esri-shaped features inside the given Leaflet bounds, building address strings
+// only for the points actually in view.
+async function queryHostedFile(url, b){
+  const idx=await loadHostedFileIndex(url);
+  if(!idx || !idx.grid) return null;   // null => load failed (lets caller fall back to live feed)
+  const W=b.getWest(),E=b.getEast(),S=b.getSouth(),N=b.getNorth();
+  const cx0=Math.floor(W/_GRID), cx1=Math.floor(E/_GRID);
+  const cy0=Math.floor(S/_GRID), cy1=Math.floor(N/_GRID);
+  const streets=idx.streets, out=[];
+  for(let cx=cx0;cx<=cx1;cx++){
+    for(let cy=cy0;cy<=cy1;cy++){
+      const cell=idx.grid.get(_cellKey(cx,cy));
+      if(!cell) continue;
+      for(let i=0;i<cell.length;i++){
+        const p=cell[i], x=p[0], y=p[1];
+        if(x>=W && x<=E && y>=S && y<=N){
+          const num=p[2], street=streets[p[3]]||'';
+          out.push({ attributes:{ ADDRNUM:num, FULLADDR:(num+' '+street).trim() }, geometry:{ x, y } });
+        }
+      }
+    }
+  }
+  return out;
+}
+// Kick the download+index off early (before zoom-in) so it's ready when labels are needed.
+function prefetchCountyFile(county){
+  try{
+    const url = county ? ADDRPOINT_FILES[norm(county)] : null;
+    if(url && url.indexOf('REPLACE-ME')<0) loadHostedFileIndex(url);
+  }catch(e){}
 }
 /* Build a readable address from an address-point's attributes, auto-detecting field names. */
 function formatAddrPoint(a){
@@ -5576,17 +5612,15 @@ async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid){
       if(apUrl || fileCfg){
         let aj=null;
         if(fileCfg){
-          // HOSTED FILE path: fetch the whole county once (cached), then filter to the viewport.
-          // The full file is small (compact rows + gzip), so one load covers all panning/zooming.
-          const feats=await loadHostedFileRows(fileCfg);
-          // Only fall back to a live feed if the FILE ITSELF failed to load (zero rows total),
-          // not merely because this viewport happens to be empty.
-          if((!feats || !feats.length) && apUrl){
+          // HOSTED FILE path: query the spatial index for just this viewport's points.
+          // Fast: only nearby grid cells are scanned, and address strings are built lazily.
+          const inView = await queryHostedFile(fileCfg, b);
+          // queryHostedFile returns null only if the file failed to load — in that case, if the
+          // county also has a live feed, fall through to it. An empty (but successful) result is [].
+          if(inView===null && apUrl){
             aj=null;
           } else {
-            const W=b.getWest(),E=b.getEast(),S=b.getSouth(),N=b.getNorth();
-            const inView=feats.filter(f=>{ const g=f.geometry; return g && g.x>=W && g.x<=E && g.y>=S && g.y<=N; });
-            aj={ features: inView };
+            aj={ features: inView||[] };
           }
         }
         if(!aj){
@@ -5783,6 +5817,8 @@ async function runLookup(lat,lng,searchCtx){
   let countyName = (!county.__err && county.features && county.features[0]) ? county.features[0].attributes.NAME : null;
   let cityName   = (!city.__err   && city.features   && city.features[0])   ? city.features[0].attributes.NAME   : null;
   window.__lastCounty = countyName || '';   // for the live-feed diagnostic
+  prefetchCountyFile(countyName);            // SPEED: start downloading+indexing address points now,
+                                             // so they're ready the moment the user zooms to label range.
   if(window.__exportData){ window.__exportData.county=countyName?titleCase(countyName):''; window.__exportData.municipality=cityName?titleCase(cityName):''; }
   const paUrl = countyName ? PA[norm(countyName)] : null;
 
