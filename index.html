@@ -5513,17 +5513,29 @@ async function localAddrPoints(county, bounds, cap){
 const nbrNumLayer = L.layerGroup();
 let nbrNumOn = true;   // labels follow the parcel view by default; tied to the parcel result
 function clearNeighborNumbers(){ try{ nbrNumLayer.clearLayers(); if(map.hasLayer(nbrNumLayer)) map.removeLayer(nbrNumLayer); }catch(e){} }
-async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid){
+async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid, forceAnchorBox){
   if(!nbrNumOn) return;
   try{
     clearNeighborNumbers();
-    if(map.getZoom() < 16) return;                       // too dense/zoomed-out to be legible
-    const b=map.getBounds();
     const want = subjectHN!=null ? String(subjectHN).trim() : null;
     const _pidDigits = s => (s==null?'':String(s).replace(/\D/g,''));
     const wantPidRaw = (subjPid!=null && String(subjPid).trim()!=='') ? String(subjPid).trim() : null;
     const wantPidDig = _pidDigits(wantPidRaw);
     const haveAnchor = isFinite(subjLat) && isFinite(subjLng);
+    // Zoom gate: skip only when zoomed out AND we're not forcing an anchor box. On the INITIAL draw
+    // after a search/click (forceAnchorBox=true) the map may still be mid-fly-to a shared tract, so
+    // getZoom() would read the stale pre-animation zoom and wrongly bail — we proceed anyway.
+    if(!(forceAnchorBox && haveAnchor) && map.getZoom() < 16) return;
+    // Query box. Normally the visible map bounds (so panning shows what's in view). On the initial
+    // draw we UNION the view with a fixed ~450 m box around the anchor — so inside a big dotted-orange
+    // SHARED TRACT (condo/mobile park), where the map is still animating to the unit, the surrounding
+    // units are always covered even though map.getBounds() may briefly report the old, wrong view.
+    let b=map.getBounds();
+    if(forceAnchorBox && haveAnchor){
+      const pad=0.004;  // ~450 m
+      const aB=L.latLngBounds([subjLat-pad,subjLng-pad],[subjLat+pad,subjLng+pad]);
+      b = b.isValid() ? b.extend(aB) : aB;
+    }
     const _county = (window.__lastCounty||'').toString();
 
     // ---- Build the neighbor label list. Each entry: {hn, lat, lng, addr, pid?}
@@ -6021,7 +6033,7 @@ async function runLookup(lat,lng,searchCtx){
         const _sLat = liveRes.__ngLat!=null?liveRes.__ngLat:lat, _sLng=liveRes.__ngLng!=null?liveRes.__ngLng:lng;
         const _sPid = det.pid?pick(_a,det.pid):null;
         _nbrCtx={ hn:_sHN, lat:_sLat, lng:_sLng, pid:(_sPid!=null?String(_sPid):null) };
-        setTimeout(()=>showNeighborNumbers(_sHN,_sLat,_sLng,(_sPid!=null?String(_sPid):null)), 150);
+        setTimeout(()=>showNeighborNumbers(_sHN,_sLat,_sLng,(_sPid!=null?String(_sPid):null),true), 150);
       }catch(e){}
     }
     { const _a=liveRes.features[0].attributes; const _ra=pick(_a,'TOTALACRES')||pick(_a,'ACREAGE')||pick(_a,'GIS_ACRES')||null;
@@ -6104,7 +6116,7 @@ async function runLookup(lat,lng,searchCtx){
     try{
       const _sHN = houseNum(site||'') || (searchCtx&&searchCtx.hn) || null;
       _nbrCtx={ hn:_sHN, lat:lat, lng:lng, pid:(pid!=null?String(pid):null) };
-      setTimeout(()=>showNeighborNumbers(_sHN, lat, lng, (pid!=null?String(pid):null)), 150);
+      setTimeout(()=>showNeighborNumbers(_sHN, lat, lng, (pid!=null?String(pid):null),true), 150);
     }catch(e){}
     html += renderLotDimensions(parcel.features[0].geometry, pick(a,'TOTALACRES'));
     try{ const _dim=parcelDimensions(parcel.features[0].geometry); if(_dim&&_dim.areaSqft>0) parcelLotSqft=_dim.areaSqft;
