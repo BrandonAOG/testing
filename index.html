@@ -262,9 +262,9 @@
   .nbr-num .nbr-hn{font-weight:700}
   .nbr-num .nbr-st{font-size:8px;font-weight:500;opacity:.82;letter-spacing:.04em}
   .nbr-num.subject{background:#ffb000;color:#10151b;border-color:#ffd166;font-weight:700;font-size:11px;box-shadow:0 1px 6px rgba(255,176,0,.5)}
-  /* neighbor labels are hoverable for their own address tooltip (the marker carries .nbr-hit) */
-  .leaflet-marker-icon.nbr-hit{pointer-events:auto!important;cursor:help}
-  .nbr-hit .nbr-num{pointer-events:auto;cursor:help}
+  /* neighbor labels are hoverable for their own address tooltip, and clickable to look up that address */
+  .leaflet-marker-icon.nbr-hit{pointer-events:auto!important;cursor:pointer}
+  .nbr-hit .nbr-num{pointer-events:auto;cursor:pointer}
   .crosshair{position:absolute;z-index:999;bottom:18px;left:50%;transform:translateX(-50%);font-family:var(--mono);font-size:10.5px;color:var(--dim);background:var(--crosshair-bg);border:1px solid var(--line);padding:5px 12px;border-radius:20px;pointer-events:none}
 
   .empty{text-align:center;color:var(--faint);font-family:var(--mono);font-size:12px;padding:26px 10px;line-height:1.6}
@@ -4674,7 +4674,7 @@ const ADDRPOINT_FILES = {
   // Lee's full address-point set, served as one compact file sitting next to this
   // index.html in your repo (no external host, no account needed). If you ever move
   // it to a CDN, just swap this for the full https:// URL.
-  LEE: "lee_compact_v3.json",
+  LEE: "lee_compact_v3.json.gz",
   // Collier also served from a compact file (offline-capable). Collier additionally
   // has a live feed in ADDRPOINT_FEEDS below, which acts as an automatic fallback if
   // this file ever fails to load.
@@ -5564,6 +5564,19 @@ async function drawHomeWithinTract(lat, lng, tractAcres, info){
 const nbrNumLayer = L.layerGroup();
 let nbrNumOn = true;   // labels follow the parcel view by default; tied to the parcel result
 function clearNeighborNumbers(){ try{ nbrNumLayer.clearLayers(); if(map.hasLayer(nbrNumLayer)) map.removeLayer(nbrNumLayer); }catch(e){} }
+/* Clicking a neighbour label runs a FULL lookup of that address — identical to typing
+   it in the search box. We drop any "#unit" suffix and a trailing ", City" so the
+   geocoder/NG911 resolver gets a clean street address. */
+function searchForAddress(addrStr){
+  try{
+    if(!addrStr) return;
+    let q=String(addrStr).split(',')[0].replace(/\s+#.*$/,'').replace(/\s+UNIT\s+\S+$/i,'').trim();
+    if(!q) return;
+    const inp=document.getElementById('addr');
+    if(inp){ inp.value=q; try{ updateClearBtn(); }catch(e){} }
+    doSearch();
+  }catch(e){}
+}
 async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid, forceAnchorBox){
   if(!nbrNumOn) return;
   try{
@@ -5695,6 +5708,8 @@ async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid, forceAn
       const labelHTML = numStreetLabelHTML(L0.txt, L0.hn);
       const icon=L.divIcon({ className:'nbr-hit', html:`<div class="nbr-num${isSubj?' subject':''}">${labelHTML}</div>`, iconSize:null });
       const mk=L.marker([L0.lat,L0.lng],{icon, interactive:true, keyboard:false, zIndexOffset:isSubj?1000:0}).addTo(nbrNumLayer);
+      // click a label → full lookup of that address (same as searching it)
+      mk.on('click', (ev)=>{ try{ L.DomEvent.stop(ev); }catch(e){} searchForAddress(L0.txt); });
       try{ const _a=L0.feat.attributes||{};
         const _liv=fmtNum(pick(_a,'TOT_LVG_AR','TOTLVGAR','HEATED_AREA','HEATEDAREA','LIVING_AREA','LIVINGAREA','BLDG_SQFT'));
         const _tip=parcelTooltipHTML({ site:L0.txt||parcelAddrText(_a),
@@ -5801,6 +5816,7 @@ async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid, forceAn
             const labelHTML = numStreetLabelHTML(_addr, P.hn);
             const icon=L.divIcon({ className:'nbr-hit', html:`<div class="nbr-num${isSubj?' subject':''}">${labelHTML}</div>`, iconSize:null });
             const mk=L.marker([P.lat,P.lng],{icon, interactive:true, keyboard:false, zIndexOffset:isSubj?1000:0}).addTo(nbrNumLayer);
+            mk.on('click', (ev)=>{ try{ L.DomEvent.stop(ev); }catch(e){} searchForAddress(_addr); });
             try{
               const _aa=P.a||{};
               const _liv=fmtNum(_aa.TOT_LVG_AR);
