@@ -4671,7 +4671,11 @@ const ADDRPOINT_FILES = {
   // Lee's full address-point set, served as one compact file sitting next to this
   // index.html in your repo (no external host, no account needed). If you ever move
   // it to a CDN, just swap this for the full https:// URL.
-  LEE: "lee_compact_v3.json"
+  LEE: "lee_compact_v3.json",
+  // Collier also served from a compact file (offline-capable). Collier additionally
+  // has a live feed in ADDRPOINT_FEEDS below, which acts as an automatic fallback if
+  // this file ever fails to load.
+  COLLIER: "collier_compact_v3.json"
 };
 // Cache the parsed rows per county-file URL so it's fetched only once per session.
 const _fileCache = new Map();
@@ -5575,10 +5579,17 @@ async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid){
           // HOSTED FILE path: fetch the whole county once (cached), then filter to the viewport.
           // The full file is small (compact rows + gzip), so one load covers all panning/zooming.
           const feats=await loadHostedFileRows(fileCfg);
-          const W=b.getWest(),E=b.getEast(),S=b.getSouth(),N=b.getNorth();
-          const inView=feats.filter(f=>{ const g=f.geometry; return g && g.x>=W && g.x<=E && g.y>=S && g.y<=N; });
-          aj={ features: inView };
-        } else {
+          // Only fall back to a live feed if the FILE ITSELF failed to load (zero rows total),
+          // not merely because this viewport happens to be empty.
+          if((!feats || !feats.length) && apUrl){
+            aj=null;
+          } else {
+            const W=b.getWest(),E=b.getEast(),S=b.getSouth(),N=b.getNorth();
+            const inView=feats.filter(f=>{ const g=f.geometry; return g && g.x>=W && g.x<=E && g.y>=S && g.y<=N; });
+            aj={ features: inView };
+          }
+        }
+        if(!aj){
           const apEnv=`${b.getWest()},${b.getSouth()},${b.getEast()},${b.getNorth()}`;
           // SPEED: request ONLY the fields formatAddrPoint()/the house-number logic actually read —
           // not outFields=* — and cap the record count. outFields=* + 800 records was pulling every
