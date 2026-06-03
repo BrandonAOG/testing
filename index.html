@@ -4693,16 +4693,35 @@ async function loadHostedFileIndex(url){
   const p = fetch(url).then(r=> r.ok ? r.json() : null).then(j=>{
     if(!j || !Array.isArray(j.rows)) return null;
     const lat0=j.lat0||0, lon0=j.lon0||0, scale=j.scale||1, streets=j.streets||[];
+    const owners=j.owners||[];
+    // Two row layouts are supported:
+    //   OLD  "…-v3":          [ix(lon Δ), iy(lat Δ), num, streetIdx]
+    //   NEW  "collier-full-v1":[dLat,     dLon,      num, streetIdx, unit, ownerIdx, sqft]
+    // The new build puts LAT first and carries unit/owner/sqft. Detect via fmt.
+    const isFull = (j.fmt==='collier-full-v1');
     const grid=new Map();
     const rows=j.rows;
     for(let i=0;i<rows.length;i++){
       const r=rows[i];
-      const x=lon0 + r[0]/scale, y=lat0 + r[1]/scale;
+      let x,y,num,si,unit,own,sqft;
+      if(isFull){
+        y = lat0 + r[0]/scale;   // dLat first
+        x = lon0 + r[1]/scale;   // dLon second
+        num = r[2]||''; si = r[3];
+        unit = (r[4]!=null && r[4]!=='') ? r[4] : null;
+        own  = (r[5]!=null && r[5]>=0 && owners[r[5]]) ? owners[r[5]] : null;
+        sqft = (r[6]!=null && r[6]>0) ? r[6] : null;
+      } else {
+        x = lon0 + r[0]/scale;   // OLD: lon first
+        y = lat0 + r[1]/scale;
+        num = r[2]||''; si = r[3];
+        unit = null; own = null; sqft = null;
+      }
       const cx=Math.floor(x/_GRID), cy=Math.floor(y/_GRID);
       const k=_cellKey(cx,cy);
       let cell=grid.get(k); if(!cell){ cell=[]; grid.set(k,cell); }
-      // store decoded x,y + the row so we don't recompute coords on every query
-      cell.push([x,y,r[2]||'',r[3]]);
+      // store decoded x,y, number, streetIdx, and (new) unit/owner/sqft
+      cell.push([x,y,num,si,unit,own,sqft]);
     }
     return { grid, streets };
   }).catch(()=>null);
@@ -4726,7 +4745,15 @@ async function queryHostedFile(url, b){
         const p=cell[i], x=p[0], y=p[1];
         if(x>=W && x<=E && y>=S && y<=N){
           const num=p[2], street=streets[p[3]]||'';
-          out.push({ attributes:{ ADDRNUM:num, FULLADDR:(num+' '+street).trim() }, geometry:{ x, y } });
+          const unit=p[4]||null, own=p[5]||null, sqft=p[6]||null;
+          // include the unit in the displayed address (e.g. "140 Seaview CT #405S")
+          let full=(num+' '+street).trim();
+          if(unit) full += ' #'+unit;
+          const attrs={ ADDRNUM:num, FULLADDR:full };
+          if(unit) attrs.UNITID=unit;
+          if(own)  attrs.OWN_NAME=own;
+          if(sqft) attrs.TOT_LVG_AR=sqft;
+          out.push({ attributes:attrs, geometry:{ x, y } });
         }
       }
     }
@@ -5712,7 +5739,13 @@ async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid, forceAn
             const labelHTML = numStreetLabelHTML(_addr, P.hn);
             const icon=L.divIcon({ className:'nbr-hit', html:`<div class="nbr-num${isSubj?' subject':''}">${labelHTML}</div>`, iconSize:null });
             const mk=L.marker([P.lat,P.lng],{icon, interactive:true, keyboard:false, zIndexOffset:isSubj?1000:0}).addTo(nbrNumLayer);
-            try{ const _tip=parcelTooltipHTML({ site:_addr }); if(_tip) mk.bindTooltip(_tip,{sticky:true,direction:'top',className:'parcel-tip',opacity:1}); }catch(e){}
+            try{
+              const _aa=P.a||{};
+              const _liv=fmtNum(_aa.TOT_LVG_AR);
+              const _tip=parcelTooltipHTML({ site:_addr, owner:(_aa.OWN_NAME||null),
+                sqft:(_liv?_liv+' sq ft':null) });
+              if(_tip) mk.bindTooltip(_tip,{sticky:true,direction:'top',className:'parcel-tip',opacity:1});
+            }catch(e){}
             added++;
           }
           if(added && !map.hasLayer(nbrNumLayer)) nbrNumLayer.addTo(map);
