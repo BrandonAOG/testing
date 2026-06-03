@@ -4678,7 +4678,7 @@ const ADDRPOINT_FILES = {
   // Collier also served from a compact file (offline-capable). Collier additionally
   // has a live feed in ADDRPOINT_FEEDS below, which acts as an automatic fallback if
   // this file ever fails to load.
-  COLLIER: "collier_compact_v3.json"
+  COLLIER: "collier_compact_v3.json.gz"
 };
 // Cache the parsed file per URL so it's fetched + indexed only once per session.
 const _fileCache = new Map();
@@ -4688,9 +4688,32 @@ const _fileCache = new Map();
 // build address strings lazily for just those few hundred points — not the whole county.
 const _GRID = 0.02;
 function _cellKey(cx,cy){ return cx+'_'+cy; }
+/* Fetch a compact data file and parse JSON, transparently handling gzip.
+   A ".gz" file (or any response that arrives gzip-compressed) is piped through
+   the browser's built-in DecompressionStream so we never ship a decompression
+   library. Falls back to plain .json text if the bytes turn out not to be gzip
+   (e.g. a server that already auto-decompressed, or a non-gz file). */
+async function fetchMaybeGzip(url){
+  const r = await fetch(url);
+  if(!r.ok) return null;
+  const isGz = /\.gz($|\?)/i.test(url);
+  if(isGz && typeof DecompressionStream!=='undefined' && r.body){
+    try{
+      const ds = new DecompressionStream('gzip');
+      const stream = r.body.pipeThrough(ds);
+      const text = await new Response(stream).text();
+      return JSON.parse(text);
+    }catch(e){
+      // Some hosts (or a double-decompress) yield already-plain text; try that.
+      try{ return JSON.parse(await (await fetch(url)).text()); }catch(_){ return null; }
+    }
+  }
+  // not gzip (or no DecompressionStream): parse normally
+  try{ return await r.json(); }catch(e){ return null; }
+}
 async function loadHostedFileIndex(url){
   if(_fileCache.has(url)) return _fileCache.get(url);
-  const p = fetch(url).then(r=> r.ok ? r.json() : null).then(j=>{
+  const p = fetchMaybeGzip(url).then(j=>{
     if(!j || !Array.isArray(j.rows)) return null;
     const lat0=j.lat0||0, lon0=j.lon0||0, scale=j.scale||1, streets=j.streets||[];
     const owners=j.owners||[];
@@ -5561,39 +5584,76 @@ async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid, forceAn
       b = b.isValid() ? b.extend(aB) : aB;
     }
     const env=`${b.getWest()},${b.getSouth()},${b.getEast()},${b.getNorth()}`;
-    // Centroid-only query (no polygon geometry) keeps it fast. Fields: address + parcel id for the
-    // label/match, plus owner name (OWN_NAME) and living area (TOT_LVG_AR) for the hover tooltip.
-    const url=PARCEL_FS+`?geometry=${encodeURIComponent(env)}&geometryType=esriGeometryEnvelope&inSR=4326`+
-      `&spatialRel=esriSpatialRelIntersects&where=1%3D1&outFields=${encodeURIComponent('PHY_ADDR1,PARCEL_ID,OWN_NAME,TOT_LVG_AR')}`+
-      `&returnGeometry=false&returnCentroid=true&outSR=4326&resultRecordCount=400&f=json`;
-    const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),12000);
-    const r=await fetch(url,{signal:ctrl.signal}); clearTimeout(t);
-    if(!r.ok) return;
-    const j=await r.json();
-    if(j.error || !j.features || !j.features.length) return;
     const want = subjectHN!=null ? String(subjectHN).trim() : null;
     const _pidDigits = s => (s==null?'':String(s).replace(/\D/g,''));
     const wantPidRaw = (subjPid!=null && String(subjPid).trim()!=='') ? String(subjPid).trim() : null;
     const wantPidDig = _pidDigits(wantPidRaw);
     const haveAnchor = isFinite(subjLat) && isFinite(subjLng);
-    // PASS 1: build the label list — EVERY parcel in view that has an address gets an entry, so all
-    // the house numbers show. (This is the simple, complete behavior.)
-    const labels=[];   // {hn, lat, lng, feat}
+    const labels=[];   // {hn, lat, lng, feat, txt}
     let seen=new Set();
-    for(const f of j.features){
-      if(labels.length>=200) break;                       // safety cap
-      const a=f.attributes||{};
-      const txt=parcelAddrText(a);                        // auto-detects SITEADDR/PHY_ADDR1/SITUS/etc.
-      const hn=houseNum(txt);
-      if(!hn) continue;
-      // label position: server-provided centroid (fast). Fall back to feature centroid if absent.
-      const ce=f.centroid;
-      let cx = ce ? (ce.x!=null?ce.x:ce.X) : null, cy = ce ? (ce.y!=null?ce.y:ce.Y) : null;
-      if(cx==null||cy==null){ const fc=featCentroid(f); if(!fc) continue; cx=fc[0]; cy=fc[1]; }
-      const key=hn+'@'+cx.toFixed(5)+','+cy.toFixed(5);
-      if(seen.has(key)) continue; seen.add(key);
-      labels.push({ hn, lat:cy, lng:cx, feat:f, txt });
+    let usedFile=false;
+
+    // ================= FILE-FIRST =================
+    // If this county ships a local data file (e.g. Collier's compact .gz with owner/sqft/units),
+    // build the neighbour labels FROM THAT FILE — no county-server call. This makes the tool run
+    // on local data first (fast, works offline) and only falls back to the live parcel server when
+    // the file has no coverage here or fails to load. Each label carries the file's owner/sqft/unit.
+    try{
+      const _cty = (window.__lastCounty||'').toString();
+      const _fileUrl = _cty ? ADDRPOINT_FILES[norm(_cty)] : null;
+      const _fileCfg = (_fileUrl && _fileUrl.indexOf('REPLACE-ME')<0) ? _fileUrl : null;
+      if(_fileCfg){
+        const inView = await queryHostedFile(_fileCfg, b);   // null=load failed, []=loaded-but-empty
+        if(Array.isArray(inView) && inView.length){
+          for(const f of inView){
+            if(labels.length>=900) break;                    // higher cap: file points are cheap
+            const a=f.attributes||{};
+            const txt=formatAddrPoint(a);
+            const hn=houseNum(txt);
+            if(!hn) continue;
+            const g=f.geometry; const cx=g?(g.x!=null?g.x:g.X):null, cy=g?(g.y!=null?g.y:g.Y):null;
+            if(cx==null||cy==null) continue;
+            // dedup on full address + exact coord so stacked condo units collapse only if identical
+            const key=txt+'@'+cx.toFixed(6)+','+cy.toFixed(6);
+            if(seen.has(key)) continue; seen.add(key);
+            labels.push({ hn, lat:cy, lng:cx, feat:f, txt });
+          }
+          if(labels.length) usedFile=true;
+        }
+      }
+    }catch(e){ /* file-first is best-effort; fall through to county server */ }
+
+    // ============ COUNTY-SERVER FALLBACK ============
+    // Runs only when the file gave us nothing (no file for this county, file failed, or no points
+    // in view). Same centroid-only query as before.
+    if(!usedFile){
+      // Centroid-only query (no polygon geometry) keeps it fast. Fields: address + parcel id for the
+      // label/match, plus owner name (OWN_NAME) and living area (TOT_LVG_AR) for the hover tooltip.
+      const url=PARCEL_FS+`?geometry=${encodeURIComponent(env)}&geometryType=esriGeometryEnvelope&inSR=4326`+
+        `&spatialRel=esriSpatialRelIntersects&where=1%3D1&outFields=${encodeURIComponent('PHY_ADDR1,PARCEL_ID,OWN_NAME,TOT_LVG_AR')}`+
+        `&returnGeometry=false&returnCentroid=true&outSR=4326&resultRecordCount=400&f=json`;
+      const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),12000);
+      let j=null;
+      try{ const r=await fetch(url,{signal:ctrl.signal}); clearTimeout(t); if(r.ok) j=await r.json(); }
+      catch(e){ clearTimeout(t); }
+      if(j && !j.error && j.features && j.features.length){
+        for(const f of j.features){
+          if(labels.length>=200) break;                       // safety cap
+          const a=f.attributes||{};
+          const txt=parcelAddrText(a);                        // auto-detects SITEADDR/PHY_ADDR1/SITUS/etc.
+          const hn=houseNum(txt);
+          if(!hn) continue;
+          const ce=f.centroid;
+          let cx = ce ? (ce.x!=null?ce.x:ce.X) : null, cy = ce ? (ce.y!=null?ce.y:ce.Y) : null;
+          if(cx==null||cy==null){ const fc=featCentroid(f); if(!fc) continue; cx=fc[0]; cy=fc[1]; }
+          const key=hn+'@'+cx.toFixed(5)+','+cy.toFixed(5);
+          if(seen.has(key)) continue; seen.add(key);
+          labels.push({ hn, lat:cy, lng:cx, feat:f, txt });
+        }
+      }
     }
+    // Nothing from either source — nothing to draw.
+    if(!labels.length) return;
     // --- Wrong-house correction (small bolt-on): decide which ONE label is the subject highlight.
     // This NEVER removes a label — it only chooses which existing label gets the "subject" style.
     // Priority: (1) exact parcel-ID match, (2) anchor falls inside the parcel, (3) nearest same
@@ -5651,7 +5711,9 @@ async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid, forceAn
     // sits nearby — so this fills the holes without duplicating the outside numbers. The address-
     // point layer is lightweight points (no polygon geometry), so a single outFields=* query is fine
     // here — unlike the heavy parcel layer that needed a trimmed field list.
-    try{
+    // NOTE: when the labels above were built FROM the file (usedFile), the file already covers every
+    // point in view — so gap-fill would only duplicate. Skip it in that case.
+    if(!usedFile) try{
       const _county = (window.__lastCounty||'').toString();
       const apUrl    = _county ? ADDRPOINT_FEEDS[norm(_county)] : null;
       const fileUrl  = _county ? ADDRPOINT_FILES[norm(_county)] : null;
