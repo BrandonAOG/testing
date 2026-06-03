@@ -5585,11 +5585,16 @@ async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid){
       for(let i=0;i<labels.length;i++){ if(labels[i].hn===want){ subjIdx=i; break; } }
     }
     // PASS 2: render every label; the chosen subject (if any) gets the highlight.
+    // We keep a reference to each marker + its coords so a final FORCED-SUBJECT pass can guarantee
+    // the orange highlight lands on the address the user typed/clicked, even if the heuristics above
+    // picked nothing (or the right lot has no parcel-layer address).
+    const _allMarkers=[];   // {marker, lat, lng, hn, addr, isSubj}
     for(let i=0;i<labels.length;i++){
       const L0=labels[i]; const isSubj = (i===subjIdx);
       const labelHTML = numStreetLabelHTML(L0.txt, L0.hn);
       const icon=L.divIcon({ className:'', html:`<div class="nbr-num${isSubj?' subject':''}">${labelHTML}</div>`, iconSize:null });
-      L.marker([L0.lat,L0.lng],{icon, interactive:false, keyboard:false, zIndexOffset:isSubj?1000:0}).addTo(nbrNumLayer);
+      const mk=L.marker([L0.lat,L0.lng],{icon, interactive:false, keyboard:false, zIndexOffset:isSubj?1000:0}).addTo(nbrNumLayer);
+      _allMarkers.push({ marker:mk, lat:L0.lat, lng:L0.lng, hn:L0.hn, addr:L0.txt, isSubj });
     }
     if(labels.length){ nbrNumLayer.addTo(map); }
     // GAP-FILL for inside-tract / lean-feed homes: villa & condo units inside a shared tract often
@@ -5680,12 +5685,67 @@ async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid){
           const P=ptLabels[i]; const isSubj=(i===ptSubjIdx);
           const labelHTML = numStreetLabelHTML(P.addr||'', P.hn);
           const icon=L.divIcon({ className:'', html:`<div class="nbr-num${isSubj?' subject':''}">${labelHTML}</div>`, iconSize:null });
-          L.marker([P.lat,P.lng],{icon, interactive:false, keyboard:false, zIndexOffset:isSubj?1000:0}).addTo(nbrNumLayer);
+          const mk=L.marker([P.lat,P.lng],{icon, interactive:false, keyboard:false, zIndexOffset:isSubj?1000:0}).addTo(nbrNumLayer);
+          _allMarkers.push({ marker:mk, lat:P.lat, lng:P.lng, hn:P.hn, addr:P.addr, isSubj });
           added++;
         }
         if(added && !map.hasLayer(nbrNumLayer)) nbrNumLayer.addTo(map);
       }
     }catch(e){ /* gap-fill is best-effort; never block the result */ }
+
+    // FORCE SUBJECT HIGHLIGHT: guarantee the orange highlight lands on the address the user typed or
+    // clicked. The heuristics above can leave nothing highlighted (distance guard tripped, no
+    // matching parcel number, right lot missing from the parcel layer). Here we override that: pick
+    // the ONE marker that best represents the anchor and force it orange — and if no rendered marker
+    // is close enough, drop a dedicated subject marker right at the anchor coordinates.
+    try{
+      if(haveAnchor){
+        const _setSubj=(rec)=>{
+          // re-render this marker's icon with the .subject (orange) class, raise it above the rest
+          const labelHTML = numStreetLabelHTML(rec.addr||'', rec.hn);
+          rec.marker.setIcon(L.divIcon({ className:'', html:`<div class="nbr-num subject">${labelHTML}</div>`, iconSize:null }));
+          rec.marker.setZIndexOffset(1000); rec.isSubj=true;
+        };
+        const _clearSubj=(rec)=>{
+          const labelHTML = numStreetLabelHTML(rec.addr||'', rec.hn);
+          rec.marker.setIcon(L.divIcon({ className:'', html:`<div class="nbr-num">${labelHTML}</div>`, iconSize:null }));
+          rec.marker.setZIndexOffset(0); rec.isSubj=false;
+        };
+        // Find the best marker for the anchor: prefer one whose house number matches what the user
+        // typed AND is nearest the anchor; otherwise the nearest marker of any number to the anchor.
+        let hnBestI=-1, hnBestD=Infinity, nearBestI=-1, nearBestD=Infinity;
+        for(let i=0;i<_allMarkers.length;i++){
+          const m=_allMarkers[i];
+          const dd=(m.lng-subjLng)*(m.lng-subjLng)+(m.lat-subjLat)*(m.lat-subjLat);
+          if(dd<nearBestD){ nearBestD=dd; nearBestI=i; }
+          if(want && String(m.hn).trim()===want && dd<hnBestD){ hnBestD=dd; hnBestI=i; }
+        }
+        // pick same-number-near-anchor first; fall back to plain nearest. ~40 m acceptance window so a
+        // label that's basically on the anchor counts as the subject instead of a stray duplicate.
+        const ACCEPT2 = 0.00037*0.00037;   // ~40 m in degrees, squared
+        let chosenI=-1;
+        if(hnBestI>=0 && hnBestD<=ACCEPT2) chosenI=hnBestI;
+        else if(nearBestI>=0 && nearBestD<=ACCEPT2) chosenI=nearBestI;
+        else if(hnBestI>=0) chosenI=hnBestI;          // same number exists but a bit far — still prefer it
+        // Clear any highlight the heuristics set, then force exactly one (or a synthetic marker).
+        for(const m of _allMarkers){ if(m.isSubj) _clearSubj(m); }
+        if(chosenI>=0){
+          _setSubj(_allMarkers[chosenI]);
+        } else {
+          // Nothing rendered near the anchor — drop a dedicated subject marker AT the anchor, using the
+          // address the user searched/clicked. We reconstruct a label from the search context when we
+          // have it; otherwise just show the house number.
+          let subjAddr='';
+          try{ if(window.__exportData && window.__exportData.address) subjAddr=String(window.__exportData.address); }catch(e){}
+          if(!subjAddr && _nbrCtx && _nbrCtx.addr) subjAddr=String(_nbrCtx.addr);
+          const subjHNshow = want || houseNum(subjAddr) || '';
+          const labelHTML = numStreetLabelHTML(subjAddr, subjHNshow);
+          const icon=L.divIcon({ className:'', html:`<div class="nbr-num subject">${labelHTML||esc(String(subjHNshow))}</div>`, iconSize:null });
+          L.marker([subjLat,subjLng],{icon, interactive:false, keyboard:false, zIndexOffset:1000}).addTo(nbrNumLayer);
+          if(!map.hasLayer(nbrNumLayer)) nbrNumLayer.addTo(map);
+        }
+      }
+    }catch(e){ /* forced highlight is best-effort; never block the result */ }
   }catch(e){ /* best-effort; never block the result */ }
 }
 // Keep the labels in sync as the user pans/zooms after a search (debounced, same as parcel lines).
@@ -6065,7 +6125,8 @@ async function runLookup(lat,lng,searchCtx){
         const _sHN = (searchCtx&&searchCtx.hn) || houseNum(det.site?pick(_a,det.site):'') || null;
         const _sLat = liveRes.__ngLat!=null?liveRes.__ngLat:lat, _sLng=liveRes.__ngLng!=null?liveRes.__ngLng:lng;
         const _sPid = det.pid?pick(_a,det.pid):null;
-        _nbrCtx={ hn:_sHN, lat:_sLat, lng:_sLng, pid:(_sPid!=null?String(_sPid):null) };
+        const _sAddr = (searchCtx&&searchCtx.raw) || (det.site?pick(_a,det.site):'') || '';
+        _nbrCtx={ hn:_sHN, lat:_sLat, lng:_sLng, pid:(_sPid!=null?String(_sPid):null), addr:_sAddr };
         setTimeout(()=>showNeighborNumbers(_sHN,_sLat,_sLng,(_sPid!=null?String(_sPid):null)), 150);
       }catch(e){}
     }
@@ -6148,7 +6209,8 @@ async function runLookup(lat,lng,searchCtx){
     });
     try{
       const _sHN = houseNum(site||'') || (searchCtx&&searchCtx.hn) || null;
-      _nbrCtx={ hn:_sHN, lat:lat, lng:lng, pid:(pid!=null?String(pid):null) };
+      const _sAddr = (searchCtx&&searchCtx.raw) || [site, siteCity].filter(Boolean).join(', ') || '';
+      _nbrCtx={ hn:_sHN, lat:lat, lng:lng, pid:(pid!=null?String(pid):null), addr:_sAddr };
       setTimeout(()=>showNeighborNumbers(_sHN, lat, lng, (pid!=null?String(pid):null)), 150);
     }catch(e){}
     html += renderLotDimensions(parcel.features[0].geometry, pick(a,'TOTALACRES'));
