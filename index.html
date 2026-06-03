@@ -5513,64 +5513,66 @@ async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid){
     clearNeighborNumbers();
     if(map.getZoom() < 16) return;                       // too dense/zoomed-out to be legible
     const b=map.getBounds();
+    const env=`${b.getWest()},${b.getSouth()},${b.getEast()},${b.getNorth()}`;
+    // SPEED: ask the server for CENTROIDS only — not full polygon geometry. Downloading/parsing
+    // polygons for ~400 parcels was the main delay (~1.5s); centroids are tiny, so this returns in a
+    // few hundred ms. We only need a point to place each number; the centroid is plenty for a label.
+    // Two fields (PHY_ADDR1, PARCEL_ID) both confirmed to exist on the statewide layer.
+    const url=PARCEL_FS+`?geometry=${encodeURIComponent(env)}&geometryType=esriGeometryEnvelope&inSR=4326`+
+      `&spatialRel=esriSpatialRelIntersects&where=1%3D1&outFields=${encodeURIComponent('PHY_ADDR1,PARCEL_ID')}`+
+      `&returnGeometry=false&returnCentroid=true&outSR=4326&resultRecordCount=400&f=json`;
+    const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),12000);
+    const r=await fetch(url,{signal:ctrl.signal}); clearTimeout(t);
+    if(!r.ok) return;
+    const j=await r.json();
+    if(j.error || !j.features || !j.features.length) return;
     const want = subjectHN!=null ? String(subjectHN).trim() : null;
+    const _pidDigits = s => (s==null?'':String(s).replace(/\D/g,''));
+    const wantPidRaw = (subjPid!=null && String(subjPid).trim()!=='') ? String(subjPid).trim() : null;
+    const wantPidDig = _pidDigits(wantPidRaw);
     const haveAnchor = isFinite(subjLat) && isFinite(subjLng);
-
-    // ---- SOURCE: local GeoJSON address-point index (lee/collier _compact_v3.json beside index.html).
-    // This is the comprehensive neighbor source — like the ORIGINAL parcel-layer PASS 1, it labels
-    // EVERY address point in view (all house numbers show); no street filter. Falls back to the live
-    // statewide parcel layer only when this county has no local file.
-    const _county = (window.__lastCounty||'').toString();
-    const hasLocal = _county && LOCAL_ADDR_FILES[norm(_county)];
-
-    // Build the label list: {hn, lat, lng, addr}. EVERY point in view that has a house number gets one.
-    const labels=[];
+    // PASS 1: build the label list — EVERY parcel in view that has an address gets an entry, so all
+    // the house numbers show. (This is the simple, complete behavior.)
+    const labels=[];   // {hn, lat, lng, feat}
     let seen=new Set();
-    if(hasLocal){
-      let points=[];
-      try{ points = await localAddrPoints(_county, b, 1200); }catch(e){ points=[]; }
-      for(const P of points){
-        if(labels.length>=600) break;                    // safety cap (was 200 for the heavier parcel layer)
-        const hn = houseNum(String(P.hn)) || (P.hn!=null?String(P.hn):null);
-        if(!hn || P.lat==null || P.lng==null) continue;
-        const key=hn+'@'+P.lng.toFixed(5)+','+P.lat.toFixed(5);
-        if(seen.has(key)) continue; seen.add(key);
-        labels.push({ hn, lat:P.lat, lng:P.lng, addr:P.addr });
-      }
-    } else {
-      // FALLBACK (no local file for this county): live statewide parcel layer, centroids only — this is
-      // the original behavior verbatim for counties we don't ship data for.
-      const env=`${b.getWest()},${b.getSouth()},${b.getEast()},${b.getNorth()}`;
-      const url=PARCEL_FS+`?geometry=${encodeURIComponent(env)}&geometryType=esriGeometryEnvelope&inSR=4326`+
-        `&spatialRel=esriSpatialRelIntersects&where=1%3D1&outFields=${encodeURIComponent('PHY_ADDR1,PARCEL_ID')}`+
-        `&returnGeometry=false&returnCentroid=true&outSR=4326&resultRecordCount=400&f=json`;
-      const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),12000);
-      let j=null;
-      try{ const r=await fetch(url,{signal:ctrl.signal}); clearTimeout(t); if(r.ok) j=await r.json(); }
-      catch(e){ clearTimeout(t); }
-      const feats=(j && !j.error && j.features)?j.features:[];
-      for(const f of feats){
-        if(labels.length>=200) break;
-        const a=f.attributes||{};
-        const txt=parcelAddrText(a);
-        const hn=houseNum(txt);
-        if(!hn) continue;
-        const ce=f.centroid;
-        let cx = ce ? (ce.x!=null?ce.x:ce.X) : null, cy = ce ? (ce.y!=null?ce.y:ce.Y) : null;
-        if(cx==null||cy==null){ const fc=featCentroid(f); if(!fc) continue; cx=fc[0]; cy=fc[1]; }
-        const key=hn+'@'+cx.toFixed(5)+','+cy.toFixed(5);
-        if(seen.has(key)) continue; seen.add(key);
-        labels.push({ hn, lat:cy, lng:cx, addr:txt });
+    for(const f of j.features){
+      if(labels.length>=200) break;                       // safety cap
+      const a=f.attributes||{};
+      const txt=parcelAddrText(a);                        // auto-detects SITEADDR/PHY_ADDR1/SITUS/etc.
+      const hn=houseNum(txt);
+      if(!hn) continue;
+      // label position: server-provided centroid (fast). Fall back to feature centroid if absent.
+      const ce=f.centroid;
+      let cx = ce ? (ce.x!=null?ce.x:ce.X) : null, cy = ce ? (ce.y!=null?ce.y:ce.Y) : null;
+      if(cx==null||cy==null){ const fc=featCentroid(f); if(!fc) continue; cx=fc[0]; cy=fc[1]; }
+      const key=hn+'@'+cx.toFixed(5)+','+cy.toFixed(5);
+      if(seen.has(key)) continue; seen.add(key);
+      labels.push({ hn, lat:cy, lng:cx, feat:f, txt });
+    }
+    // --- Wrong-house correction (small bolt-on): decide which ONE label is the subject highlight.
+    // This NEVER removes a label — it only chooses which existing label gets the "subject" style.
+    // Priority: (1) exact parcel-ID match, (2) anchor falls inside the parcel, (3) nearest same
+    // house number to the anchor. In tight villa clusters the ID/inside test keeps the highlight on
+    // the right unit instead of drifting to a neighbour.
+    let subjIdx=-1;
+    if(wantPidRaw){
+      for(let i=0;i<labels.length;i++){
+        const a=labels[i].feat.attributes||{};
+        const fpid=pick(a,'PARCEL_ID','PARCELID','PARCEL','FOLIO','STRAP','PIN','PID','ACCOUNT','PARCEL_NO','PARCELNO','APN');
+        const fdig=_pidDigits(fpid);
+        if(fpid!=null && (String(fpid).trim()===wantPidRaw || (wantPidDig && fdig && fdig===wantPidDig))){ subjIdx=i; break; }
       }
     }
-    if(!labels.length) return;
-
-    // ---- SUBJECT HIGHLIGHT (one orange label) — same priority order as the original:
-    // (1) nearest same-house-number to the anchor (within ~60 m), (2) if no anchor, first same-number,
-    // (3) otherwise nearest label of any number to the anchor so SOMETHING at the anchor lights up.
-    let subjIdx=-1;
-    const NEAR_SUBJ2 = 0.00055*0.00055;                  // ~60 m, squared
-    if(want && haveAnchor){
+    // Distance guard: in a mobile-home/condo park MANY lots share one street number, and the only
+    // same-numbered PARCEL in view may be the shared tract sitting far from the user's actual unit.
+    // Accepting it would jump the orange highlight away from the home — and on zoom-in it looked like
+    // the highlight vanished. So a non-PID parcel match must be reasonably NEAR the anchor (~60 m);
+    // otherwise we leave subjIdx<0 and let the gap-fill unit POINT (inside the tract) take the
+    // highlight instead. ~60 m in degrees ≈ 0.00055 (lat); squared for the no-sqrt compare.
+    const NEAR_SUBJ2 = 0.00055*0.00055;
+    if(subjIdx<0 && want && haveAnchor){
+      // No polygon geometry now (centroid-only query for speed), so pick the nearest same-numbered
+      // parcel centroid to the anchor — but only if it's actually close. The PID match above is exact.
       let bestD=Infinity, bestI=-1;
       for(let i=0;i<labels.length;i++){
         if(labels[i].hn!==want) continue;
@@ -5578,28 +5580,112 @@ async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid){
         if(dd<bestD){ bestD=dd; bestI=i; }
       }
       if(bestI>=0 && bestD<=NEAR_SUBJ2) subjIdx=bestI;
-      else if(bestI>=0) subjIdx=bestI;                   // same number exists but a bit far — still it
     }
-    if(subjIdx<0 && want && !haveAnchor){
+    if(subjIdx<0 && want && !haveAnchor){   // no anchor — first same-number match
       for(let i=0;i<labels.length;i++){ if(labels[i].hn===want){ subjIdx=i; break; } }
     }
-    if(subjIdx<0 && haveAnchor){                          // last resort: nearest label of any number
-      let bestD=Infinity, bestI=-1;
-      for(let i=0;i<labels.length;i++){
-        const dd=(labels[i].lng-subjLng)*(labels[i].lng-subjLng)+(labels[i].lat-subjLat)*(labels[i].lat-subjLat);
-        if(dd<bestD){ bestD=dd; bestI=i; }
-      }
-      subjIdx=bestI;
-    }
-
-    // ---- RENDER: every label; the one subject gets the orange .subject style.
+    // PASS 2: render every label; the chosen subject (if any) gets the highlight.
     for(let i=0;i<labels.length;i++){
       const L0=labels[i]; const isSubj = (i===subjIdx);
-      const labelHTML = numStreetLabelHTML(L0.addr, L0.hn);
+      const labelHTML = numStreetLabelHTML(L0.txt, L0.hn);
       const icon=L.divIcon({ className:'', html:`<div class="nbr-num${isSubj?' subject':''}">${labelHTML}</div>`, iconSize:null });
       L.marker([L0.lat,L0.lng],{icon, interactive:false, keyboard:false, zIndexOffset:isSubj?1000:0}).addTo(nbrNumLayer);
     }
-    nbrNumLayer.addTo(map);
+    if(labels.length){ nbrNumLayer.addTo(map); }
+    // GAP-FILL for inside-tract / lean-feed homes: villa & condo units inside a shared tract often
+    // carry NO address on the parcel layer, so PASS 2 skips them (you see numbers OUTSIDE the orange
+    // tract but not inside). Counties that publish an address-POINT layer (e.g. Collier) have those
+    // unit numbers. Pull them for the viewport and drop a label only where no parcel label already
+    // sits nearby — so this fills the holes without duplicating the outside numbers. The address-
+    // point layer is lightweight points (no polygon geometry), so a single outFields=* query is fine
+    // here — unlike the heavy parcel layer that needed a trimmed field list.
+    try{
+      const _county = (window.__lastCounty||'').toString();
+      // SOURCE 1 (preferred): local static address-point file beside index.html on GitHub. Covers
+      // Lee + Collier, needs no county server, and works offline. Each entry is {hn, addr, lat, lng}.
+      // SOURCE 2 (fallback): the live county address-POINT feed, only when no local file exists for
+      // this county. We normalize whichever source we use into one `points` list of {hn, addr, lat, lng}.
+      let points = [];
+      if(_county && LOCAL_ADDR_FILES[norm(_county)]){
+        try{ points = await localAddrPoints(_county, b, 800); }catch(e){ points=[]; }
+      }
+      if(!points.length){
+        const apUrl = _county ? ADDRPOINT_FEEDS[norm(_county)] : null;
+        if(apUrl){
+          const apEnv=`${b.getWest()},${b.getSouth()},${b.getEast()},${b.getNorth()}`;
+          const apUrlFull=apUrl+`?geometry=${encodeURIComponent(apEnv)}&geometryType=esriGeometryEnvelope&inSR=4326`+
+            `&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=true&outSR=4326&resultRecordCount=800&f=json`;
+          const ac=new AbortController(); const at=setTimeout(()=>ac.abort(),12000);
+          let aj=null;
+          try{ const ar=await fetch(apUrlFull,{signal:ac.signal}); clearTimeout(at); if(ar.ok) aj=await ar.json(); }
+          catch(e){ clearTimeout(at); }
+          if(aj && !aj.error && aj.features && aj.features.length){
+            for(const f of aj.features){
+              const a=f.attributes||{};
+              const st=(a.STATUS||a.Status||'').toString().toUpperCase();
+              if(st && /(RETIRE|INACTIVE|INVALID|DELETE)/.test(st)) continue;
+              const g=f.geometry; const gx=g?(g.x!=null?g.x:g.X):null, gy=g?(g.y!=null?g.y:g.Y):null;
+              if(gx==null||gy==null) continue;
+              const F={}; for(const k in a){ F[k.toUpperCase()]=a[k]; }
+              let pnum = F.ADDRNUM||F.ADD_NUMBER||F.HOUSE_NUM||F.STNUM||F.STREET_NUM;
+              const txt = formatAddrPoint(a);
+              if(pnum==null||String(pnum).trim()===''){ const m=String(txt).match(/^\s*(\d+)/); pnum=m?m[1]:null; }
+              const hn = pnum!=null ? houseNum(String(pnum)) : null;
+              if(!hn) continue;
+              points.push({ hn, addr:txt, lat:gy, lng:gx });
+            }
+          }
+        }
+      }
+      if(points.length){
+        // "Near" threshold ≈ 12 m in degrees — if a parcel label is already within this of the
+        // point, the point is that same house; skip it. Otherwise it's an unlabeled inside-tract
+        // unit, so add it.
+        const NEAR=0.00011, NEAR2=NEAR*NEAR;
+        const ptSeen=new Set();
+        // PASS A: collect the gap-fill points (no highlighting yet). In a mobile-home park MANY
+        // points share the same house number, so highlighting every same-numbered point lit up
+        // the whole park in orange. Gather first, then highlight only the ONE nearest the anchor.
+        const ptLabels=[];   // {hn, lat, lng, addr}
+        for(const P of points){
+          if(ptLabels.length>=400) break;
+          const hn = houseNum(String(P.hn)) || (P.hn!=null?String(P.hn):null);
+          const gx = P.lng, gy = P.lat;
+          if(!hn || gx==null || gy==null) continue;
+          // already have a parcel label for this spot? skip (avoids duplicating outside numbers).
+          let dup=false;
+          for(const L0 of labels){ const ddx=L0.lng-gx, ddy=L0.lat-gy; if(ddx*ddx+ddy*ddy < NEAR2){ dup=true; break; } }
+          if(dup) continue;
+          const key=hn+'@'+gx.toFixed(5)+','+gy.toFixed(5);
+          if(ptSeen.has(key)) continue; ptSeen.add(key);
+          ptLabels.push({ hn, lat:gy, lng:gx, addr:P.addr });
+        }
+        // Choose at most ONE point to highlight: only when a parcel label wasn't already chosen
+        // as the subject. Pick the nearest same-numbered point to the anchor (the searched/tapped
+        // location), so a single home lights up instead of every unit sharing that number.
+        let ptSubjIdx=-1;
+        if(want && subjIdx<0){
+          let bestD=Infinity;
+          for(let i=0;i<ptLabels.length;i++){
+            if(ptLabels[i].hn!==want) continue;
+            if(haveAnchor){
+              const dd=(ptLabels[i].lng-subjLng)*(ptLabels[i].lng-subjLng)+(ptLabels[i].lat-subjLat)*(ptLabels[i].lat-subjLat);
+              if(dd<bestD){ bestD=dd; ptSubjIdx=i; }
+            } else if(ptSubjIdx<0){ ptSubjIdx=i; }   // no anchor: first same-number point
+          }
+        }
+        // PASS B: render the gap-fill points; only ptSubjIdx (if any) gets the subject highlight.
+        let added=0;
+        for(let i=0;i<ptLabels.length;i++){
+          const P=ptLabels[i]; const isSubj=(i===ptSubjIdx);
+          const labelHTML = numStreetLabelHTML(P.addr||'', P.hn);
+          const icon=L.divIcon({ className:'', html:`<div class="nbr-num${isSubj?' subject':''}">${labelHTML}</div>`, iconSize:null });
+          L.marker([P.lat,P.lng],{icon, interactive:false, keyboard:false, zIndexOffset:isSubj?1000:0}).addTo(nbrNumLayer);
+          added++;
+        }
+        if(added && !map.hasLayer(nbrNumLayer)) nbrNumLayer.addTo(map);
+      }
+    }catch(e){ /* gap-fill is best-effort; never block the result */ }
   }catch(e){ /* best-effort; never block the result */ }
 }
 // Keep the labels in sync as the user pans/zooms after a search (debounced, same as parcel lines).
@@ -5979,8 +6065,7 @@ async function runLookup(lat,lng,searchCtx){
         const _sHN = (searchCtx&&searchCtx.hn) || houseNum(det.site?pick(_a,det.site):'') || null;
         const _sLat = liveRes.__ngLat!=null?liveRes.__ngLat:lat, _sLng=liveRes.__ngLng!=null?liveRes.__ngLng:lng;
         const _sPid = det.pid?pick(_a,det.pid):null;
-        const _sAddr = (searchCtx&&searchCtx.raw) || (det.site?pick(_a,det.site):'') || '';
-        _nbrCtx={ hn:_sHN, lat:_sLat, lng:_sLng, pid:(_sPid!=null?String(_sPid):null), addr:_sAddr };
+        _nbrCtx={ hn:_sHN, lat:_sLat, lng:_sLng, pid:(_sPid!=null?String(_sPid):null) };
         setTimeout(()=>showNeighborNumbers(_sHN,_sLat,_sLng,(_sPid!=null?String(_sPid):null)), 150);
       }catch(e){}
     }
@@ -6063,8 +6148,7 @@ async function runLookup(lat,lng,searchCtx){
     });
     try{
       const _sHN = houseNum(site||'') || (searchCtx&&searchCtx.hn) || null;
-      const _sAddr = (searchCtx&&searchCtx.raw) || [site, siteCity].filter(Boolean).join(', ') || '';
-      _nbrCtx={ hn:_sHN, lat:lat, lng:lng, pid:(pid!=null?String(pid):null), addr:_sAddr };
+      _nbrCtx={ hn:_sHN, lat:lat, lng:lng, pid:(pid!=null?String(pid):null) };
       setTimeout(()=>showNeighborNumbers(_sHN, lat, lng, (pid!=null?String(pid):null)), 150);
     }catch(e){}
     html += renderLotDimensions(parcel.features[0].geometry, pick(a,'TOTALACRES'));
