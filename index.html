@@ -5526,7 +5526,7 @@ async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid){
     // Two fields (PHY_ADDR1, PARCEL_ID) both confirmed to exist on the statewide layer.
     const url=PARCEL_FS+`?geometry=${encodeURIComponent(env)}&geometryType=esriGeometryEnvelope&inSR=4326`+
       `&spatialRel=esriSpatialRelIntersects&where=1%3D1&outFields=${encodeURIComponent('PHY_ADDR1,PARCEL_ID')}`+
-      `&returnGeometry=false&returnCentroid=true&outSR=4326&resultRecordCount=400&f=json`;
+      `&returnGeometry=false&returnCentroid=true&outSR=4326&resultRecordCount=2000&f=json`;
     const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),12000);
     const r=await fetch(url,{signal:ctrl.signal}); clearTimeout(t);
     if(!r.ok) return;
@@ -5538,11 +5538,12 @@ async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid){
     const wantPidDig = _pidDigits(wantPidRaw);
     const haveAnchor = isFinite(subjLat) && isFinite(subjLng);
     // PASS 1: build the label list — EVERY parcel in view that has an address gets an entry, so all
-    // the house numbers show. (This is the simple, complete behavior.)
+    // the house numbers show. We collect ALL of them first (no cap during collection), then if the
+    // count exceeds the render cap we keep the ones CLOSEST to the view center — so a dense mobile-home
+    // park you're actually looking at never gets truncated in favor of distant perimeter streets.
     const labels=[];   // {hn, lat, lng, feat}
     let seen=new Set();
     for(const f of j.features){
-      if(labels.length>=200) break;                       // safety cap
       const a=f.attributes||{};
       const txt=parcelAddrText(a);                        // auto-detects SITEADDR/PHY_ADDR1/SITUS/etc.
       const hn=houseNum(txt);
@@ -5554,6 +5555,19 @@ async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid){
       const key=hn+'@'+cx.toFixed(5)+','+cy.toFixed(5);
       if(seen.has(key)) continue; seen.add(key);
       labels.push({ hn, lat:cy, lng:cx, feat:f, txt });
+    }
+    // Render cap (DOM markers get slow past a point). If we collected more, keep the nearest to the
+    // map center (or the subject anchor if we have one) and drop the farthest.
+    const NBR_RENDER_CAP = 700;
+    if(labels.length > NBR_RENDER_CAP){
+      const cLat = haveAnchor ? subjLat : (b.getNorth()+b.getSouth())/2;
+      const cLng = haveAnchor ? subjLng : (b.getEast()+b.getWest())/2;
+      labels.sort((p,q)=>{
+        const dp=(p.lng-cLng)*(p.lng-cLng)+(p.lat-cLat)*(p.lat-cLat);
+        const dq=(q.lng-cLng)*(q.lng-cLng)+(q.lat-cLat)*(q.lat-cLat);
+        return dp-dq;
+      });
+      labels.length = NBR_RENDER_CAP;
     }
     // --- Wrong-house correction (small bolt-on): decide which ONE label is the subject highlight.
     // This NEVER removes a label — it only chooses which existing label gets the "subject" style.
@@ -5617,7 +5631,7 @@ async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid){
       // this county. We normalize whichever source we use into one `points` list of {hn, addr, lat, lng}.
       let points = [];
       if(_county && LOCAL_ADDR_FILES[norm(_county)]){
-        try{ points = await localAddrPoints(_county, b, 800); }catch(e){ points=[]; }
+        try{ points = await localAddrPoints(_county, b, 2500); }catch(e){ points=[]; }
       }
       if(!points.length){
         const apUrl = _county ? ADDRPOINT_FEEDS[norm(_county)] : null;
@@ -5658,7 +5672,7 @@ async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid){
         // the whole park in orange. Gather first, then highlight only the ONE nearest the anchor.
         const ptLabels=[];   // {hn, lat, lng, addr}
         for(const P of points){
-          if(ptLabels.length>=400) break;
+          if(ptLabels.length>=900) break;
           const hn = houseNum(String(P.hn)) || (P.hn!=null?String(P.hn):null);
           const gx = P.lng, gy = P.lat;
           if(!hn || gx==null || gy==null) continue;
