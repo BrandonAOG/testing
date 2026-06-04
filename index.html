@@ -263,6 +263,12 @@
     font-family:var(--disp);font-size:11px;color:var(--dim);box-shadow:0 6px 20px var(--shadow-soft);line-height:1.5}
   .zoning-legend.show{display:block}
   .zoning-legend .zl-title{font-weight:700;color:#dff6ff;margin-bottom:3px;letter-spacing:.04em;text-transform:uppercase;font-size:10px}
+  .zoning-legend .zl-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:3px}
+  .zoning-legend .zl-head .zl-title{margin-bottom:0}
+  .zoning-legend .zl-refresh{background:rgba(57,211,255,.14);border:1px solid rgba(57,211,255,.5);
+    color:#dff6ff;font-family:var(--disp);font-size:9px;font-weight:600;letter-spacing:.04em;
+    text-transform:uppercase;padding:2px 6px;border-radius:5px;cursor:pointer;white-space:nowrap}
+  .zoning-legend .zl-refresh:hover{background:rgba(57,211,255,.28)}
   .zoning-legend i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:6px;vertical-align:-1px;opacity:.85}
   @media (max-width:640px){ .zoning-legend{bottom:auto;top:54px;left:12px;font-size:10px} }
   @media (max-width:640px){ .radarclock{bottom:auto;top:54px;right:12px} }
@@ -818,7 +824,10 @@
 <div class="crosshair" id="coordReadout">click the map to query a point</div>
 <div class="radarclock" id="radarClock">◵ Radar</div>
 <div class="zoning-legend" id="zoningLegend">
-  <div class="zl-title">Zoning</div>
+  <div class="zl-head">
+    <span class="zl-title">Zoning</span>
+    <button id="zoningRefresh" class="zl-refresh" title="Reload zoning for the area you're currently viewing (e.g. after panning out of a city into the county)">⟳ this view</button>
+  </div>
   <div id="zoningLegendBody">
     <div><i style="background:#3fb0ff"></i>Residential</div>
     <div><i style="background:#7c6cff"></i>Multi-family</div>
@@ -2246,7 +2255,30 @@ if(btnZoning) btnZoning.onclick=function(){
     else refreshZoning();
   } else map.removeLayer(zoningLayer);
 };
+const btnZoningRefresh=document.getElementById('zoningRefresh');
+if(btnZoningRefresh) btnZoningRefresh.onclick=(e)=>{ e.stopPropagation(); redetectZoningJurisdiction(); };
 let zoningTimer=null;
+// Re-detect which city/county is under the CURRENT map center and reload zoning for it. Lets the
+// user pan from (say) City of Naples into unincorporated Collier and pull the right zoning without
+// running a new property search. Point-queries the same FDOT boundary layers the lookup uses.
+async function redetectZoningJurisdiction(){
+  const c=map.getCenter();
+  const pt=encodeURIComponent(JSON.stringify({x:c.lng,y:c.lat,spatialReference:{wkid:4326}}));
+  const q=`?geometry=${pt}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects`+
+    `&where=1%3D1&outFields=NAME&returnGeometry=false&f=json`;
+  const get=u=>fetch(u).then(r=>r.ok?r.json():null).catch(()=>null);
+  try{
+    const [cy,co]=await Promise.all([ get(EP.city+q), get(EP.county+q) ]);
+    const cityName=(cy&&cy.features&&cy.features[0])?cy.features[0].attributes.NAME:'';
+    const cntyName=(co&&co.features&&co.features[0])?co.features[0].attributes.NAME:'';
+    window.__lastCity   = cityName||'';
+    window.__lastCounty = cntyName||'';
+    zoningKey='';                       // force a redraw for the new jurisdiction
+    const jur = cityName || cntyName || 'this area';
+    mapToast('Zoning set to '+titleCase(jur), 2200);
+    refreshZoning();
+  }catch(e){ mapToast('Could not detect the jurisdiction here.',2400); }
+}
 map.on('zoomstart', ()=>{ if(zoningOn) zoningLayer.clearLayers(); });
 map.on('moveend zoomend', ()=>{ clearTimeout(zoningTimer); zoningTimer=setTimeout(refreshZoning,BOUNDS_DEBOUNCE); });
 
