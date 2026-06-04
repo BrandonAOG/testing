@@ -231,9 +231,9 @@
   /* basemap picker: one button that opens a small popup of the 3 mutually-exclusive basemaps */
   .basemap-pick{position:relative;display:flex}
   .basemap-pick .bm-caret{font-size:9px;opacity:.7;margin-left:2px}
-  .basemap-menu{position:absolute;bottom:calc(100% + 6px);left:0;display:flex;flex-direction:column;
+  .basemap-menu{position:fixed;display:flex;flex-direction:column;
     background:var(--search-bg);border:1px solid var(--line);border-radius:8px;overflow:hidden;
-    box-shadow:0 6px 20px var(--shadow-soft);min-width:130px;z-index:1001}
+    box-shadow:0 6px 20px var(--shadow-soft);min-width:130px;z-index:1100}
   .basemap-menu[hidden]{display:none}
   .basemap-menu button{background:transparent;border:none;color:var(--dim);font-family:var(--disp);
     font-weight:600;font-size:12px;letter-spacing:.05em;padding:9px 14px;cursor:pointer;
@@ -1786,7 +1786,19 @@ function setBasemap(which){
   basemapMenu.querySelectorAll('button').forEach(b=>b.classList.toggle('active', b.dataset.bm===which));
 }
 function closeBasemapMenu(){ basemapMenu.hidden=true; }
-btnBasemap.onclick=(e)=>{ e.stopPropagation(); basemapMenu.hidden=!basemapMenu.hidden; };
+function openBasemapMenu(){
+  // position the fixed popup just above the button (escapes the bar's overflow:hidden clip)
+  const r=btnBasemap.getBoundingClientRect();
+  basemapMenu.hidden=false;
+  const mh=basemapMenu.offsetHeight||120, mw=basemapMenu.offsetWidth||140;
+  let top=r.top-mh-6;
+  if(top<8) top=r.bottom+6;                 // not enough room above → open below
+  let left=r.left;
+  if(left+mw>window.innerWidth-8) left=window.innerWidth-mw-8;  // keep on-screen
+  basemapMenu.style.top=top+'px';
+  basemapMenu.style.left=left+'px';
+}
+btnBasemap.onclick=(e)=>{ e.stopPropagation(); if(basemapMenu.hidden) openBasemapMenu(); else closeBasemapMenu(); };
 basemapMenu.querySelectorAll('button').forEach(b=>{
   b.onclick=(e)=>{ e.stopPropagation(); setBasemap(b.dataset.bm); closeBasemapMenu(); };
 });
