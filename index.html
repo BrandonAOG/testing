@@ -814,7 +814,9 @@
     <button id="btnBasemap" title="Switch the base map (Satellite / Street / Topo)">🗺 <span id="basemapLbl">Satellite</span> <span class="bm-caret">▾</span></button>
     <div id="basemapMenu" class="basemap-menu" hidden>
       <button data-bm="sat" class="active">Satellite</button>
+      <button data-bm="aerial" title="Aerial imagery with no place labels — unobstructed photo view">Aerial (clean)</button>
       <button data-bm="street">Street</button>
+      <button data-bm="gray" title="Minimal light-gray basemap — makes parcel / flood / city overlays read clearly">Gray</button>
       <button data-bm="topo" title="USGS topographic / terrain basemap — elevation &amp; contour context for low-ground / pad siting">⛰ Topo</button>
     </div>
   </div>
@@ -1772,16 +1774,24 @@ const satGroup = L.layerGroup([sat,labels]).addTo(map);
 // context (handy for spotting low ground before siting a pad). Cached only to z16, so upscale above.
 const topo = L.tileLayer("https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}",
   {maxZoom:19,maxNativeZoom:16,attribution:"Topo &copy; USGS The National Map",updateWhenIdle:L.Browser.mobile,updateWhenZooming:false,keepBuffer:4});
+// Clean aerial: the same Esri imagery as Satellite but WITHOUT the place-label overlay, for an
+// unobstructed photo view of roofs / pads / setbacks.
+const aerialClean = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
+  {maxZoom:19,attribution:"Imagery &copy; Esri",updateWhenIdle:L.Browser.mobile,updateWhenZooming:false,keepBuffer:4});
+// Light gray canvas: minimal, low-noise basemap so parcel lines / flood / city overlays read clearly.
+const gray = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}",
+  {maxZoom:19,maxNativeZoom:16,attribution:"&copy; Esri",updateWhenIdle:L.Browser.mobile,updateWhenZooming:false,keepBuffer:4});
 
 const btnBasemap=document.getElementById('btnBasemap');
 const basemapMenu=document.getElementById('basemapMenu');
 const basemapLbl=document.getElementById('basemapLbl');
-const BM_LABEL={sat:'Satellite',street:'Street',topo:'⛰ Topo'};
-// The three basemaps are mutually exclusive; overlays (city limits / flood / parcels / radar) sit on top.
+const BM_LABEL={sat:'Satellite',street:'Street',topo:'⛰ Topo',aerial:'Aerial',gray:'Gray'};
+// The basemaps are mutually exclusive; overlays (city limits / flood / parcels / radar) sit on top.
 // All basemaps live in the low tilePane, so they always render beneath the overlays regardless of order.
+const BM_LAYER={sat:satGroup,street:street,topo:topo,aerial:aerialClean,gray:gray};
 function setBasemap(which){
-  [satGroup,street,topo].forEach(l=>{ if(map.hasLayer(l)) map.removeLayer(l); });
-  ({sat:satGroup,street:street,topo:topo}[which]||satGroup).addTo(map);
+  Object.values(BM_LAYER).forEach(l=>{ if(map.hasLayer(l)) map.removeLayer(l); });
+  (BM_LAYER[which]||satGroup).addTo(map);
   basemapLbl.textContent = (BM_LABEL[which]||'Satellite').replace('⛰ ','');
   basemapMenu.querySelectorAll('button').forEach(b=>b.classList.toggle('active', b.dataset.bm===which));
 }
