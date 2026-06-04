@@ -261,7 +261,7 @@
     background:var(--search-bg);border:1px solid var(--line);padding:5px 11px;border-radius:7px;
     box-shadow:0 4px 14px var(--shadow-soft);pointer-events:none}
   .radarclock.show{display:block}
-  .zoning-legend{position:absolute;z-index:1000;top:64px;left:18px;display:none;
+  .zoning-legend{position:absolute;z-index:1000;top:calc(var(--abh,48px) + 14px);left:14px;display:none;
     background:var(--search-bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;
     font-family:var(--disp);font-size:11px;color:var(--dim);box-shadow:0 6px 20px var(--shadow-soft);line-height:1.5}
   .zoning-legend.show{display:block}
@@ -452,6 +452,7 @@
     }
     #map{ inset:var(--abh,48px) 0 0 600px; }
     .cardflow{ column-count:1; }   /* one category at a time — no masonry in tabbed mode */
+    .zoning-legend{ left:614px; }  /* clear the 600px sidebar so the legend sits in the map area */
   }
 
   /* ---- Mobile: panel becomes a snapping, draggable bottom sheet ---- */
@@ -2197,18 +2198,41 @@ function zoningDistrictOf(props, reg){
 }
 const ZONING_MINZOOM = 13;          // try zoning this early; the density guard below protects dense views
 const ZONING_MAXRECORDS = 1200;     // if a view returns this many polygons it's too dense → ask to zoom in
+let _zjCache={lat:null,lng:null,city:'',county:'',t:0};
+// Detect the city/county under the CURRENT map center (cached ~0.01° / 30s so panning doesn't
+// re-query the boundary constantly). This is what makes zoning follow the view instead of sticking
+// to whatever the last property search/click set.
+async function jurisdictionAtCenter(){
+  const c=map.getCenter();
+  // reuse cache if center barely moved and it's recent
+  if(_zjCache.lat!=null && Math.abs(c.lat-_zjCache.lat)<0.01 && Math.abs(c.lng-_zjCache.lng)<0.01
+     && (Date.now()-_zjCache.t)<30000){
+    return {city:_zjCache.city, county:_zjCache.county};
+  }
+  const pt=encodeURIComponent(JSON.stringify({x:c.lng,y:c.lat,spatialReference:{wkid:4326}}));
+  const q=`?geometry=${pt}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects`+
+    `&where=1%3D1&outFields=NAME&returnGeometry=false&f=json`;
+  const get=u=>fetch(u).then(r=>r.ok?r.json():null).catch(()=>null);
+  let city='', county='';
+  try{
+    const [cy,co]=await Promise.all([ get(EP.city+q), get(EP.county+q) ]);
+    city  =(cy&&cy.features&&cy.features[0])?(cy.features[0].attributes.NAME||''):'';
+    county=(co&&co.features&&co.features[0])?(co.features[0].attributes.NAME||''):'';
+  }catch(e){}
+  _zjCache={lat:c.lat,lng:c.lng,city,county,t:Date.now()};
+  return {city,county};
+}
 async function refreshZoning(){
   if(!zoningOn){ zoningLayer.clearLayers(); return; }
   if(map.getZoom() < ZONING_MINZOOM){ zoningLayer.clearLayers(); zoningKey=''; return; }   // too far out
-  // City is its own zoning authority — prefer its layer (Naples, Marco, Cape Coral, Sanibel...),
-  // then fall back to the county. Mirrors the click-lookup precedence.
-  const cty=(window.__lastCounty||'').toString();
-  const city=(window.__lastCity||'').toString();
+  // Detect jurisdiction from the VIEW (not the last search), so it always matches what's on screen.
+  const j = await jurisdictionAtCenter();
+  const city=(j.city||'').toString(), cty=(j.county||'').toString();
   const reg = (city && ZONING_LIVE_CITY[norm(city)]) ? ZONING_LIVE_CITY[norm(city)]
             : (cty ? ZONING_LIVE[norm(cty)] : null);
   if(!reg || !reg.urls || !reg.urls.length){ zoningLayer.clearLayers(); return; } // no zoning wired here
   const b=map.getBounds();
-  const key=[b.getWest(),b.getSouth(),b.getEast(),b.getNorth()].map(n=>n.toFixed(4)).join(',');
+  const key=norm(city||cty)+'|'+[b.getWest(),b.getSouth(),b.getEast(),b.getNorth()].map(n=>n.toFixed(4)).join(',');
   if(key===zoningKey || zoningBusy) return;
   zoningBusy=true;
   const env=`${b.getWest()},${b.getSouth()},${b.getEast()},${b.getNorth()}`;
@@ -2269,22 +2293,12 @@ let zoningTimer=null;
 // user pan from (say) City of Naples into unincorporated Collier and pull the right zoning without
 // running a new property search. Point-queries the same FDOT boundary layers the lookup uses.
 async function redetectZoningJurisdiction(){
-  const c=map.getCenter();
-  const pt=encodeURIComponent(JSON.stringify({x:c.lng,y:c.lat,spatialReference:{wkid:4326}}));
-  const q=`?geometry=${pt}&geometryType=esriGeometryPoint&inSR=4326&spatialRel=esriSpatialRelIntersects`+
-    `&where=1%3D1&outFields=NAME&returnGeometry=false&f=json`;
-  const get=u=>fetch(u).then(r=>r.ok?r.json():null).catch(()=>null);
-  try{
-    const [cy,co]=await Promise.all([ get(EP.city+q), get(EP.county+q) ]);
-    const cityName=(cy&&cy.features&&cy.features[0])?cy.features[0].attributes.NAME:'';
-    const cntyName=(co&&co.features&&co.features[0])?co.features[0].attributes.NAME:'';
-    window.__lastCity   = cityName||'';
-    window.__lastCounty = cntyName||'';
-    zoningKey='';                       // force a redraw for the new jurisdiction
-    const jur = cityName || cntyName || 'this area';
-    mapToast('Zoning set to '+titleCase(jur), 2200);
-    refreshZoning();
-  }catch(e){ mapToast('Could not detect the jurisdiction here.',2400); }
+  _zjCache={lat:null,lng:null,city:'',county:'',t:0};  // force a fresh jurisdiction lookup
+  zoningKey='';
+  const j=await jurisdictionAtCenter();
+  const jur = j.city || j.county || 'this area';
+  mapToast('Zoning set to '+titleCase(jur), 2000);
+  refreshZoning();
 }
 map.on('zoomstart', ()=>{ if(zoningOn) zoningLayer.clearLayers(); });
 map.on('moveend zoomend', ()=>{ clearTimeout(zoningTimer); zoningTimer=setTimeout(refreshZoning,BOUNDS_DEBOUNCE); });
@@ -2800,9 +2814,13 @@ async function geocodeAll(q){
   // Esri World Geocoder — strong on rural addresses the others miss (e.g. Glades/Moore Haven).
   // Bias to Florida's center and request WGS84 directly. This is the same service many county
   // GIS sites (incl. Glades') use for address search.
+  // Bias toward what the user is currently looking at: pass the map center as 'location' so the
+  // Esri geocoder ranks the nearby "123 Main St" above an identical address in another town.
+  let near='';
+  try{ if(typeof map!=='undefined' && map.getCenter){ const c=map.getCenter(); near=`&location=${c.lng},${c.lat}`; } }catch(e){}
   const esriU=`https://geocode.arcgis.com/arcgis/rest/services/World/GeocodeServer/findAddressCandidates`+
     `?SingleLine=${encodeURIComponent(qq)}&f=json&outFields=*&maxLocations=6&outSR=4326`+
-    `&searchExtent=${encodeURIComponent('-87.6,24.4,-80.0,31.0')}`;   // Florida bounding box
+    `&searchExtent=${encodeURIComponent('-87.6,24.4,-80.0,31.0')}`+near;   // Florida bbox + nearby bias
   const [cRes,oRes,eRes]=await Promise.allSettled([
     fetch(censusU).then(r=>r.json()),
     fetch(osmU).then(r=>r.json()),
@@ -6135,7 +6153,12 @@ async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid, forceAn
       const labelHTML = numStreetLabelHTML(L0.txt, L0.hn);
       const icon=L.divIcon({ className:'nbr-hit', html:`<div class="nbr-num${isSubj?' subject':''}">${labelHTML}</div>`, iconSize:null });
       const mk=L.marker([dlat,dlng],{icon, interactive:true, keyboard:false, zIndexOffset:isSubj?1000:5}).addTo(nbrNumLayer);
-      mk.on('click', (ev)=>{ try{ L.DomEvent.stop(ev); }catch(e){} searchForAddress(L0.txt); });
+      mk.on('click', (ev)=>{ try{ L.DomEvent.stop(ev); }catch(e){}
+        // Use the parcel's REAL coordinates (exact) rather than re-geocoding the bare street, which
+        // can resolve "123 Main St" to the wrong town. Fall back to address only if coords missing.
+        if(isFinite(L0.lat) && isFinite(L0.lng)) runLookup(L0.lat, L0.lng);
+        else searchForAddress(L0.txt);
+      });
       try{ const _a=L0.feat.attributes||{};
         const _liv=fmtNum(pick(_a,'TOT_LVG_AR','TOTLVGAR','HEATED_AREA','HEATEDAREA','LIVING_AREA','LIVINGAREA','BLDG_SQFT'));
         const _tip=parcelTooltipHTML({ site:L0.txt||parcelAddrText(_a),
@@ -6297,7 +6320,10 @@ async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid, forceAn
             const labelHTML = numStreetLabelHTML(_addr, P.hn);
             const icon=L.divIcon({ className:'nbr-hit', html:`<div class="nbr-num${isSubj?' subject':''}">${labelHTML}</div>`, iconSize:null });
             const mk=L.marker([P.lat,P.lng],{icon, interactive:true, keyboard:false, zIndexOffset:isSubj?1000:0}).addTo(nbrNumLayer);
-            mk.on('click', (ev)=>{ try{ L.DomEvent.stop(ev); }catch(e){} searchForAddress(_addr); });
+            mk.on('click', (ev)=>{ try{ L.DomEvent.stop(ev); }catch(e){}
+              if(isFinite(P.lat) && isFinite(P.lng)) runLookup(P.lat, P.lng);
+              else searchForAddress(_addr);
+            });
             try{
               const _aa=P.a||{};
               const _liv=fmtNum(_aa.TOT_LVG_AR);
