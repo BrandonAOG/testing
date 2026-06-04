@@ -230,6 +230,7 @@
   .layerswitch button.active{background:var(--signal);color:var(--signal-ink)}
   /* basemap picker: one button that opens a small popup of the 3 mutually-exclusive basemaps */
   .basemap-pick{position:relative;display:flex}
+  .weather-pick{position:relative;display:flex}
   .basemap-pick .bm-caret{font-size:9px;opacity:.7;margin-left:2px}
   .basemap-menu{position:fixed;display:flex;flex-direction:column;
     background:var(--search-bg);border:1px solid var(--line);border-radius:8px;overflow:hidden;
@@ -823,8 +824,14 @@
   <button id="btnBounds" class="active" title="Toggle color-coded incorporated city-limit outlines">◰ City limits</button>
   <button id="btnFlood" title="Shade FEMA flood-hazard zones (AE / VE / X) across the view — live NFHL. Zoom in to see it.">≋ Flood</button>
   <button id="btnParcels" title="Draw statewide parcel / lot lines — zoom in close (FL cadastral)">▦ Parcels</button>
-  <button id="btnRadar" title="Toggle animated rain/storm radar (RainViewer · last ~2h, looping)">◵ Radar</button>
-  <button id="btnCone" title="Show the NHC forecast cone &amp; track for any active tropical system">⬢ Cone</button>
+  <div class="weather-pick">
+    <button id="btnWeather" title="Storm &amp; weather layers (radar, hurricane cone, NWS warnings)">🌩 Weather <span class="bm-caret">▾</span></button>
+    <div id="weatherMenu" class="basemap-menu" hidden>
+      <button id="btnRadar" title="Animated rain/storm radar (RainViewer · last ~2h, looping)">◵ Radar</button>
+      <button id="btnCone" title="NHC forecast cone &amp; track for any active tropical system">⬢ Hurricane cone</button>
+      <button id="btnWarn" title="Live NWS watches &amp; warnings (tornado, flood, tropical, severe)">⚠ NWS warnings</button>
+    </div>
+  </div>
 </div>
 
 <div id="panel">
@@ -2235,7 +2242,47 @@ if(btnCone) btnCone.onclick=async function(){
 };
 /* Passive check on load: if a system is active, light up the Cone button so it's noticed. */
 (async()=>{ try{ const d=await fetchCone(); if(coneStormCount(d)>0 && btnCone){ btnCone.classList.add('alert');
-  btnCone.title='Active tropical system detected — tap to show the NHC forecast cone & track'; } }catch(e){} })();
+  btnCone.title='Active tropical system detected — tap to show the NHC forecast cone & track';
+  const bw=document.getElementById('btnWeather'); if(bw){ bw.classList.add('alert'); bw.title='Active tropical system — open for the NHC cone, radar & warnings'; }
+} }catch(e){} })();
+
+/* ---------- NWS live Watches & Warnings (rendered PNG overlay, like the flood layer) ----------
+   NOAA event-driven WWA map service, refreshed every few minutes. Shows active tornado / flood /
+   tropical / severe polygons. Same ArcGISExportTiles technique as the flood fill. */
+const NWS_WWA_MS = "https://mapservices.weather.noaa.gov/eventdriven/rest/services/WWA/watch_warn_adv/MapServer";
+const warnLayer = new ArcGISExportTiles(
+  NWS_WWA_MS + "/export?dpi=96&transparent=true&format=png32&bboxSR=3857&imageSR=3857"
+            + "&size=256,256&layers=show:1&f=image&bbox={bbox}",
+  { tileSize:256, opacity:0.5, minZoom:5, maxZoom:19, zIndex:245,
+    attribution:'Warnings &copy; NOAA/NWS', updateWhenIdle:L.Browser.mobile });
+let warnOn=false, warnRefresh=null;
+const btnWarn=document.getElementById('btnWarn');
+if(btnWarn) btnWarn.onclick=function(){
+  warnOn=!warnOn; this.classList.toggle('active',warnOn);
+  if(warnOn){ warnLayer.addTo(map); mapToast('Live NWS watches & warnings', 2400);
+    clearInterval(warnRefresh); warnRefresh=setInterval(()=>{ if(warnOn) warnLayer.redraw(); }, 5*60*1000); }
+  else { map.removeLayer(warnLayer); clearInterval(warnRefresh); warnRefresh=null; }
+};
+
+/* ---------- Weather popup (groups Radar / Cone / Warnings — independent toggles) ---------- */
+const btnWeather=document.getElementById('btnWeather');
+const weatherMenu=document.getElementById('weatherMenu');
+function closeWeatherMenu(){ if(weatherMenu) weatherMenu.hidden=true; }
+function openWeatherMenu(){
+  const r=btnWeather.getBoundingClientRect();
+  weatherMenu.hidden=false;
+  const mh=weatherMenu.offsetHeight||120, mw=weatherMenu.offsetWidth||160;
+  let top=r.top-mh-6; if(top<8) top=r.bottom+6;
+  let left=r.left; if(left+mw>window.innerWidth-8) left=window.innerWidth-mw-8;
+  weatherMenu.style.top=top+'px'; weatherMenu.style.left=left+'px';
+}
+if(btnWeather) btnWeather.onclick=(e)=>{ e.stopPropagation(); if(weatherMenu.hidden) openWeatherMenu(); else closeWeatherMenu(); };
+// keep the menu open when clicking a toggle inside it (so you can flip several)
+if(weatherMenu) weatherMenu.addEventListener('click',(e)=>e.stopPropagation());
+document.addEventListener('click', closeWeatherMenu);
+// reflect "any weather layer on" on the Weather button itself
+function syncWeatherBtn(){ if(btnWeather) btnWeather.classList.toggle('active', radarOn||coneOn||warnOn); }
+['btnRadar','btnCone','btnWarn'].forEach(id=>{ const b=document.getElementById(id); if(b){ const o=b.onclick; b.onclick=function(ev){ if(o) o.call(this,ev); setTimeout(syncWeatherBtn,0); }; }});
 
 
 /* ---------- Helpers ---------- */
