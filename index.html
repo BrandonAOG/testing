@@ -5769,12 +5769,45 @@ async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid, forceAn
     if(subjIdx<0 && want && !haveAnchor){   // no anchor — first same-number match
       for(let i=0;i<labels.length;i++){ if(labels[i].hn===want){ subjIdx=i; break; } }
     }
+    // FAN-OUT stacked units: condo/apartment towers put every unit on ONE coordinate, so
+    // their labels pile on a single pixel and you can't click the one you want. Group labels
+    // by (rounded) coordinate; any group with 2+ members gets spread into a compact vertical
+    // grid of synthetic positions around the real point. Positions are display-only — the
+    // address/owner/sqft stay correct. Each label gains .dl/.dn = its draw lat/lng.
+    (function fanOutStacks(){
+      const groups=new Map();
+      for(let i=0;i<labels.length;i++){
+        const L0=labels[i];
+        const k=L0.lat.toFixed(6)+','+L0.lng.toFixed(6);
+        let g=groups.get(k); if(!g){ g=[]; groups.set(k,g); } g.push(i);
+      }
+      // pixel→degree scale at the current zoom, so the spread is sensibly sized
+      const z=map.getZoom();
+      const degPerPx = 360/(256*Math.pow(2,z));     // longitude deg per pixel (approx)
+      const STEP_Y = 22*degPerPx;                    // ~22px vertical gap between stacked labels
+      const STEP_X = 96*degPerPx;                    // ~96px between columns
+      const PER_COL = 12;                            // wrap into a new column after 12
+      for(const idxs of groups.values()){
+        if(idxs.length<2){ const L0=labels[idxs[0]]; L0.dl=L0.lat; L0.dn=L0.lng; continue; }
+        // keep the subject (if in this stack) at the TOP of the first column
+        idxs.sort((a,b)=> (a===subjIdx?-1:b===subjIdx?1:0));
+        const baseLat=labels[idxs[0]].lat, baseLng=labels[idxs[0]].lng;
+        for(let n=0;n<idxs.length;n++){
+          const col=Math.floor(n/PER_COL), row=n%PER_COL;
+          const L0=labels[idxs[n]];
+          L0.dl = baseLat - row*STEP_Y;              // stack downward
+          L0.dn = baseLng + col*STEP_X;              // new column to the right
+          L0.fanned = true;
+        }
+      }
+    })();
     // PASS 2: render every label; the chosen subject (if any) gets the highlight.
     for(let i=0;i<labels.length;i++){
       const L0=labels[i]; const isSubj = (i===subjIdx);
       const labelHTML = numStreetLabelHTML(L0.txt, L0.hn);
       const icon=L.divIcon({ className:'nbr-hit', html:`<div class="nbr-num${isSubj?' subject':''}">${labelHTML}</div>`, iconSize:null });
-      const mk=L.marker([L0.lat,L0.lng],{icon, interactive:true, keyboard:false, zIndexOffset:isSubj?1000:0}).addTo(nbrNumLayer);
+      const dlat=(L0.dl!=null?L0.dl:L0.lat), dlng=(L0.dn!=null?L0.dn:L0.lng);
+      const mk=L.marker([dlat,dlng],{icon, interactive:true, keyboard:false, zIndexOffset:isSubj?1000:0}).addTo(nbrNumLayer);
       // click a label → full lookup of that address (same as searching it)
       mk.on('click', (ev)=>{ try{ L.DomEvent.stop(ev); }catch(e){} searchForAddress(L0.txt); });
       try{ const _a=L0.feat.attributes||{};
