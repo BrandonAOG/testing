@@ -261,7 +261,7 @@
     background:var(--search-bg);border:1px solid var(--line);padding:5px 11px;border-radius:7px;
     box-shadow:0 4px 14px var(--shadow-soft);pointer-events:none}
   .radarclock.show{display:block}
-  .zoning-legend{position:absolute;z-index:1000;top:calc(var(--abh,48px) + 14px);left:14px;display:none;
+  .zoning-legend{position:absolute;z-index:1000;bottom:18px;left:14px;display:none;
     background:var(--search-bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;
     font-family:var(--disp);font-size:11px;color:var(--dim);box-shadow:0 6px 20px var(--shadow-soft);line-height:1.5}
   .zoning-legend.show{display:block}
@@ -452,7 +452,7 @@
     }
     #map{ inset:var(--abh,48px) 0 0 600px; }
     .cardflow{ column-count:1; }   /* one category at a time — no masonry in tabbed mode */
-    .zoning-legend{ left:614px; }  /* clear the 600px sidebar so the legend sits in the map area */
+    .zoning-legend{ left:614px; bottom:18px; }  /* clear the 600px sidebar; lower-left of map */
   }
 
   /* ---- Mobile: panel becomes a snapping, draggable bottom sheet ---- */
@@ -830,8 +830,11 @@
 <div class="zoning-legend" id="zoningLegend">
   <div class="zl-title">Zoning</div>
   <div id="zoningLegendBody">
-    <div><i style="background:#3fb0ff"></i>Residential</div>
+    <div><i style="background:#34d399"></i>Estate / rural res.</div>
+    <div><i style="background:#0ea5e9"></i>Single-family</div>
+    <div><i style="background:#2563eb"></i>Dense single-family</div>
     <div><i style="background:#7c6cff"></i>Multi-family</div>
+    <div><i style="background:#06b6d4"></i>Mobile / manufactured</div>
     <div><i style="background:#ff6b6b"></i>Commercial</div>
     <div><i style="background:#b06b3a"></i>Industrial</div>
     <div><i style="background:#5fc26a"></i>Agricultural</div>
@@ -2102,11 +2105,14 @@ document.getElementById('btnBounds').onclick=function(){
    letters/pattern rather than exact strings. Heuristic: gets the big buckets right across all
    four counties; unusual codes (overlays, civic) land in "other". */
 const ZONE_CAT_COLOR = {
-  residential:'#3fb0ff',   // blue
-  multifamily:'#7c6cff',   // indigo (R-multi / RMF)
+  estate:'#34d399',        // emerald — estate / rural-residential (large lots, ag-residential)
+  residential:'#0ea5e9',   // sky blue — standard single-family
+  resdense:'#2563eb',      // strong blue — dense / small-lot single-family
+  multifamily:'#7c6cff',   // indigo — multifamily (RMF / RM / townhouse)
+  mobile:'#06b6d4',        // cyan — mobile home / manufactured
   commercial:'#ff6b6b',    // red
   industrial:'#b06b3a',    // brown
-  agricultural:'#5fc26a',  // green
+  agricultural:'#5fc26a',  // green — pure agricultural
   mixed:'#ffb000',         // amber (PUD / mixed-use / planned)
   public:'#9aa7b3',        // gray (civic / institutional / conservation)
   other:'#c08cff'          // purple fallback
@@ -2116,18 +2122,24 @@ function zoneCategory(code){
   if(!c) return 'other';
   // planned / mixed-use first (PUD, MPUD, MU, PD, etc.)
   if(/^(M?P?UD|PD|MU|MX|PUD|MPUD|RPUD|CPUD|TND|VR)/.test(c)) return 'mixed';
-  // agricultural
-  if(/^(AG|A1|A2|A3|AE|EA|RU|RR)/.test(c) || c==='A') return 'agricultural';
-  // multifamily residential (RMF, RM, RT, R3..R6 multi)
-  if(/^(RMF|RM|RT|RML|RMH|MH|MF)/.test(c)) return 'multifamily';
-  // single-family / general residential
-  if(/^(RSF|RS|RE|RG|R1|R2|RA|TR|GR|R)/.test(c)) return 'residential';
+  // mobile / manufactured home
+  if(/^(MH|RMH|TT|RV|MHP|MOB)/.test(c)) return 'mobile';
+  // pure agricultural (no residential intent)
+  if(/^(AG|A1|A2|A3|A$)/.test(c) || c==='A') return 'agricultural';
+  // estate / rural residential / large-lot ag-residential
+  if(/^(RE|RR|RA|AE|EA|RU|E1|E2|ARSF1|RSF1$|RSF2$)/.test(c)) return 'estate';
+  // multifamily (RMF, RM, RT townhouse, MF)
+  if(/^(RMF|RM|RT|RML|MF)/.test(c)) return 'multifamily';
+  // dense / small-lot single-family (higher digits = smaller lots: RSF-4/5/6, R3..)
+  if(/^(RSF[4-9]|RS[4-9]|R[3-9]|RG)/.test(c)) return 'resdense';
+  // standard single-family
+  if(/^(RSF|RS|R1|R2|TR|GR|R)/.test(c)) return 'residential';
   // commercial / office / business
   if(/^(C|CG|CC|CN|CO|OF|B|GC|TC|HC|IC|DT|CR)/.test(c)) return 'commercial';
   // industrial
   if(/^(I|IL|IG|IH|IND|M1|M2|LM|HM|IP)/.test(c)) return 'industrial';
   // public / institutional / conservation / parks
-  if(/^(P|PU|GU|CF|CON|OS|REC|ST|GOV|INST|E)/.test(c)) return 'public';
+  if(/^(P|PU|GU|CF|CON|OS|REC|ST|GOV|INST)/.test(c)) return 'public';
   return 'other';
 }
 const ZONING_FILL_OPACITY = 0.35;
@@ -2158,7 +2170,8 @@ function naplesColor(code){
   const c=String(code||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
   return NAPLES_ZONE_COLOR[c] || null;
 }
-const ZL_GENERIC=[["#3fb0ff","Residential"],["#7c6cff","Multi-family"],["#ff6b6b","Commercial"],
+const ZL_GENERIC=[["#34d399","Estate / rural res."],["#0ea5e9","Single-family"],["#2563eb","Dense single-family"],
+  ["#7c6cff","Multi-family"],["#06b6d4","Mobile / manufactured"],["#ff6b6b","Commercial"],
   ["#b06b3a","Industrial"],["#5fc26a","Agricultural"],["#ffb000","Planned / mixed"],
   ["#9aa7b3","Public / civic"],["#c08cff","Other"]];
 const ZL_NAPLES=[["#10b981","R1-E / RE (estate)"],["#14b8a6","R1-15"],["#0ea5e9","R1-10"],
