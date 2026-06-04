@@ -228,6 +228,18 @@
   .layerswitch{position:absolute;z-index:1000;bottom:18px;right:18px;display:flex;background:var(--search-bg);border:1px solid var(--line);border-radius:8px;overflow:hidden;box-shadow:0 6px 20px var(--shadow-soft)}
   .layerswitch button{background:transparent;border:none;color:var(--dim);font-family:var(--disp);font-weight:600;font-size:12px;letter-spacing:.05em;padding:9px 14px;cursor:pointer;text-transform:uppercase}
   .layerswitch button.active{background:var(--signal);color:var(--signal-ink)}
+  /* basemap picker: one button that opens a small popup of the 3 mutually-exclusive basemaps */
+  .basemap-pick{position:relative;display:flex}
+  .basemap-pick .bm-caret{font-size:9px;opacity:.7;margin-left:2px}
+  .basemap-menu{position:absolute;bottom:calc(100% + 6px);left:0;display:flex;flex-direction:column;
+    background:var(--search-bg);border:1px solid var(--line);border-radius:8px;overflow:hidden;
+    box-shadow:0 6px 20px var(--shadow-soft);min-width:130px;z-index:1001}
+  .basemap-menu[hidden]{display:none}
+  .basemap-menu button{background:transparent;border:none;color:var(--dim);font-family:var(--disp);
+    font-weight:600;font-size:12px;letter-spacing:.05em;padding:9px 14px;cursor:pointer;
+    text-transform:uppercase;text-align:left}
+  .basemap-menu button:hover{background:rgba(57,211,255,.12);color:#dff6ff}
+  .basemap-menu button.active{background:var(--signal);color:var(--signal-ink)}
   /* Cone button when NHC has an active tropical system — pulsing warn highlight */
   .layerswitch button.alert{color:var(--warn)}
   .layerswitch button.alert::before{content:'●';margin-right:5px;font-size:9px;vertical-align:1px;animation:conepulse 1.4s ease-in-out infinite}
@@ -798,9 +810,14 @@
 <div class="radarclock" id="radarClock">◵ Radar</div>
 <button class="sheet-tab" id="sheetTab" aria-label="Show property panel">⌃ Property panel</button>
 <div class="layerswitch">
-  <button id="btnSat" class="active">Satellite</button>
-  <button id="btnStreet">Street</button>
-  <button id="btnTopo" title="USGS topographic / terrain basemap — elevation &amp; contour context for low-ground / pad siting">⛰ Topo</button>
+  <div class="basemap-pick">
+    <button id="btnBasemap" title="Switch the base map (Satellite / Street / Topo)">🗺 <span id="basemapLbl">Satellite</span> <span class="bm-caret">▾</span></button>
+    <div id="basemapMenu" class="basemap-menu" hidden>
+      <button data-bm="sat" class="active">Satellite</button>
+      <button data-bm="street">Street</button>
+      <button data-bm="topo" title="USGS topographic / terrain basemap — elevation &amp; contour context for low-ground / pad siting">⛰ Topo</button>
+    </div>
+  </div>
   <button id="btnBounds" class="active" title="Toggle color-coded incorporated city-limit outlines">◰ City limits</button>
   <button id="btnFlood" title="Shade FEMA flood-hazard zones (AE / VE / X) across the view — live NFHL. Zoom in to see it.">≋ Flood</button>
   <button id="btnParcels" title="Draw statewide parcel / lot lines — zoom in close (FL cadastral)">▦ Parcels</button>
@@ -1756,19 +1773,25 @@ const satGroup = L.layerGroup([sat,labels]).addTo(map);
 const topo = L.tileLayer("https://basemap.nationalmap.gov/arcgis/rest/services/USGSTopo/MapServer/tile/{z}/{y}/{x}",
   {maxZoom:19,maxNativeZoom:16,attribution:"Topo &copy; USGS The National Map",updateWhenIdle:L.Browser.mobile,updateWhenZooming:false,keepBuffer:4});
 
-const btnSat=document.getElementById('btnSat'), btnStreet=document.getElementById('btnStreet'), btnTopo=document.getElementById('btnTopo');
+const btnBasemap=document.getElementById('btnBasemap');
+const basemapMenu=document.getElementById('basemapMenu');
+const basemapLbl=document.getElementById('basemapLbl');
+const BM_LABEL={sat:'Satellite',street:'Street',topo:'⛰ Topo'};
 // The three basemaps are mutually exclusive; overlays (city limits / flood / parcels / radar) sit on top.
 // All basemaps live in the low tilePane, so they always render beneath the overlays regardless of order.
 function setBasemap(which){
   [satGroup,street,topo].forEach(l=>{ if(map.hasLayer(l)) map.removeLayer(l); });
   ({sat:satGroup,street:street,topo:topo}[which]||satGroup).addTo(map);
-  btnSat.classList.toggle('active', which==='sat');
-  btnStreet.classList.toggle('active', which==='street');
-  btnTopo.classList.toggle('active', which==='topo');
+  basemapLbl.textContent = (BM_LABEL[which]||'Satellite').replace('⛰ ','');
+  basemapMenu.querySelectorAll('button').forEach(b=>b.classList.toggle('active', b.dataset.bm===which));
 }
-btnSat.onclick=()=>setBasemap('sat');
-btnStreet.onclick=()=>setBasemap('street');
-btnTopo.onclick=()=>setBasemap('topo');
+function closeBasemapMenu(){ basemapMenu.hidden=true; }
+btnBasemap.onclick=(e)=>{ e.stopPropagation(); basemapMenu.hidden=!basemapMenu.hidden; };
+basemapMenu.querySelectorAll('button').forEach(b=>{
+  b.onclick=(e)=>{ e.stopPropagation(); setBasemap(b.dataset.bm); closeBasemapMenu(); };
+});
+// click anywhere else closes the menu
+document.addEventListener('click', closeBasemapMenu);
 
 let marker=null, parcelLayer=null, homeParcelLayer=null;
 map.on('click', e => runLookup(e.latlng.lat, e.latlng.lng));
