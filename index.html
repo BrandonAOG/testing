@@ -6419,7 +6419,9 @@ function renderParcelGeneric(a, d){
   h += fieldRow('Owner', owner?esc(owner):'<span class="muted">field not detected</span>','big');
   if(own2) h += fieldRow('Owner 2', esc(own2));
   h += fieldRow('Parcel ID', pid?esc(pid):'<span class="muted">—</span>','big');
-  if(liv)   h += fieldRow('Living area', liv+' sq ft','big');
+  if(liv){ h += fieldRow('Living area', liv+' sq ft','big');
+    try{ if(window.__livOverride){ h += `<div class="note">Living area from the county appraiser's record (primary structure). The state roll listed ${window.__livOverride.roll.toLocaleString('en-US')} sq ft, which sums secondary structures.</div>`; window.__livOverride=null; } }catch(e){}
+  }
   if(lotSf) h += fieldRow('Lot area', lotSf+' sq ft');
   if(site) h += fieldRow('Site address', esc(site)+(city?'<br>'+esc(city):''));
   if(mail) h += fieldRow('Owner mailing', esc(mail)+(mailCity?'<br>'+esc(mailCity):''));
@@ -6691,9 +6693,27 @@ async function runLookup(lat,lng,searchCtx){
     if(parcel && !parcel.__err && parcel.features && parcel.features[0]){
       const _ra=parcel.features[0].attributes||{}, _la=liveRes.features[0].attributes;
       const _num=v=>v!=null&&String(v).trim()!==''&&Number(String(v).replace(/[^0-9.]/g,''))>0;
-      // living area
-      if(!det.liv){ const _liv=pick(_ra,'TOT_LVG_AR','TOTLVGAR','HEATED_AREA','HEATEDAREA','LIVING_AREA','LIVINGAREA','BLDG_SQFT');
-        if(_num(_liv)){ _la.TOT_LVG_AR=_liv; det.liv='TOT_LVG_AR'; } }
+      // living area — prefer the county appraiser file (primary-structure figure) over the statewide
+      // roll, which can sum secondary structures (e.g. 4300 Brynwood: roll 23,724 vs appraiser 11,862).
+      if(!det.liv){
+        let _fileSqft=null, _rollLiv=pick(_ra,'TOT_LVG_AR','TOTLVGAR','HEATED_AREA','HEATEDAREA','LIVING_AREA','LIVINGAREA','BLDG_SQFT');
+        try{
+          const _fileUrl = countyName ? ADDRPOINT_FILES[norm(countyName)] : null;
+          if(_fileUrl && _fileUrl.indexOf('REPLACE-ME')<0 && isFinite(lat) && isFinite(lng)){
+            const _eps=0.0008, _bb=L.latLngBounds([lat-_eps,lng-_eps],[lat+_eps,lng+_eps]);
+            const _fr=await queryHostedFile(_fileUrl,_bb);
+            if(_fr && _fr.length){ let _bx=null,_bd=Infinity;
+              for(const f of _fr){ const dx=f.geometry.x-lng,dy=f.geometry.y-lat,d=dx*dx+dy*dy; if(d<_bd){_bd=d;_bx=f;} }
+              if(_bx && _bx.attributes && Number(_bx.attributes.TOT_LVG_AR)>0) _fileSqft=_bx.attributes.TOT_LVG_AR;
+            }
+          }
+        }catch(e){}
+        if(_num(_fileSqft)){
+          _la.TOT_LVG_AR=_fileSqft; det.liv='TOT_LVG_AR';
+          if(_num(_rollLiv) && Math.abs(Number(_rollLiv)-Number(_fileSqft))>1)
+            window.__livOverride={roll:Number(_rollLiv), file:Number(_fileSqft)};
+        } else if(_num(_rollLiv)){ _la.TOT_LVG_AR=_rollLiv; det.liv='TOT_LVG_AR'; }
+      }
       // year built (actual)
       if(!det.yr){ const _y=pick(_ra,'ACT_YR_BLT','YR_BLT','EFF_YR_BLT','ACTYRBLT');
         if(_num(_y)){ _la.ACT_YR_BLT=_y; det.yr='ACT_YR_BLT'; } }
