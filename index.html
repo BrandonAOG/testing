@@ -1891,9 +1891,68 @@ let floodOn=false;
 const btnFlood=document.getElementById('btnFlood');
 if(btnFlood) btnFlood.onclick=function(){
   floodOn=!floodOn; this.classList.toggle('active',floodOn);
-  if(floodOn){ floodLayer.addTo(map); if(map.getZoom()<10) mapToast('Zoom in to see flood-zone shading.',2400); }
-  else map.removeLayer(floodLayer);
+  if(floodOn){ floodLayer.addTo(map); floodEdgeLayer.addTo(map); floodEdgeKey='';
+    if(map.getZoom()<10) mapToast('Zoom in to see flood-zone shading.',2400);
+    else refreshFloodEdges(); }
+  else { map.removeLayer(floodLayer); map.removeLayer(floodEdgeLayer); }
 };
+
+/* ---------- Flood-zone BOUNDARIES (vector, on top of the PNG fill) ----------
+   The PNG above gives the fast color fill. Here we additionally pull the FEMA zone
+   POLYGONS for the current view and draw their outlines as blue dashed lines, with a
+   hover tooltip naming the zone + base-flood elevation. Polygons are heavy, so this only
+   runs zoomed in tight (z>=13) where just a few zones are in view — same discipline as
+   the parcel-lines layer. The fill (PNG) still shows at z>=10; only the crisp edges wait
+   for z>=13. */
+const FEMA_NFHL_QUERY = FEMA_NFHL_MS + "/28/query";
+const floodEdgeLayer = L.geoJSON(null, {
+  style:{ color:'#39d3ff', weight:2, opacity:.95, dashArray:'6,5',
+          fill:true, fillColor:'#39d3ff', fillOpacity:0.001 } });
+let floodEdgeKey='', floodEdgeBusy=false;
+function floodZoneLabel(p){
+  if(!p) return 'Flood zone';
+  const z = p.FLD_ZONE || p.ZONE || p.FLD_ZONE_1 || '';
+  const sub = p.ZONE_SUBTY || '';
+  const bfe = (p.STATIC_BFE!=null && p.STATIC_BFE>-9999) ? p.STATIC_BFE : null;
+  let s = z ? ('Zone '+z) : 'Flood zone';
+  if(/^X$/i.test(z) && /AREA OF MINIMAL/i.test(sub)) s += ' (minimal hazard)';
+  else if(sub && !/^0$/.test(String(sub))) s += ' · '+sub;
+  if(bfe) s += ' · BFE '+bfe+' ft';
+  return s;
+}
+async function refreshFloodEdges(){
+  if(!floodOn){ floodEdgeLayer.clearLayers(); return; }
+  if(map.getZoom() < 13){ floodEdgeLayer.clearLayers(); floodEdgeKey=''; return; }  // edges only when zoomed in
+  const b=map.getBounds();
+  const key=[b.getWest(),b.getSouth(),b.getEast(),b.getNorth()].map(n=>n.toFixed(4)).join(',');
+  if(key===floodEdgeKey || floodEdgeBusy) return;
+  floodEdgeBusy=true;
+  const env=`${b.getWest()},${b.getSouth()},${b.getEast()},${b.getNorth()}`;
+  const url=FEMA_NFHL_QUERY+`?geometry=${encodeURIComponent(env)}&geometryType=esriGeometryEnvelope&inSR=4326`+
+    `&spatialRel=esriSpatialRelIntersects&where=1%3D1`+
+    `&outFields=${encodeURIComponent('FLD_ZONE,ZONE_SUBTY,STATIC_BFE')}`+
+    `&returnGeometry=true&outSR=4326&resultRecordCount=400&f=geojson`;
+  try{
+    const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),15000);
+    const r=await fetch(url,{signal:ctrl.signal}); clearTimeout(t);
+    if(r.ok){ const gj=await r.json();
+      if(gj && gj.features){
+        floodEdgeLayer.clearLayers();
+        floodEdgeLayer.addData(gj);
+        // bind hover tooltips per zone (canvas renderer still supports layer events)
+        floodEdgeLayer.eachLayer(ly=>{
+          const p = ly.feature && ly.feature.properties;
+          const lbl = floodZoneLabel(p);
+          ly.bindTooltip(lbl, {sticky:true, direction:'top', className:'parcel-tip', opacity:1});
+        });
+        floodEdgeKey=key;
+      }
+    }
+  }catch(e){ /* keep existing edges on failure */ }
+  finally{ floodEdgeBusy=false; }
+}
+let floodEdgeTimer=null;
+map.on('moveend zoomend', ()=>{ clearTimeout(floodEdgeTimer); floodEdgeTimer=setTimeout(refreshFloodEdges,BOUNDS_DEBOUNCE); });
 
 /* ---------- Parcel / lot-line overlay (statewide cadastral) ----------
    Same FL DOR cadastral the panel reads on click, drawn as thin lines across the view. Parcels are
