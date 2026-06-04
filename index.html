@@ -1952,6 +1952,7 @@ async function refreshFloodEdges(){
   finally{ floodEdgeBusy=false; }
 }
 let floodEdgeTimer=null;
+map.on('zoomstart', ()=>{ if(floodOn) floodEdgeLayer.clearLayers(); });
 map.on('moveend zoomend', ()=>{ clearTimeout(floodEdgeTimer); floodEdgeTimer=setTimeout(refreshFloodEdges,BOUNDS_DEBOUNCE); });
 
 /* ---------- Parcel / lot-line overlay (statewide cadastral) ----------
@@ -5685,7 +5686,7 @@ async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid, forceAn
         const inView = await queryHostedFile(_fileCfg, b);   // null=load failed, []=loaded-but-empty
         if(Array.isArray(inView) && inView.length){
           for(const f of inView){
-            if(labels.length>=900) break;                    // higher cap: file points are cheap
+            if(labels.length>=500) break;                    // cap: enough when zoomed in, smooth on zoom-out
             const a=f.attributes||{};
             const txt=formatAddrPoint(a);
             const hn=houseNum(txt);
@@ -5900,6 +5901,10 @@ async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid, forceAn
 }
 // Keep the labels in sync as the user pans/zooms after a search (debounced, same as parcel lines).
 let _nbrTimer=null, _nbrCtx=null;
+// PERF: drop the labels the instant a zoom gesture starts. Repositioning hundreds of
+// interactive markers frame-by-frame through the zoom animation is what caused the
+// stutter on zoom-out; clearing first and rebuilding on zoomend is smooth.
+map.on('zoomstart', ()=>{ if(nbrNumOn && _nbrCtx) clearNeighborNumbers(); });
 map.on('moveend zoomend', ()=>{
   if(!nbrNumOn || !_nbrCtx) return;
   clearTimeout(_nbrTimer);
