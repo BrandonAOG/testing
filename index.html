@@ -242,6 +242,9 @@
     text-transform:uppercase;text-align:left}
   .basemap-menu button:hover{background:rgba(57,211,255,.12);color:#dff6ff}
   .basemap-menu button.active{background:var(--signal);color:var(--signal-ink)}
+  /* zoning "refresh to this view" action row inside the Layers popup */
+  .basemap-menu .zl-refresh-row{color:#7fe3ff;font-size:11px;border-top:1px solid var(--line);text-transform:none;letter-spacing:.02em}
+  .basemap-menu .zl-refresh-row:hover{background:rgba(57,211,255,.16);color:#dff6ff}
   /* Cone button when NHC has an active tropical system — pulsing warn highlight */
   .layerswitch button.alert{color:var(--warn)}
   .layerswitch button.alert::before{content:'●';margin-right:5px;font-size:9px;vertical-align:1px;animation:conepulse 1.4s ease-in-out infinite}
@@ -258,7 +261,7 @@
     background:var(--search-bg);border:1px solid var(--line);padding:5px 11px;border-radius:7px;
     box-shadow:0 4px 14px var(--shadow-soft);pointer-events:none}
   .radarclock.show{display:block}
-  .zoning-legend{position:absolute;z-index:1000;bottom:64px;left:18px;display:none;
+  .zoning-legend{position:absolute;z-index:1000;top:64px;left:18px;display:none;
     background:var(--search-bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;
     font-family:var(--disp);font-size:11px;color:var(--dim);box-shadow:0 6px 20px var(--shadow-soft);line-height:1.5}
   .zoning-legend.show{display:block}
@@ -270,7 +273,7 @@
     text-transform:uppercase;padding:2px 6px;border-radius:5px;cursor:pointer;white-space:nowrap}
   .zoning-legend .zl-refresh:hover{background:rgba(57,211,255,.28)}
   .zoning-legend i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:6px;vertical-align:-1px;opacity:.85}
-  @media (max-width:640px){ .zoning-legend{bottom:auto;top:54px;left:12px;font-size:10px} }
+  @media (max-width:640px){ .zoning-legend{top:96px;left:12px;font-size:10px} }
   @media (max-width:640px){ .radarclock{bottom:auto;top:54px;right:12px} }
   .bnd-tip{background:var(--bnd-bg);color:var(--bnd-ink);border:none;font-family:var(--disp);font-weight:700;font-size:11px;letter-spacing:.04em;padding:2px 7px;box-shadow:0 2px 8px var(--shadow-soft)}
   .bnd-tip .leaflet-tooltip-tip{background:var(--bnd-bg)}
@@ -824,10 +827,7 @@
 <div class="crosshair" id="coordReadout">click the map to query a point</div>
 <div class="radarclock" id="radarClock">◵ Radar</div>
 <div class="zoning-legend" id="zoningLegend">
-  <div class="zl-head">
-    <span class="zl-title">Zoning</span>
-    <button id="zoningRefresh" class="zl-refresh" title="Reload zoning for the area you're currently viewing (e.g. after panning out of a city into the county)">⟳ this view</button>
-  </div>
+  <div class="zl-title">Zoning</div>
   <div id="zoningLegendBody">
     <div><i style="background:#3fb0ff"></i>Residential</div>
     <div><i style="background:#7c6cff"></i>Multi-family</div>
@@ -858,6 +858,7 @@
       <button id="btnBounds" class="active" title="Color-coded incorporated city-limit outlines">◰ City limits</button>
       <button id="btnParcels" title="Statewide parcel / lot lines — zoom in close (FL cadastral)">▦ Parcels</button>
       <button id="btnZoning" title="Zoning districts for the current county — zoom in close. Hover a zone for its district code.">⬡ Zoning</button>
+      <button id="zoningRefresh" class="zl-refresh-row" title="Reload zoning for the area you're currently viewing (e.g. after panning out of a city into the county)">⟳ Refresh zoning to this view</button>
     </div>
   </div>
   <div class="weather-pick">
@@ -2256,7 +2257,13 @@ if(btnZoning) btnZoning.onclick=function(){
   } else map.removeLayer(zoningLayer);
 };
 const btnZoningRefresh=document.getElementById('zoningRefresh');
-if(btnZoningRefresh) btnZoningRefresh.onclick=(e)=>{ e.stopPropagation(); redetectZoningJurisdiction(); };
+if(btnZoningRefresh) btnZoningRefresh.onclick=(e)=>{
+  e.stopPropagation();
+  // if zoning isn't on yet, turn it on so the refresh has something to show
+  if(!zoningOn && btnZoning){ btnZoning.click(); }
+  redetectZoningJurisdiction();
+  try{ closeLayersMenu(); }catch(_){}
+};
 let zoningTimer=null;
 // Re-detect which city/county is under the CURRENT map center and reload zoning for it. Lets the
 // user pan from (say) City of Naples into unincorporated Collier and pull the right zoning without
