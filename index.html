@@ -2125,15 +2125,21 @@ const ZONING_FILL_OPACITY = 0.35;
    so you can tell R1-15 from R1-10 from R1-7.5 at a glance, and families apart by hue. Codes come
    from the city's Ch. 58 district list. Matched on the normalized code (letters+digits, no spaces). */
 const NAPLES_ZONE_COLOR = {
-  // R1 single-family: blues, light (big lot) → dark (small lot)
-  "RE":"#dbeafe", "R1E":"#bfdbfe", "R115A":"#93c5fd", "R115":"#60a5fa",
-  "R110A":"#3b82f6", "R110":"#2563eb", "R175":"#1d4ed8",
+  // R1 single-family: spread across DISTINCT hues (not just shades) so adjacent lot-size
+  // districts are unmistakable. Big lot → small lot walks green→teal→blue→indigo.
+  "RE":"#34d399",     // emerald — rural estate (largest)
+  "R1E":"#10b981",    // green
+  "R115A":"#5eead4",  // light teal (15A = lighter tint of 15)
+  "R115":"#14b8a6",   // teal — R1-15
+  "R110A":"#7dd3fc",  // light sky (10A = lighter tint of 10)
+  "R110":"#0ea5e9",   // sky blue — R1-10  (clearly different from teal R1-15)
+  "R175":"#2563eb",   // strong blue — R1-7.5 (smallest lot)
   // R3 multifamily: indigos/purples, by density (6→18 units)
-  "R36":"#c4b5fd", "R312":"#a78bfa", "R315":"#8b5cf6", "R318":"#7c3aed",
-  // R3T tourist/multifamily: violet
-  "R3T12":"#d8b4fe", "R3T18":"#c084fc",
+  "R36":"#c4b5fd", "R312":"#a78bfa", "R315":"#8b5cf6", "R318":"#6d28d9",
+  // R3T tourist/multifamily: violet/magenta
+  "R3T12":"#e879f9", "R3T18":"#c026d3",
   // Commercial: reds/oranges
-  "C1":"#fca5a5", "C1A":"#f87171", "C2":"#ef4444", "C2A":"#dc2626",
+  "C1":"#fca5a5", "C1A":"#f87171", "C2":"#ef4444", "C2A":"#b91c1c",
   // Downtown / planned / public
   "D":"#fbbf24", "PD":"#f59e0b", "PS":"#9aa7b3", "P":"#9aa7b3", "CF":"#9aa7b3"
 };
@@ -2144,9 +2150,9 @@ function naplesColor(code){
 const ZL_GENERIC=[["#3fb0ff","Residential"],["#7c6cff","Multi-family"],["#ff6b6b","Commercial"],
   ["#b06b3a","Industrial"],["#5fc26a","Agricultural"],["#ffb000","Planned / mixed"],
   ["#9aa7b3","Public / civic"],["#c08cff","Other"]];
-const ZL_NAPLES=[["#bfdbfe","R1-E / RE (large lot)"],["#93c5fd","R1-15 / 15A"],["#60a5fa","R1-10 / 10A"],
-  ["#1d4ed8","R1-7.5 (small lot)"],["#a78bfa","R3-6 / R3-12"],["#7c3aed","R3-15 / R3-18"],
-  ["#c084fc","R3T (tourist MF)"],["#ef4444","C1 / C2 commercial"],["#fbbf24","D — Downtown"],
+const ZL_NAPLES=[["#10b981","R1-E / RE (estate)"],["#14b8a6","R1-15"],["#0ea5e9","R1-10"],
+  ["#2563eb","R1-7.5 (small lot)"],["#a78bfa","R3-6 / R3-12"],["#6d28d9","R3-15 / R3-18"],
+  ["#e879f9","R3T (tourist MF)"],["#ef4444","C1 / C2 commercial"],["#fbbf24","D — Downtown"],
   ["#f59e0b","PD — Planned"],["#9aa7b3","Public / civic"]];
 function setZoningLegend(reg){
   const body=document.getElementById('zoningLegendBody'); if(!body) return;
