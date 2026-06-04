@@ -262,6 +262,9 @@
   .nbr-num .nbr-hn{font-weight:700}
   .nbr-num .nbr-st{font-size:8px;font-weight:500;opacity:.82;letter-spacing:.04em}
   .nbr-num.subject{background:#ffb000;color:#10151b;border-color:#ffd166;font-weight:700;font-size:11px;box-shadow:0 1px 6px rgba(255,176,0,.5)}
+  /* collapsed condo/tower stack: one badge that fans out its units on hover */
+  .nbr-num.stack{background:rgba(57,211,255,.18);border-color:rgba(57,211,255,.7);color:#dff6ff;font-weight:700}
+  .nbr-num.stack .nbr-st{opacity:.9}
   /* neighbor labels are hoverable for their own address tooltip, and clickable to look up that address */
   .leaflet-marker-icon.nbr-hit{pointer-events:auto!important;cursor:pointer}
   .nbr-hit .nbr-num{pointer-events:auto;cursor:pointer}
@@ -5769,46 +5772,22 @@ async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid, forceAn
     if(subjIdx<0 && want && !haveAnchor){   // no anchor — first same-number match
       for(let i=0;i<labels.length;i++){ if(labels[i].hn===want){ subjIdx=i; break; } }
     }
-    // FAN-OUT stacked units: condo/apartment towers put every unit on ONE coordinate, so
-    // their labels pile on a single pixel and you can't click the one you want. Group labels
-    // by (rounded) coordinate; any group with 2+ members gets spread into a compact vertical
-    // grid of synthetic positions around the real point. Positions are display-only — the
-    // address/owner/sqft stay correct. Each label gains .dl/.dn = its draw lat/lng.
-    (function fanOutStacks(){
-      const groups=new Map();
-      for(let i=0;i<labels.length;i++){
-        const L0=labels[i];
-        const k=L0.lat.toFixed(6)+','+L0.lng.toFixed(6);
-        let g=groups.get(k); if(!g){ g=[]; groups.set(k,g); } g.push(i);
-      }
-      // pixel→degree scale at the current zoom, so the spread is sensibly sized
-      const z=map.getZoom();
-      const degPerPx = 360/(256*Math.pow(2,z));     // longitude deg per pixel (approx)
-      const STEP_Y = 22*degPerPx;                    // ~22px vertical gap between stacked labels
-      const STEP_X = 96*degPerPx;                    // ~96px between columns
-      const PER_COL = 12;                            // wrap into a new column after 12
-      for(const idxs of groups.values()){
-        if(idxs.length<2){ const L0=labels[idxs[0]]; L0.dl=L0.lat; L0.dn=L0.lng; continue; }
-        // keep the subject (if in this stack) at the TOP of the first column
-        idxs.sort((a,b)=> (a===subjIdx?-1:b===subjIdx?1:0));
-        const baseLat=labels[idxs[0]].lat, baseLng=labels[idxs[0]].lng;
-        for(let n=0;n<idxs.length;n++){
-          const col=Math.floor(n/PER_COL), row=n%PER_COL;
-          const L0=labels[idxs[n]];
-          L0.dl = baseLat - row*STEP_Y;              // stack downward
-          L0.dn = baseLng + col*STEP_X;              // new column to the right
-          L0.fanned = true;
-        }
-      }
-    })();
-    // PASS 2: render every label; the chosen subject (if any) gets the highlight.
+    // GROUP labels by coordinate. Condo/tower units all share ONE coordinate, so a group with
+    // 2+ members is a stack. Singletons render as normal labels. Stacks render as a single
+    // collapsed badge ("⊞ N units") that FANS OUT its individual unit labels on hover and
+    // collapses again on mouse-leave — keeping the map clean while staying clickable.
+    const groups=new Map();
     for(let i=0;i<labels.length;i++){
-      const L0=labels[i]; const isSubj = (i===subjIdx);
+      const L0=labels[i];
+      const k=L0.lat.toFixed(6)+','+L0.lng.toFixed(6);
+      let g=groups.get(k); if(!g){ g=[]; groups.set(k,g); } g.push(i);
+    }
+
+    // helper: build a single unit's marker at a given draw position
+    function makeUnitMarker(L0, isSubj, dlat, dlng){
       const labelHTML = numStreetLabelHTML(L0.txt, L0.hn);
       const icon=L.divIcon({ className:'nbr-hit', html:`<div class="nbr-num${isSubj?' subject':''}">${labelHTML}</div>`, iconSize:null });
-      const dlat=(L0.dl!=null?L0.dl:L0.lat), dlng=(L0.dn!=null?L0.dn:L0.lng);
-      const mk=L.marker([dlat,dlng],{icon, interactive:true, keyboard:false, zIndexOffset:isSubj?1000:0}).addTo(nbrNumLayer);
-      // click a label → full lookup of that address (same as searching it)
+      const mk=L.marker([dlat,dlng],{icon, interactive:true, keyboard:false, zIndexOffset:isSubj?1000:5}).addTo(nbrNumLayer);
       mk.on('click', (ev)=>{ try{ L.DomEvent.stop(ev); }catch(e){} searchForAddress(L0.txt); });
       try{ const _a=L0.feat.attributes||{};
         const _liv=fmtNum(pick(_a,'TOT_LVG_AR','TOTLVGAR','HEATED_AREA','HEATEDAREA','LIVING_AREA','LIVINGAREA','BLDG_SQFT'));
@@ -5817,6 +5796,61 @@ async function showNeighborNumbers(subjectHN, subjLat, subjLng, subjPid, forceAn
           sqft:_liv?_liv+' sq ft':null });
         if(_tip) mk.bindTooltip(_tip,{sticky:true,direction:'top',className:'parcel-tip',opacity:1});
       }catch(e){}
+      return mk;
+    }
+
+    const z=map.getZoom();
+    const degPerPx = 360/(256*Math.pow(2,z));
+    const STEP_Y = 22*degPerPx, STEP_X = 96*degPerPx, PER_COL = 12;
+
+    for(const idxs of groups.values()){
+      // ---- singleton: just render it ----
+      if(idxs.length<2){
+        const i=idxs[0]; makeUnitMarker(labels[i], i===subjIdx, labels[i].lat, labels[i].lng);
+        continue;
+      }
+      // ---- stack: collapsed badge that fans out on hover ----
+      idxs.sort((a,b)=> (a===subjIdx?-1:b===subjIdx?1:0));   // subject first
+      const baseLat=labels[idxs[0]].lat, baseLng=labels[idxs[0]].lng;
+      const subjInStack = idxs.indexOf(subjIdx)>=0;
+
+      const badgeHTML=`<div class="nbr-num stack"><span class="nbr-hn">⊞ ${idxs.length}</span><span class="nbr-st">units</span></div>`;
+      const badgeIcon=L.divIcon({ className:'nbr-hit', html:badgeHTML, iconSize:null });
+      const badge=L.marker([baseLat,baseLng],{icon:badgeIcon, interactive:true, keyboard:false,
+        zIndexOffset:subjInStack?1000:10}).addTo(nbrNumLayer);
+      badge.bindTooltip(`${idxs.length} units here — hover to expand, click one to look it up`,
+        {direction:'top',className:'parcel-tip',opacity:1});
+
+      let fanned=[];                                  // markers currently spread out
+      let leaveT=null;
+      function scheduleCollapse(){ clearTimeout(leaveT); leaveT=setTimeout(()=>{
+        const over = fanned.some(m=>{ const el=m.getElement(); return el && el.matches(':hover'); });
+        const overBadge = badge.getElement() && badge.getElement().matches(':hover');
+        if(!over && !overBadge) collapse();
+      }, 180); }
+      function fanOut(){
+        if(fanned.length) return;                     // already open
+        for(let n=0;n<idxs.length;n++){
+          const col=Math.floor(n/PER_COL), row=n%PER_COL;
+          const L0=labels[idxs[n]];
+          const dlat=baseLat - row*STEP_Y, dlng=baseLng + col*STEP_X;
+          const m=makeUnitMarker(L0, idxs[n]===subjIdx, dlat, dlng);
+          m.on('mouseover', ()=>clearTimeout(leaveT));  // staying in the cluster keeps it open
+          m.on('mouseout', scheduleCollapse);
+          fanned.push(m);
+        }
+        badge.getElement() && (badge.getElement().style.opacity='0.25');  // dim badge while open
+      }
+      function collapse(){
+        for(const m of fanned) nbrNumLayer.removeLayer(m);
+        fanned=[];
+        badge.getElement() && (badge.getElement().style.opacity='');
+      }
+      badge.on('mouseover', ()=>{ clearTimeout(leaveT); fanOut(); });
+      badge.on('mouseout', scheduleCollapse);
+
+      // if the subject is in this stack, fan it open immediately so the highlighted unit is visible
+      if(subjInStack) fanOut();
     }
     if(labels.length){ nbrNumLayer.addTo(map); }
     // GAP-FILL for inside-tract / lean-feed homes: villa & condo units inside a shared tract often
