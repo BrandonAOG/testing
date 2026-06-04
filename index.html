@@ -6786,7 +6786,29 @@ async function runLookup(lat,lng,searchCtx){
     const sec=pick(a,'SEC'),twn=pick(a,'TWN'),rng=pick(a,'RNG');
     const yr=pick(a,'ACT_YR_BLT'), bld=pick(a,'NO_BULDNG');
     if(yr) parcelYearBuilt=yr;
-    const liv2=fmtNum(pick(a,'TOT_LVG_AR','HEATEDAREA','HEATED_AREA','LIVING_AREA','LIVINGAREA','BLDG_SQFT','BLDGSQFT','FLOORAREA','FLOOR_AREA','UNDER_AIR','UNDERAIR','BLDG_AREA','BLDG_SF','BLDGSF','CALC_AREA','GRSAR')), lsf=fmtNum(pick(a,'LND_SQFOOT','LOT_SQFT','LAND_SQFT','LOTSQFT','SQFT_LND','LOTSF'));
+    let liv2=fmtNum(pick(a,'TOT_LVG_AR','HEATEDAREA','HEATED_AREA','LIVING_AREA','LIVINGAREA','BLDG_SQFT','BLDGSQFT','FLOORAREA','FLOOR_AREA','UNDER_AIR','UNDERAIR','BLDG_AREA','BLDG_SF','BLDGSF','CALC_AREA','GRSAR')), lsf=fmtNum(pick(a,'LND_SQFOOT','LOT_SQFT','LAND_SQFT','LOTSQFT','SQFT_LND','LOTSF'));
+    // LIVING-AREA OVERRIDE: the statewide roll can report inflated/summed living area for multi-structure
+    // parcels (e.g. estates with guest house + pool + deck). Our offline county file carries the county
+    // appraiser's correct figure (primary structure). When a hosted file exists for this county, prefer it.
+    try{
+      const _fileUrl = countyName ? ADDRPOINT_FILES[norm(countyName)] : null;
+      if(_fileUrl && _fileUrl.indexOf('REPLACE-ME')<0 && isFinite(lat) && isFinite(lng)){
+        const _eps=0.0008;
+        const _bb=L.latLngBounds([lat-_eps,lng-_eps],[lat+_eps,lng+_eps]);
+        const _fr=await queryHostedFile(_fileUrl,_bb);
+        if(_fr && _fr.length){
+          // pick the file point nearest the subject coordinate
+          let _best=null,_bd=Infinity;
+          for(const f of _fr){ const dx=f.geometry.x-lng, dy=f.geometry.y-lat; const d=dx*dx+dy*dy; if(d<_bd){_bd=d;_best=f;} }
+          const _fileSqft = _best && _best.attributes ? _best.attributes.TOT_LVG_AR : null;
+          if(_fileSqft && Number(_fileSqft)>0){
+            const _rollNum = liv2 ? Number(String(liv2).replace(/[^0-9.]/g,'')) : null;
+            liv2 = fmtNum(_fileSqft);
+            window.__livOverride = (_rollNum && Math.abs(_rollNum-Number(_fileSqft))>1) ? {roll:_rollNum, file:Number(_fileSqft)} : null;
+          }
+        }
+      }
+    }catch(e){ /* keep roll value on any failure */ }
     const jv=fmtMoney(pick(a,'JV')), lnd=fmtMoney(pick(a,'LND_VAL'));
     const ay=pick(a,'ASMNT_YR');
     const sp=fmtMoney(pick(a,'SALE_PRC1')), sy=pick(a,'SALE_YR1');
@@ -6799,7 +6821,9 @@ async function runLookup(lat,lng,searchCtx){
     html += fieldRow('Owner', owner?esc(owner):'<span class="muted">not listed</span>','big');
     if(own2) html += fieldRow('Owner 2', esc(own2));
     html += fieldRow('Parcel ID', pid?esc(pid):'<span class="muted">—</span>','big');
-    if(liv2) html += fieldRow('Living area', liv2+' sq ft','big');
+    if(liv2){ html += fieldRow('Living area', liv2+' sq ft','big');
+      try{ if(window.__livOverride){ html += `<div class="note">Living area from the county appraiser's record (primary structure). The state roll listed ${window.__livOverride.roll.toLocaleString('en-US')} sq ft, which sums secondary structures.</div>`; window.__livOverride=null; } }catch(e){}
+    }
     if(lsf) html += fieldRow('Lot area', lsf+' sq ft');
     if(site)     html += fieldRow('Site address', esc(site)+(siteCity?'<br>'+esc(siteCity):''));
     if(mail)     html += fieldRow('Owner mailing', esc(mail)+(mailCity?'<br>'+esc(mailCity):''));
