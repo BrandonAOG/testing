@@ -258,6 +258,13 @@
     background:var(--search-bg);border:1px solid var(--line);padding:5px 11px;border-radius:7px;
     box-shadow:0 4px 14px var(--shadow-soft);pointer-events:none}
   .radarclock.show{display:block}
+  .zoning-legend{position:absolute;z-index:1000;bottom:64px;left:18px;display:none;
+    background:var(--search-bg);border:1px solid var(--line);border-radius:8px;padding:8px 10px;
+    font-family:var(--disp);font-size:11px;color:var(--dim);box-shadow:0 6px 20px var(--shadow-soft);line-height:1.5}
+  .zoning-legend.show{display:block}
+  .zoning-legend .zl-title{font-weight:700;color:#dff6ff;margin-bottom:3px;letter-spacing:.04em;text-transform:uppercase;font-size:10px}
+  .zoning-legend i{display:inline-block;width:11px;height:11px;border-radius:2px;margin-right:6px;vertical-align:-1px;opacity:.85}
+  @media (max-width:640px){ .zoning-legend{bottom:auto;top:54px;left:12px;font-size:10px} }
   @media (max-width:640px){ .radarclock{bottom:auto;top:54px;right:12px} }
   .bnd-tip{background:var(--bnd-bg);color:var(--bnd-ink);border:none;font-family:var(--disp);font-weight:700;font-size:11px;letter-spacing:.04em;padding:2px 7px;box-shadow:0 2px 8px var(--shadow-soft)}
   .bnd-tip .leaflet-tooltip-tip{background:var(--bnd-bg)}
@@ -810,6 +817,17 @@
 <div id="map"></div>
 <div class="crosshair" id="coordReadout">click the map to query a point</div>
 <div class="radarclock" id="radarClock">◵ Radar</div>
+<div class="zoning-legend" id="zoningLegend">
+  <div class="zl-title">Zoning</div>
+  <div><i style="background:#3fb0ff"></i>Residential</div>
+  <div><i style="background:#7c6cff"></i>Multi-family</div>
+  <div><i style="background:#ff6b6b"></i>Commercial</div>
+  <div><i style="background:#b06b3a"></i>Industrial</div>
+  <div><i style="background:#5fc26a"></i>Agricultural</div>
+  <div><i style="background:#ffb000"></i>Planned / mixed</div>
+  <div><i style="background:#9aa7b3"></i>Public / civic</div>
+  <div><i style="background:#c08cff"></i>Other</div>
+</div>
 <button class="sheet-tab" id="sheetTab" aria-label="Show property panel">⌃ Property panel</button>
 <div class="layerswitch">
   <div class="basemap-pick">
@@ -2066,8 +2084,49 @@ document.getElementById('btnBounds').onclick=function(){
    (already wired for the click-lookup), so we draw whichever county is in context (window.__lastCounty)
    for the current viewport. Heavy polygons → only at z>=15, debounced, capped — same discipline as
    the parcel-lines layer. Stacks UNDER the parcel lines (lower zIndex) so lot lines stay on top. */
+/* Classify a raw zoning code into a broad category for coloring. Counties code zoning
+   differently (RS-1 / RMF-6 / RSF-3.5 / RSF1 all = residential), so we match by the leading
+   letters/pattern rather than exact strings. Heuristic: gets the big buckets right across all
+   four counties; unusual codes (overlays, civic) land in "other". */
+const ZONE_CAT_COLOR = {
+  residential:'#3fb0ff',   // blue
+  multifamily:'#7c6cff',   // indigo (R-multi / RMF)
+  commercial:'#ff6b6b',    // red
+  industrial:'#b06b3a',    // brown
+  agricultural:'#5fc26a',  // green
+  mixed:'#ffb000',         // amber (PUD / mixed-use / planned)
+  public:'#9aa7b3',        // gray (civic / institutional / conservation)
+  other:'#c08cff'          // purple fallback
+};
+function zoneCategory(code){
+  const c = String(code||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  if(!c) return 'other';
+  // planned / mixed-use first (PUD, MPUD, MU, PD, etc.)
+  if(/^(M?P?UD|PD|MU|MX|PUD|MPUD|RPUD|CPUD|TND|VR)/.test(c)) return 'mixed';
+  // agricultural
+  if(/^(AG|A1|A2|A3|AE|EA|RU|RR)/.test(c) || c==='A') return 'agricultural';
+  // multifamily residential (RMF, RM, RT, R3..R6 multi)
+  if(/^(RMF|RM|RT|RML|RMH|MH|MF)/.test(c)) return 'multifamily';
+  // single-family / general residential
+  if(/^(RSF|RS|RE|RG|R1|R2|RA|TR|GR|R)/.test(c)) return 'residential';
+  // commercial / office / business
+  if(/^(C|CG|CC|CN|CO|OF|B|GC|TC|HC|IC|DT|CR)/.test(c)) return 'commercial';
+  // industrial
+  if(/^(I|IL|IG|IH|IND|M1|M2|LM|HM|IP)/.test(c)) return 'industrial';
+  // public / institutional / conservation / parks
+  if(/^(P|PU|GU|CF|CON|OS|REC|ST|GOV|INST|E)/.test(c)) return 'public';
+  return 'other';
+}
+const ZONING_FILL_OPACITY = 0.35;
+function zoningStyleFor(props, reg){
+  let codeF = reg && reg.codeField;
+  if(!codeF){ const det=detectZoningFields(Object.keys(props||{})); codeF=det.code; }
+  const code = codeF && props ? props[codeF] : null;
+  const col = ZONE_CAT_COLOR[zoneCategory(code)];
+  return { color:col, weight:1.2, opacity:.85, fillColor:col, fillOpacity:ZONING_FILL_OPACITY };
+}
 const zoningLayer = L.geoJSON(null, { renderer:canvasRenderer,
-  style:{ color:'#c08cff', weight:1.2, opacity:.85, fillColor:'#c08cff', fillOpacity:.12 } });
+  style:{ color:'#c08cff', weight:1.2, opacity:.85, fillColor:'#c08cff', fillOpacity:ZONING_FILL_OPACITY } });
 let zoningOn=false, zoningBusy=false, zoningKey='';
 function zoningDistrictOf(props, reg){
   if(!props) return 'Zoning';
@@ -2103,6 +2162,7 @@ async function refreshZoning(){
       if(gj && gj.features && gj.features.length){
         zoningLayer.clearLayers(); zoningLayer.addData(gj);
         zoningLayer.eachLayer(ly=>{ const p=ly.feature&&ly.feature.properties;
+          try{ ly.setStyle(zoningStyleFor(p,reg)); }catch(e){}
           ly.bindTooltip(zoningDistrictOf(p,reg),{sticky:true,direction:'top',className:'parcel-tip',opacity:1}); });
         zoningKey=key; break;
       }
@@ -2111,8 +2171,10 @@ async function refreshZoning(){
   zoningBusy=false;
 }
 const btnZoning=document.getElementById('btnZoning');
+const zoningLegend=document.getElementById('zoningLegend');
 if(btnZoning) btnZoning.onclick=function(){
   zoningOn=!zoningOn; this.classList.toggle('active',zoningOn);
+  if(zoningLegend) zoningLegend.classList.toggle('show',zoningOn);
   if(zoningOn){ zoningLayer.addTo(map); try{ zoningLayer.bringToBack(); }catch(e){} zoningKey='';
     const cty=(window.__lastCounty||'').toString();
     if(!cty) mapToast('Search a property first so I know which county’s zoning to load.',3000);
