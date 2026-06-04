@@ -819,14 +819,16 @@
 <div class="radarclock" id="radarClock">◵ Radar</div>
 <div class="zoning-legend" id="zoningLegend">
   <div class="zl-title">Zoning</div>
-  <div><i style="background:#3fb0ff"></i>Residential</div>
-  <div><i style="background:#7c6cff"></i>Multi-family</div>
-  <div><i style="background:#ff6b6b"></i>Commercial</div>
-  <div><i style="background:#b06b3a"></i>Industrial</div>
-  <div><i style="background:#5fc26a"></i>Agricultural</div>
-  <div><i style="background:#ffb000"></i>Planned / mixed</div>
-  <div><i style="background:#9aa7b3"></i>Public / civic</div>
-  <div><i style="background:#c08cff"></i>Other</div>
+  <div id="zoningLegendBody">
+    <div><i style="background:#3fb0ff"></i>Residential</div>
+    <div><i style="background:#7c6cff"></i>Multi-family</div>
+    <div><i style="background:#ff6b6b"></i>Commercial</div>
+    <div><i style="background:#b06b3a"></i>Industrial</div>
+    <div><i style="background:#5fc26a"></i>Agricultural</div>
+    <div><i style="background:#ffb000"></i>Planned / mixed</div>
+    <div><i style="background:#9aa7b3"></i>Public / civic</div>
+    <div><i style="background:#c08cff"></i>Other</div>
+  </div>
 </div>
 <button class="sheet-tab" id="sheetTab" aria-label="Show property panel">⌃ Property panel</button>
 <div class="layerswitch">
@@ -2118,11 +2120,50 @@ function zoneCategory(code){
   return 'other';
 }
 const ZONING_FILL_OPACITY = 0.35;
+/* City of Naples — per-district colors. Each zoning *family* gets a hue; variants within a family
+   are graded light→dark (bigger lot / lower density = lighter, smaller lot / higher density = darker)
+   so you can tell R1-15 from R1-10 from R1-7.5 at a glance, and families apart by hue. Codes come
+   from the city's Ch. 58 district list. Matched on the normalized code (letters+digits, no spaces). */
+const NAPLES_ZONE_COLOR = {
+  // R1 single-family: blues, light (big lot) → dark (small lot)
+  "RE":"#dbeafe", "R1E":"#bfdbfe", "R115A":"#93c5fd", "R115":"#60a5fa",
+  "R110A":"#3b82f6", "R110":"#2563eb", "R175":"#1d4ed8",
+  // R3 multifamily: indigos/purples, by density (6→18 units)
+  "R36":"#c4b5fd", "R312":"#a78bfa", "R315":"#8b5cf6", "R318":"#7c3aed",
+  // R3T tourist/multifamily: violet
+  "R3T12":"#d8b4fe", "R3T18":"#c084fc",
+  // Commercial: reds/oranges
+  "C1":"#fca5a5", "C1A":"#f87171", "C2":"#ef4444", "C2A":"#dc2626",
+  // Downtown / planned / public
+  "D":"#fbbf24", "PD":"#f59e0b", "PS":"#9aa7b3", "P":"#9aa7b3", "CF":"#9aa7b3"
+};
+function naplesColor(code){
+  const c=String(code||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  return NAPLES_ZONE_COLOR[c] || null;
+}
+const ZL_GENERIC=[["#3fb0ff","Residential"],["#7c6cff","Multi-family"],["#ff6b6b","Commercial"],
+  ["#b06b3a","Industrial"],["#5fc26a","Agricultural"],["#ffb000","Planned / mixed"],
+  ["#9aa7b3","Public / civic"],["#c08cff","Other"]];
+const ZL_NAPLES=[["#bfdbfe","R1-E / RE (large lot)"],["#93c5fd","R1-15 / 15A"],["#60a5fa","R1-10 / 10A"],
+  ["#1d4ed8","R1-7.5 (small lot)"],["#a78bfa","R3-6 / R3-12"],["#7c3aed","R3-15 / R3-18"],
+  ["#c084fc","R3T (tourist MF)"],["#ef4444","C1 / C2 commercial"],["#fbbf24","D — Downtown"],
+  ["#f59e0b","PD — Planned"],["#9aa7b3","Public / civic"]];
+function setZoningLegend(reg){
+  const body=document.getElementById('zoningLegendBody'); if(!body) return;
+  const title=document.querySelector('#zoningLegend .zl-title');
+  const isNaples = reg && /naples/i.test(reg.label||'');
+  const rows = isNaples ? ZL_NAPLES : ZL_GENERIC;
+  if(title) title.textContent = isNaples ? 'Naples Zoning' : 'Zoning';
+  body.innerHTML = rows.map(([c,l])=>`<div><i style="background:${c}"></i>${l}</div>`).join('');
+}
 function zoningStyleFor(props, reg){
   let codeF = reg && reg.codeField;
   if(!codeF){ const det=detectZoningFields(Object.keys(props||{})); codeF=det.code; }
   const code = codeF && props ? props[codeF] : null;
-  const col = ZONE_CAT_COLOR[zoneCategory(code)];
+  // Naples gets its fine per-district palette; everywhere else uses the broad category colors.
+  let col=null;
+  if(reg && /naples/i.test(reg.label||'')) col=naplesColor(code);
+  if(!col) col = ZONE_CAT_COLOR[zoneCategory(code)];
   return { color:col, weight:1.2, opacity:.85, fillColor:col, fillOpacity:ZONING_FILL_OPACITY };
 }
 const zoningLayer = L.geoJSON(null, { renderer:canvasRenderer,
@@ -2174,6 +2215,7 @@ async function refreshZoning(){
           break;
         }
         zoningLayer.clearLayers(); zoningLayer.addData(gj);
+        setZoningLegend(reg);
         zoningLayer.eachLayer(ly=>{ const p=ly.feature&&ly.feature.properties;
           try{ ly.setStyle(zoningStyleFor(p,reg)); }catch(e){}
           ly.bindTooltip(zoningDistrictOf(p,reg),{sticky:true,direction:'top',className:'parcel-tip',opacity:1}); });
