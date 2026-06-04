@@ -2138,9 +2138,11 @@ function zoningDistrictOf(props, reg){
   if(desc && String(desc).trim() && String(desc)!==String(code)) s += ' · '+desc;
   return s;
 }
+const ZONING_MINZOOM = 13;          // try zoning this early; the density guard below protects dense views
+const ZONING_MAXRECORDS = 1200;     // if a view returns this many polygons it's too dense → ask to zoom in
 async function refreshZoning(){
   if(!zoningOn){ zoningLayer.clearLayers(); return; }
-  if(map.getZoom() < 15){ zoningLayer.clearLayers(); zoningKey=''; return; }   // polygons heavy zoomed out
+  if(map.getZoom() < ZONING_MINZOOM){ zoningLayer.clearLayers(); zoningKey=''; return; }   // too far out
   const cty=(window.__lastCounty||'').toString();
   const reg = cty ? ZONING_LIVE[norm(cty)] : null;
   if(!reg || !reg.urls || !reg.urls.length){ zoningLayer.clearLayers(); return; } // no zoning wired here
@@ -2151,7 +2153,7 @@ async function refreshZoning(){
   const env=`${b.getWest()},${b.getSouth()},${b.getEast()},${b.getNorth()}`;
   const qs=`?geometry=${encodeURIComponent(env)}&geometryType=esriGeometryEnvelope&inSR=4326`+
     `&spatialRel=esriSpatialRelIntersects&where=1%3D1&outFields=*&returnGeometry=true&outSR=4326`+
-    `&resultRecordCount=1000&f=geojson`;
+    `&resultRecordCount=${ZONING_MAXRECORDS}&f=geojson`;
   // try the county's layer URLs in order until one returns features
   for(const baseUrl of reg.urls){
     try{
@@ -2160,6 +2162,13 @@ async function refreshZoning(){
       if(!r.ok) continue;
       const gj=await r.json();
       if(gj && gj.features && gj.features.length){
+        // DENSITY GUARD: if the view returned the max records, it's a dense area (likely truncated &
+        // heavy). At low zoom, skip drawing and ask the user to zoom in rather than lag the map.
+        if(gj.features.length >= ZONING_MAXRECORDS && map.getZoom() < 15){
+          zoningLayer.clearLayers(); zoningKey='';
+          mapToast('Too many zoning districts here — zoom in a little to show them.',2600);
+          break;
+        }
         zoningLayer.clearLayers(); zoningLayer.addData(gj);
         zoningLayer.eachLayer(ly=>{ const p=ly.feature&&ly.feature.properties;
           try{ ly.setStyle(zoningStyleFor(p,reg)); }catch(e){}
@@ -2179,7 +2188,7 @@ if(btnZoning) btnZoning.onclick=function(){
     const cty=(window.__lastCounty||'').toString();
     if(!cty) mapToast('Search a property first so I know which county’s zoning to load.',3000);
     else if(!ZONING_LIVE[norm(cty)]) mapToast('No zoning layer wired for '+cty+' yet.',3000);
-    else if(map.getZoom()<15) mapToast('Zoom in close to see zoning districts.',2400);
+    else if(map.getZoom()<ZONING_MINZOOM) mapToast('Zoom in a bit to see zoning districts.',2400);
     else refreshZoning();
   } else map.removeLayer(zoningLayer);
 };
