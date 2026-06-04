@@ -6701,13 +6701,13 @@ async function runLookup(lat,lng,searchCtx){
           const _fileUrl = countyName ? ADDRPOINT_FILES[norm(countyName)] : null;
           if(_fileUrl && _fileUrl.indexOf('REPLACE-ME')<0 && isFinite(lat) && isFinite(lng)){
             const _eps=0.0008, _bb=L.latLngBounds([lat-_eps,lng-_eps],[lat+_eps,lng+_eps]);
-            const _fr=await queryHostedFile(_fileUrl,_bb);
+            const _fr=await queryHostedFile(_fileUrl,_bb).catch(()=>null);
             if(_fr && _fr.length){ let _bx=null,_bd=Infinity;
               for(const f of _fr){ const dx=f.geometry.x-lng,dy=f.geometry.y-lat,d=dx*dx+dy*dy; if(d<_bd){_bd=d;_bx=f;} }
               if(_bx && _bx.attributes && Number(_bx.attributes.TOT_LVG_AR)>0) _fileSqft=_bx.attributes.TOT_LVG_AR;
             }
           }
-        }catch(e){}
+        }catch(e){ _fileSqft=null; }
         if(_num(_fileSqft)){
           _la.TOT_LVG_AR=_fileSqft; det.liv='TOT_LVG_AR';
           if(_num(_rollLiv) && Math.abs(Number(_rollLiv)-Number(_fileSqft))>1)
@@ -6815,7 +6815,7 @@ async function runLookup(lat,lng,searchCtx){
       if(_fileUrl && _fileUrl.indexOf('REPLACE-ME')<0 && isFinite(lat) && isFinite(lng)){
         const _eps=0.0008;
         const _bb=L.latLngBounds([lat-_eps,lng-_eps],[lat+_eps,lng+_eps]);
-        const _fr=await queryHostedFile(_fileUrl,_bb);
+        const _fr=await queryHostedFile(_fileUrl,_bb).catch(()=>null);
         if(_fr && _fr.length){
           // pick the file point nearest the subject coordinate
           let _best=null,_bd=Infinity;
