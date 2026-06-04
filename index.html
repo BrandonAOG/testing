@@ -231,6 +231,7 @@
   /* basemap picker: one button that opens a small popup of the 3 mutually-exclusive basemaps */
   .basemap-pick{position:relative;display:flex}
   .weather-pick{position:relative;display:flex}
+  .layers-pick{position:relative;display:flex}
   .basemap-pick .bm-caret{font-size:9px;opacity:.7;margin-left:2px}
   .basemap-menu{position:fixed;display:flex;flex-direction:column;
     background:var(--search-bg);border:1px solid var(--line);border-radius:8px;overflow:hidden;
@@ -821,9 +822,15 @@
       <button data-bm="topo" title="USGS topographic / terrain basemap — elevation &amp; contour context for low-ground / pad siting">⛰ Topo</button>
     </div>
   </div>
-  <button id="btnBounds" class="active" title="Toggle color-coded incorporated city-limit outlines">◰ City limits</button>
   <button id="btnFlood" title="Shade FEMA flood-hazard zones (AE / VE / X) across the view — live NFHL. Zoom in to see it.">≋ Flood</button>
-  <button id="btnParcels" title="Draw statewide parcel / lot lines — zoom in close (FL cadastral)">▦ Parcels</button>
+  <div class="layers-pick">
+    <button id="btnLayers" title="Property boundary overlays (city limits, parcels, zoning)">▦ Layers <span class="bm-caret">▾</span></button>
+    <div id="layersMenu" class="basemap-menu" hidden>
+      <button id="btnBounds" class="active" title="Color-coded incorporated city-limit outlines">◰ City limits</button>
+      <button id="btnParcels" title="Statewide parcel / lot lines — zoom in close (FL cadastral)">▦ Parcels</button>
+      <button id="btnZoning" title="Zoning districts for the current county — zoom in close. Hover a zone for its district code.">⬡ Zoning</button>
+    </div>
+  </div>
   <div class="weather-pick">
     <button id="btnWeather" title="Storm &amp; weather layers (radar, hurricane cone, NWS warnings)">🌩 Weather <span class="bm-caret">▾</span></button>
     <div id="weatherMenu" class="basemap-menu" hidden>
@@ -2053,6 +2060,90 @@ document.getElementById('btnBounds').onclick=function(){
   boundsOn=!boundsOn; this.classList.toggle('active',boundsOn);
   if(boundsOn){ boundsKey=''; boundsFetched=null; refreshBoundaries(); } else { boundsLayer.clearLayers(); boundsFetched=null; }
 };
+
+/* ---------- Zoning districts overlay (reuses the ZONING_LIVE per-county layers) ----------
+   Phase 1: translucent fill + hover-to-read the district code. Zoning lives on per-county servers
+   (already wired for the click-lookup), so we draw whichever county is in context (window.__lastCounty)
+   for the current viewport. Heavy polygons → only at z>=15, debounced, capped — same discipline as
+   the parcel-lines layer. Stacks UNDER the parcel lines (lower zIndex) so lot lines stay on top. */
+const zoningLayer = L.geoJSON(null, { renderer:canvasRenderer,
+  style:{ color:'#c08cff', weight:1.2, opacity:.85, fillColor:'#c08cff', fillOpacity:.12 } });
+let zoningOn=false, zoningBusy=false, zoningKey='';
+function zoningDistrictOf(props, reg){
+  if(!props) return 'Zoning';
+  let codeF = reg && reg.codeField, descF = reg && reg.descField;
+  if(!codeF){ const det=detectZoningFields(Object.keys(props)); codeF=det.code; descF=descF||det.desc; }
+  const code = codeF ? props[codeF] : null;
+  const desc = descF ? props[descF] : null;
+  let s = code ? String(code) : 'Zoning';
+  if(desc && String(desc).trim() && String(desc)!==String(code)) s += ' · '+desc;
+  return s;
+}
+async function refreshZoning(){
+  if(!zoningOn){ zoningLayer.clearLayers(); return; }
+  if(map.getZoom() < 15){ zoningLayer.clearLayers(); zoningKey=''; return; }   // polygons heavy zoomed out
+  const cty=(window.__lastCounty||'').toString();
+  const reg = cty ? ZONING_LIVE[norm(cty)] : null;
+  if(!reg || !reg.urls || !reg.urls.length){ zoningLayer.clearLayers(); return; } // no zoning wired here
+  const b=map.getBounds();
+  const key=[b.getWest(),b.getSouth(),b.getEast(),b.getNorth()].map(n=>n.toFixed(4)).join(',');
+  if(key===zoningKey || zoningBusy) return;
+  zoningBusy=true;
+  const env=`${b.getWest()},${b.getSouth()},${b.getEast()},${b.getNorth()}`;
+  const qs=`?geometry=${encodeURIComponent(env)}&geometryType=esriGeometryEnvelope&inSR=4326`+
+    `&spatialRel=esriSpatialRelIntersects&where=1%3D1&outFields=*&returnGeometry=true&outSR=4326`+
+    `&resultRecordCount=1000&f=geojson`;
+  // try the county's layer URLs in order until one returns features
+  for(const baseUrl of reg.urls){
+    try{
+      const ctrl=new AbortController(); const t=setTimeout(()=>ctrl.abort(),15000);
+      const r=await fetch(baseUrl+qs,{signal:ctrl.signal}); clearTimeout(t);
+      if(!r.ok) continue;
+      const gj=await r.json();
+      if(gj && gj.features && gj.features.length){
+        zoningLayer.clearLayers(); zoningLayer.addData(gj);
+        zoningLayer.eachLayer(ly=>{ const p=ly.feature&&ly.feature.properties;
+          ly.bindTooltip(zoningDistrictOf(p,reg),{sticky:true,direction:'top',className:'parcel-tip',opacity:1}); });
+        zoningKey=key; break;
+      }
+    }catch(e){ /* try next url */ }
+  }
+  zoningBusy=false;
+}
+const btnZoning=document.getElementById('btnZoning');
+if(btnZoning) btnZoning.onclick=function(){
+  zoningOn=!zoningOn; this.classList.toggle('active',zoningOn);
+  if(zoningOn){ zoningLayer.addTo(map); try{ zoningLayer.bringToBack(); }catch(e){} zoningKey='';
+    const cty=(window.__lastCounty||'').toString();
+    if(!cty) mapToast('Search a property first so I know which county’s zoning to load.',3000);
+    else if(!ZONING_LIVE[norm(cty)]) mapToast('No zoning layer wired for '+cty+' yet.',3000);
+    else if(map.getZoom()<15) mapToast('Zoom in close to see zoning districts.',2400);
+    else refreshZoning();
+  } else map.removeLayer(zoningLayer);
+};
+let zoningTimer=null;
+map.on('zoomstart', ()=>{ if(zoningOn) zoningLayer.clearLayers(); });
+map.on('moveend zoomend', ()=>{ clearTimeout(zoningTimer); zoningTimer=setTimeout(refreshZoning,BOUNDS_DEBOUNCE); });
+
+/* ---------- Layers popup (groups City limits / Parcels / Zoning — independent toggles) ---------- */
+const btnLayers=document.getElementById('btnLayers');
+const layersMenu=document.getElementById('layersMenu');
+function closeLayersMenu(){ if(layersMenu) layersMenu.hidden=true; }
+function openLayersMenu(){
+  const r=btnLayers.getBoundingClientRect();
+  layersMenu.hidden=false;
+  const mh=layersMenu.offsetHeight||120, mw=layersMenu.offsetWidth||160;
+  let top=r.top-mh-6; if(top<8) top=r.bottom+6;
+  let left=r.left; if(left+mw>window.innerWidth-8) left=window.innerWidth-mw-8;
+  layersMenu.style.top=top+'px'; layersMenu.style.left=left+'px';
+}
+if(btnLayers) btnLayers.onclick=(e)=>{ e.stopPropagation(); if(layersMenu.hidden) openLayersMenu(); else closeLayersMenu(); };
+if(layersMenu) layersMenu.addEventListener('click',(e)=>e.stopPropagation());
+document.addEventListener('click', closeLayersMenu);
+// reflect "any boundary layer on" on the Layers button
+function syncLayersBtn(){ if(btnLayers) btnLayers.classList.toggle('active', boundsOn||parcelLinesOn||zoningOn); }
+['btnBounds','btnParcels','btnZoning'].forEach(id=>{ const b=document.getElementById(id); if(b){ const o=b.onclick; b.onclick=function(ev){ if(o) o.call(this,ev); setTimeout(syncLayersBtn,0); }; }});
+syncLayersBtn();
 // Live coordinate readout follows the cursor — desktop only. On touch there's no hover, so
 // this handler would only fire mid-drag and fight the pan; skip it entirely on mobile. Throttle
 // to one DOM write per animation frame so fast mouse movement can't flood the main thread.
