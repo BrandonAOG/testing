@@ -3820,25 +3820,64 @@ function renderMooreHavenSetbacks(districtCode){
    CITIES: LaBelle and Clewiston are incorporated and run their OWN zoning/setbacks (the county
    zoning layer just stamps parcels inside them "LABELLE"/"CLEWISTON") — excluded via HENDRY_INCORP. */
 const HENDRY_SETBACKS = {
-  "A-1":  { name:"Agriculture / Conservation (A-1)", secRef:"§ 1-53-4.1 Table 53-2", note:"Lowest-intensity agricultural/conservation district (max ~1 du/20 ac). Large minimum parcel; see Table 53-2 for the exact lot size, yards and height." },
-  "A-2":  { name:"General Agriculture (A-2)", secRef:"§ 1-53-4.1 Table 53-2", note:"County's primary agricultural district. Non-agricultural uses on 40+ ac may need a special exception (§ 1-53-3.2). Exact lot/yard/height in Table 53-2." },
-  "A-3":  { name:"Agriculture Transitional (A-3)", secRef:"§ 1-53-4.1 Table 53-2" },
-  "RR":   { name:"Rural Residential (RR)", secRef:"§ 1-53-4.1 Table 53-2", note:"Single-family rural residential; new agricultural uses allowed on 5+ ac by special permit (§ 1-53-6)." },
-  "RR-5": { name:"Rural Residential — 5 acre (RR-5)", secRef:"§ 1-53-4.1 Table 53-2", note:"Rural residential at a 5-acre minimum lot. Exact yards in Table 53-2." },
-  "RR-F": { name:"Rural Residential Farm (RR-F)", secRef:"§ 1-53-4.1 Table 53-2", note:"Same criteria/uses as RR except as modified by § 1-53-6.7(g) (§ 1-53-2.1A)." },
-  "RR-WE":{ name:"Rural Residential — Wheeler Estates (RR-WE)", secRef:"§ 1-53-2.1 / Table 53-2", note:"Wheeler Estates overlay (former A-3/RG-1 parcels, T44S R28E). Single-family only; mobile homes & RVs as living quarters prohibited; 5-acre minimum with private-road/driveway conditions for a building permit." },
-  "RG-1": { name:"Residential / Low Density (RG-1)", secRef:"§ 1-53-4.1 Table 53-2" },
-  "RG-1M":{ name:"Residential / Low Density — Mobile Home (RG-1M)", secRef:"§ 1-53-4.1 Table 53-2" },
-  "RG-2": { name:"Residential / Medium Density (RG-2)", secRef:"§ 1-53-4.1 Table 53-2" },
-  "RG-2M":{ name:"Residential / Medium Density — Mobile Home (RG-2M)", secRef:"§ 1-53-4.1 Table 53-2" },
-  "RG-3": { name:"Residential / High Density (RG-3)", secRef:"§ 1-53-4.1 Table 53-2" },
-  "RG-3M":{ name:"Residential / High Density — Mobile Home (RG-3M)", secRef:"§ 1-53-4.1 Table 53-2" },
-  "RG-4": { name:"Residential / Multifamily (RG-4)", secRef:"§ 1-53-4.1 Table 53-2", note:"Highest residential density (multifamily). Multifamily over 25 ft tall typically must set back at least the building height — confirm in Table 53-2 & § 1-53-6." },
-  "C-1":  { name:"Convenience Commercial (C-1)", secRef:"§ 1-53-4.1 Table 53-2" },
-  "C-2":  { name:"General Commercial (C-2)", secRef:"§ 1-53-4.1 Table 53-2" },
-  "C-3":  { name:"High Intensity Commercial (C-3)", secRef:"§ 1-53-4.1 Table 53-2" },
-  "I-1":  { name:"Light Industrial (I-1)", secRef:"§ 1-53-4.1 Table 53-2" },
-  "I-2":  { name:"Heavy Industrial (I-2)", secRef:"§ 1-53-4.1 Table 53-2" },
+  "A-1":  { name:"Agriculture / Conservation (A-1)", secRef:"§ 1-53-4.1 Table 53-2",
+            front:50, side:50, rear:50, height:35, minLot:"20 acres", lotWidth:400,
+            note:"Lowest-intensity agricultural/conservation district. Min lot 20 ac (400 ft wide); min dwelling 600 sq ft / mobile home 500 sq ft." },
+  "A-2":  { name:"General Agriculture (A-2)", secRef:"§ 1-53-4.1 Table 53-2",
+            front:50, side:25, rear:40, height:35, minLot:"5 acres", lotWidth:200,
+            note:"County's primary agricultural district (min lot 5 ac, 200 ft wide × 200 ft deep). Existing recorded parcels under 5 ac in the Agriculture FLU are vested for residential use as of 1/1/2015 (Table 53-2 note 2). Min dwelling 600 sq ft / mobile home 500 sq ft." },
+  "A-3":  { name:"Agriculture Transitional (A-3)", secRef:"§ 1-53-4.1 Table 53-2",
+            note:"A-3 is not a separate row in Table 53-2 — confirm the governing district and its lot/yard/height with Hendry County Planning & Zoning (863-675-5240)." },
+  "RR":   { name:"Rural Residential (RR)", secRef:"§ 1-53-4.1 Table 53-2",
+            front:40, side:15, rear:25, height:35, minLot:"1–5 acres (varies by subdivision)", lotWidth:150,
+            note:"Front/side/rear (40/15/25 ft) and 35 ft height are uniform for all RR subdivisions; only the minimum lot size differs — Flaghole 1 ac; Pioneer Plantation & Fort Denaud 2 ac; Big Oak Acres Units 1 & 2 5 ac; all other RR 2 ac (150 ft wide × 200 ft deep). Min dwelling 600 sq ft / mobile home 500 sq ft. New ag uses on 5+ ac allowed by special permit (§ 1-53-6.7)." },
+  "RR-5": { name:"Rural Residential — 5 acre (RR-5)", secRef:"§ 1-53-4.1 Table 53-2",
+            front:40, side:15, rear:25, height:35, minLot:"5 acres", lotWidth:150,
+            note:"Rural residential at a 5-acre minimum (e.g. Big Oak Acres Units 1 & 2; 150 ft wide × 200 ft deep). Min dwelling 600 sq ft / mobile home 500 sq ft." },
+  "RR-F": { name:"Rural Residential Farm (RR-F) — Montura", secRef:"§ 1-53-4.1 Table 53-2",
+            front:40, side:15, rear:25, height:35, minLot:"1.10 acres", lotWidth:150,
+            note:"Montura. Min lot 1.10 ac (150 ft wide × 200 ft deep); min dwelling 600 sq ft / mobile home 500 sq ft. Same criteria/uses as RR except as modified by § 1-53-6.7(g) (§ 1-53-2.1A)." },
+  "RR-WE":{ name:"Rural Residential — Wheeler Estates (RR-WE)", secRef:"§ 1-53-4.1 Table 53-2",
+            front:25, side:15, rear:15, height:35, minLot:"1.1 acres", lotWidth:135, coverage:"— residential / 50% nonresidential",
+            rearNote:"Setbacks are measured from the road right-of-way, easement, or property line — whichever is MOST restrictive (Table 53-2 note 3).",
+            note:"Wheeler Estates. Numbers shown are for residential uses (min lot 1.1 ac, 135 ft wide × 200 ft deep, min dwelling 1,000 sq ft). Nonresidential uses use a 1-acre min lot and 50% max coverage. Single-family only; mobile homes & RVs as living quarters prohibited." },
+  "RG-1": { name:"Residential / Low Density (RG-1)", secRef:"§ 1-53-4.1 Table 53-2",
+            front:40, side:15, rear:25, height:35, minLot:"1 acre", lotWidth:150,
+            note:"Min lot 1 ac (150 ft wide × 200 ft deep); min dwelling 800 sq ft / mobile home 500 sq ft." },
+  "RG-1M":{ name:"Residential / Low Density — Mobile Home (RG-1M)", secRef:"§ 1-53-4.1 Table 53-2",
+            front:40, side:15, rear:25, height:35, minLot:"1 acre", lotWidth:150,
+            note:"Same dimensional standards as RG-1. Min lot 1 ac (150 ft wide × 200 ft deep); min dwelling 800 sq ft / mobile home 500 sq ft." },
+  "RG-2": { name:"Residential / Medium Density (RG-2)", secRef:"§ 1-53-4.1 Table 53-2",
+            front:35, side:15, rear:25, height:35, minLot:21780, lotWidth:100,
+            note:"Numbers shown are for a single-family dwelling or mobile home (min lot 21,780 sq ft, 100 ft wide × 150 ft deep; min dwelling 600 sq ft / mobile home 500 sq ft). All OTHER uses: 1-acre min lot, 150 ft wide, front 40 / side 15 / rear 25 ft." },
+  "RG-2M":{ name:"Residential / Medium Density — Mobile Home (RG-2M)", secRef:"§ 1-53-4.1 Table 53-2",
+            front:35, side:15, rear:25, height:35, minLot:21780, lotWidth:100,
+            note:"Numbers shown are for a single-family dwelling or mobile home (min lot 21,780 sq ft, 100 ft wide × 150 ft deep; min dwelling 600 sq ft / mobile home 500 sq ft). All OTHER uses: 1-acre min lot, 150 ft wide, front 40 / side 15 / rear 25 ft." },
+  "RG-3": { name:"Residential / High Density (RG-3)", secRef:"§ 1-53-4.1 Table 53-2",
+            front:25, side:10, rear:15, height:35, minLot:7500, lotWidth:75,
+            note:"Numbers shown are for a single-family dwelling or mobile home (min lot 7,500 sq ft, 75 ft wide × 100 ft deep; min dwelling 600 sq ft / mobile home 500 sq ft). All OTHER uses: 1-acre min lot, 150 ft wide, front 40 / side 15 / rear 25 ft, 50% max coverage." },
+  "RG-3M":{ name:"Residential / High Density — Mobile Home (RG-3M)", secRef:"§ 1-53-4.1 Table 53-2",
+            front:25, side:10, rear:15, height:35, minLot:7500, lotWidth:75,
+            note:"Numbers shown are for a single-family dwelling or mobile home (min lot 7,500 sq ft, 75 ft wide × 100 ft deep; min dwelling 600 sq ft / mobile home 500 sq ft). All OTHER uses: 1-acre min lot, 150 ft wide, front 40 / side 15 / rear 25 ft, 50% max coverage." },
+  "RG-4": { name:"Residential / Multifamily (RG-4)", secRef:"§ 1-53-4.1 Table 53-2",
+            front:25, side:10, rear:15, height:35, minLot:7500, lotWidth:75,
+            sideNote:"Townhouse interior units have NO required side setback (0 ft); townhouse end units require 15 ft.",
+            note:"RG-4 setbacks are use-specific; numbers shown are for a single-family dwelling (7,500 sq ft, 75 ft wide, min dwelling 600 sq ft). Per Table 53-2: Two-family — 10,000 sq ft, 100 ft wide, front 40 / side 15 / rear 25, min 400 sq ft. Townhouse interior — 1,500 sq ft, front 15 / side 0 / rear 25. Townhouse end — 2,500 sq ft, front 15 / side 15 / rear 25. Multifamily — 1-acre min, front 40 / side 15 / rear 25, 50% coverage, min 400 sq ft/unit. All cap at 35 ft height." },
+  "C-1":  { name:"Convenience Commercial (C-1)", secRef:"§ 1-53-4.1 Table 53-2",
+            front:40, side:15, rear:25, height:35, minLot:10000, lotWidth:100, coverage:"40%",
+            note:"Min lot 10,000 sq ft (100 ft wide × 100 ft deep)." },
+  "C-2":  { name:"General Commercial (C-2)", secRef:"§ 1-53-4.1 Table 53-2",
+            front:40, side:15, rear:25, height:35, minLot:10000, lotWidth:100, coverage:"40%",
+            note:"Min lot 10,000 sq ft (100 ft wide × 100 ft deep)." },
+  "C-3":  { name:"High Intensity Commercial (C-3)", secRef:"§ 1-53-4.1 Table 53-2",
+            front:40, side:15, rear:25, height:35, minLot:10000, lotWidth:100, coverage:"30%",
+            note:"Min lot 10,000 sq ft (100 ft wide × 100 ft deep)." },
+  "I-1":  { name:"Light Industrial (I-1)", secRef:"§ 1-53-4.1 Table 53-2",
+            front:40, side:15, rear:25, height:35, minLot:10000, lotWidth:100, coverage:"30%",
+            note:"Min lot 10,000 sq ft (100 ft wide × 100 ft deep)." },
+  "I-2":  { name:"Heavy Industrial (I-2)", secRef:"§ 1-53-4.1 Table 53-2",
+            front:40, side:15, rear:25, height:35, minLot:10000, lotWidth:100, coverage:"30%",
+            note:"Min lot 10,000 sq ft (100 ft wide × 100 ft deep)." },
   "AOPD": { name:"Airglades Airport Overlay (AOPD)", secRef:"§ 1-53-6", overlay:true, note:"Airport overlay around Airglades. Aircraft Noise Control Zone land-use restrictions & sound-level-reduction requirements apply ON TOP of the underlying district's Table 53-2 standards (§ 1-53-6)." },
   "PUD":  { name:"Planned Unit Development (PUD)", pud:true, secRef:"§ 1-53-5", note:"Stand-alone PUD ordinance. All setbacks, lot, height, density & buffers are set in this parcel's approved PUD ordinance & master plan — not Table 53-2." },
   "DSAP": { name:"Detailed Specific Area Plan (DSAP)", pud:true, secRef:"§ 1-53-7", note:"Site-specific DSAP. Dimensional standards come from the adopted DSAP, not Table 53-2." },
@@ -3883,10 +3922,10 @@ function renderHendryGeneratorNote(){
   h+=`<a class="palink" href="https://library.municode.com/fl/hendry_county/codes/code_of_ordinances" target="_blank" rel="noopener" style="margin-top:6px">↗ Verify §§ 1-53-4.1 &amp; 1-53-6 — Hendry County LDC (Municode)</a>`;
   return h;
 }
-/* Render required setbacks for an unincorporated Hendry County district. The per-district feet live
-   in the graphic Table 53-2, so this names the district, cites the governing section, and points the
-   user to the table for the exact front/side/rear (rather than inventing numbers). If a future build
-   hand-enters verified front/side/rear into HENDRY_SETBACKS, they render automatically. */
+/* Render required setbacks for an unincorporated Hendry County district. The per-district feet are
+   hand-entered into HENDRY_SETBACKS from the adopted LDC Table 53-2 (§ 1-53-4.1) and render directly.
+   Districts whose standards come from an approved plan (PUD/DSAP/RDSAP) carry pud:true and route to
+   the plan instead; A-3 has no Table 53-2 row, so it falls back to the "see the table" path. */
 function renderHendrySetbacks(districtCode){
   // Parcels inside LaBelle / Clewiston: the county zoning layer stamps the city name as the "code".
   const rawU = districtCode!=null ? String(districtCode).toUpperCase().trim() : '';
@@ -3923,12 +3962,20 @@ function renderHendrySetbacks(districtCode){
     h+=fieldRow('Rear', esc(setVal(s.rear)));
     if(s.height!=null) h+=fieldRow('Max building height', esc(setVal(s.height)));
     if(s.minLot!=null){ const lv=(typeof s.minLot==='number')?(fmtNum(s.minLot)+' sq ft'):String(s.minLot); h+=fieldRow('Minimum lot', esc(lv)+(s.lotWidth?(' · '+s.lotWidth+' ft wide'):'')); }
+    if(s.coverage) h+=fieldRow('Max lot coverage', esc(s.coverage));
   } else {
     h+=fieldRow('Front / side / rear', '<span class="muted">see Table 53-2 for this district</span>', 'big');
   }
   if(s.overlay) h+=`<div class="note"><b>Overlay:</b> this is an overlay district — its requirements apply on top of the underlying base district's Table 53-2 standards.</div>`;
+  if(s.sideNote) h+=`<div class="note"><b>Side detail:</b> ${esc(s.sideNote)}</div>`;
+  if(s.rearNote) h+=`<div class="note"><b>Yard detail:</b> ${esc(s.rearNote)}</div>`;
   if(s.note) h+=`<div class="note">${esc(s.note)}</div>`;
-  h+=`<div class="note"><b>Where the exact numbers live:</b> Hendry's minimum lot size and front/side/rear setbacks for <b>${esc(s.name||String(districtCode))}</b> are in <b>Table 53-2</b> (§ 1-53-4.1 of the LDC), published as a table in the code. Read the row for this district for the governing feet.</div>`;
+  if(haveNums){
+    h+=`<div class="note">Front/side/rear, height, minimum lot &amp; coverage above are taken from <b>Table 53-2</b> (§ 1-53-4.1). Where a district sets different standards per use, the headline figures are the common single-family/primary case and the per-use variations are noted above.</div>`;
+  } else {
+    h+=`<div class="note"><b>Where the exact numbers live:</b> Hendry's minimum lot size and front/side/rear setbacks for <b>${esc(s.name||String(districtCode))}</b> are in <b>Table 53-2</b> (§ 1-53-4.1 of the LDC), published as a table in the code. Read the row for this district for the governing feet.</div>`;
+  }
+  h+=`<div class="note"><b>Countywide:</b> no permanent residential structure may sit within <b>100 ft of a state or federal highway right-of-way</b> (§ 1-53-4.3), regardless of the district minimums above. Setbacks are measured per § 1-53-4.2 (corner lots have two front yards; flag-lot fronts run along the access easement).</div>`;
   h+=`<a class="palink" href="https://library.municode.com/fl/hendry_county/codes/code_of_ordinances" target="_blank" rel="noopener" style="margin-top:6px">↗ Verify ${esc(secRef)} — Hendry County LDC (Municode)</a>`;
   h+=`<div class="note warnbox">District read live from Hendry County's zoning GIS. The per-district setback feet come from the adopted LDC's Table 53-2 (a graphic table, not a queryable number). Verify overlays (esp. the Airglades AOPD), corner-lot rules and any PUD/DSAP terms before relying on these.</div>`;
   h+=renderHendryGeneratorNote();
