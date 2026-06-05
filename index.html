@@ -852,7 +852,6 @@
       <button data-bm="aerial" title="Aerial imagery with no place labels — unobstructed photo view">Aerial (clean)</button>
       <button data-bm="sarco" title="Local high-res county aerials — auto-switches to whichever county you're viewing (Sarasota, Lee, Charlotte, Collier, Manatee). Falls back to Esri imagery elsewhere.">📷 Local HD</button>
       <button id="localAerialRefresh" class="zl-refresh-row" title="Reload the local aerial for the county you're currently viewing (use after panning across a county line)">⟳ Refresh aerial to this view</button>
-      <button data-bm="naip" title="USGS NAIP — free national aerial (~0.6 m), independent second source for cross-checking. Lower-res than Local HD but covers everywhere and is a different flight/date.">🛩 NAIP (USGS)</button>
       <button data-bm="street">Street</button>
       <button data-bm="gray" title="Minimal light-gray basemap — makes parcel / flood / city overlays read clearly">Gray</button>
       <button data-bm="topo" title="USGS topographic / terrain basemap — elevation &amp; contour context for low-ground / pad siting">⛰ Topo</button>
@@ -1944,39 +1943,44 @@ const LOCAL_AERIAL = {
                  "https://gisimageserver.leegov.com/imageserver/rest/services/Aerials/Aerials2024/ImageServer",
                  "https://gisimageserver.leegov.com/imageserver/rest/services/Aerials/Aerials2023/ImageServer" ] },
   CHARLOTTE:{ label:"Charlotte County", bounds:[-82.35,26.70,-81.75,27.10], kind:"export",
-    candidates:[ "https://agis.charlottecountyfl.gov/arcgis/rest/services/Imagery/Aerials2025/ImageServer",
-                 "https://agis.charlottecountyfl.gov/arcgis/rest/services/Imagery/Aerials2024/ImageServer",
-                 "https://agis.charlottecountyfl.gov/arcgis/rest/services/Imagery/Aerials2023/ImageServer",
-                 "https://agis.charlottecountyfl.gov/arcgis/rest/services/Imagery/Aerial_2023/ImageServer" ] },
+    // Charlotte County FL's live GIS server is agis3.charlottecountyfl.gov/arcgis (confirmed). Aerial
+    // service name not externally confirmable, so try likely Imagery-folder names, then fall back to the
+    // verified statewide FDEP ortho so the county still gets HD imagery that loads.
+    candidates:[ "https://agis3.charlottecountyfl.gov/arcgis/rest/services/Imagery/Aerials_2025/ImageServer",
+                 "https://agis3.charlottecountyfl.gov/arcgis/rest/services/Imagery/Aerials_2024/ImageServer",
+                 "https://agis3.charlottecountyfl.gov/arcgis/rest/services/Imagery/Aerials/MapServer",
+                 "https://agis3.charlottecountyfl.gov/arcgis/rest/services/Imagery/Aerial_2024/ImageServer",
+                 "https://ca.dep.state.fl.us/image/rest/services/FDOT_Yearly_Aerials/Aerial_Imagery_2023/ImageServer",
+                 "https://ca.dep.state.fl.us/image/rest/services/FDOT_Yearly_Aerials/Aerial_Imagery_2021/ImageServer" ] },
   COLLIER:  { label:"Collier County", bounds:[-81.90,25.80,-80.85,26.55], kind:"export",
-    // Collier's public GIS server is ags2.colliercountyfl.gov/gis (folders: Public, Agency, Hosted...).
-    // Exact aerial service name couldn't be confirmed externally, so we list likely names in the Public
-    // folder; the statewide FDEP ortho is the last-resort candidate so Collier still gets HD if the
-    // county server is CORS-blocked. If none match, grab the real ImageServer URL from the county map's
-    // network tab and drop it in at the top.
-    candidates:[ "https://ags2.colliercountyfl.gov/gis/rest/services/Public/Aerials_2025/ImageServer",
+    // Collier's public GIS server is ags2.colliercountyfl.gov/gis, but its aerial service name couldn't
+    // be confirmed and earlier guesses failed. Lead with the VERIFIED statewide FDEP ortho so Collier
+    // reliably gets HD imagery; keep county guesses after it in case one resolves. If you capture the
+    // real county ImageServer URL from Collier's map (network tab), drop it in at the top.
+    candidates:[ "https://ca.dep.state.fl.us/image/rest/services/FDOT_Yearly_Aerials/Aerial_Imagery_2023/ImageServer",
+                 "https://ca.dep.state.fl.us/image/rest/services/FDOT_Yearly_Aerials/Aerial_Imagery_2021/ImageServer",
                  "https://ags2.colliercountyfl.gov/gis/rest/services/Public/Aerials_2024/ImageServer",
-                 "https://ags2.colliercountyfl.gov/gis/rest/services/Public/Aerials/ImageServer",
-                 "https://ags2.colliercountyfl.gov/gis/rest/services/Public/Imagery_2024/ImageServer",
-                 "https://ca.dep.state.fl.us/image/rest/services/FDOT_Yearly_Aerials/Aerial_Imagery_2024/ImageServer",
-                 "https://ca.dep.state.fl.us/image/rest/services/FDOT_Yearly_Aerials/Aerial_Imagery_2023/ImageServer" ] },
-  MANATEE:  { label:"Manatee County", bounds:[-82.70,27.30,-82.00,27.65], kind:"export",
-    candidates:[ "https://www.mymanatee.org/arcgis/rest/services/Imagery/Aerials_2025/ImageServer",
-                 "https://www.mymanatee.org/arcgis/rest/services/Imagery/Aerials_2024/ImageServer",
-                 "https://maps.mymanatee.org/arcgis/rest/services/Imagery/Aerials_2024/ImageServer",
+                 "https://ags2.colliercountyfl.gov/gis/rest/services/Public/Aerials/MapServer" ] },
+  MANATEE:  { label:"Manatee County (2025)", bounds:[-82.70,27.30,-82.00,27.65], kind:"tilexyz",
+    // CONFIRMED: Manatee serves its current aerial from mymanatee.org/gisimg (NOT /arcgis). "current/
+    // aerials" is the live 2025 flight (12/13/24–01/25/25) and is a TILED cache (singleFusedMapCache),
+    // so the probe will auto-detect kind=tilexyz and use the fast {z}/{y}/{x} path. DRAFT2025 is the
+    // raw 2025 RGB. FDEP statewide is the safety net.
+    candidates:[ "https://www.mymanatee.org/gisimg/rest/services/current/aerials/MapServer",
+                 "https://www.mymanatee.org/gisimg/rest/services/DRAFT2025/DRAFT_AERIAL_2025_RGB/MapServer",
                  "https://ca.dep.state.fl.us/image/rest/services/FDOT_Yearly_Aerials/Aerial_Imagery_2023/ImageServer" ] },
   // Glades & Hendry are rural counties that outsource GIS to qPublic/Schneider — they run NO public
-  // county aerial server. Best available local-grade HD is the STATEWIDE FDEP/FDOT ortho (public,
-  // covers all 67 counties, dynamic ImageServer). FDOT confirms Hendry has a 2023 flight. Labeled
-  // honestly as statewide ortho rather than a county-flown aerial. Newest-year-first.
+  // county aerial server. Best available is the VERIFIED STATEWIDE FDEP/FDOT ortho (public, covers all
+  // 67 counties, dynamic ImageServer, SR 3087 → reprojected via exportImage bboxSR/imageSR=3857).
+  // Labeled honestly as statewide ortho. Newest confirmed-pattern years first.
   GLADES:   { label:"Glades County (FL statewide ortho)", bounds:[-81.55,26.65,-80.90,27.21], kind:"export",
-    candidates:[ "https://ca.dep.state.fl.us/image/rest/services/FDOT_Yearly_Aerials/Aerial_Imagery_2024/ImageServer",
-                 "https://ca.dep.state.fl.us/image/rest/services/FDOT_Yearly_Aerials/Aerial_Imagery_2023/ImageServer",
-                 "https://ca.dep.state.fl.us/image/rest/services/FDOT_Yearly_Aerials/Aerial_Imagery_2022/ImageServer" ] },
+    candidates:[ "https://ca.dep.state.fl.us/image/rest/services/FDOT_Yearly_Aerials/Aerial_Imagery_2023/ImageServer",
+                 "https://ca.dep.state.fl.us/image/rest/services/FDOT_Yearly_Aerials/Aerial_Imagery_2021/ImageServer",
+                 "https://ca.dep.state.fl.us/image/rest/services/FDOT_Yearly_Aerials/Aerial_Imagery_2019/ImageServer" ] },
   HENDRY:   { label:"Hendry County (FL statewide ortho)", bounds:[-81.57,26.32,-80.78,26.95], kind:"export",
     candidates:[ "https://ca.dep.state.fl.us/image/rest/services/FDOT_Yearly_Aerials/Aerial_Imagery_2023/ImageServer",
-                 "https://ca.dep.state.fl.us/image/rest/services/FDOT_Yearly_Aerials/Aerial_Imagery_2024/ImageServer",
-                 "https://ca.dep.state.fl.us/image/rest/services/FDOT_Yearly_Aerials/Aerial_Imagery_2022/ImageServer" ] }
+                 "https://ca.dep.state.fl.us/image/rest/services/FDOT_Yearly_Aerials/Aerial_Imagery_2021/ImageServer",
+                 "https://ca.dep.state.fl.us/image/rest/services/FDOT_Yearly_Aerials/Aerial_Imagery_2019/ImageServer" ] }
 };
 // Resolved-at-runtime state: which counties' services actually responded, and their working URLs.
 const LOCAL_AERIAL_ACTIVE = {};        // KEY -> { url, kind, label }
@@ -2032,27 +2036,6 @@ const localAerial = new LocalAerial("", {
 const localEsriBase = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
   {maxZoom:23,maxNativeZoom:19,updateWhenIdle:L.Browser.mobile,updateWhenZooming:false,keepBuffer:2});
 const sarcoGroup = L.layerGroup([localEsriBase, localAerial, labels]);   // the "Local HD" basemap
-
-// ---- USGS NAIP (free national aerial, independent second source) ----
-// USDA/USGS National Agriculture Imagery Program ortho, served by The National Map. ~0.6 m, natural
-// color, refreshed every 1–2 years (current vintage ~2025), public + CORS-open, already Web Mercator.
-// Lower-res than the 3-inch county flights but covers EVERYWHERE and is a genuinely different photo
-// (different flight/date), so it's useful as a cross-check. Dynamic ImageServer → per-tile exportImage.
-const NAIP_URL = "https://imagery.nationalmap.gov/arcgis/rest/services/USGSNAIPImagery/ImageServer";
-const NaipLayer = L.TileLayer.extend({
-  getTileUrl: function(coords){
-    const n = Math.pow(2, coords.z), t = 2*R_MERC/n;
-    const xmin=-R_MERC+coords.x*t, xmax=-R_MERC+(coords.x+1)*t;
-    const ymax= R_MERC-coords.y*t, ymin= R_MERC-(coords.y+1)*t;
-    return NAIP_URL + "/exportImage?f=image&format=jpgpng&transparent=false" +
-           "&bbox=" + [xmin,ymin,xmax,ymax].join(",") + "&bboxSR=3857&imageSR=3857" +
-           "&size=" + LOCAL_TILE_PX + "," + LOCAL_TILE_PX;
-  }
-});
-const naip = new NaipLayer("", { maxZoom:23, maxNativeZoom:20, minZoom:5,
-  attribution:"NAIP &copy; USGS/USDA The National Map", updateWhenIdle:L.Browser.mobile,
-  updateWhenZooming:false, keepBuffer:2, crossOrigin:true });
-const naipGroup = L.layerGroup([naip, labels]);
 // Switch the local layer to the county under the current map center; returns the active key (or null).
 let _localActiveKey = "__init__";
 function _applyLocalKey(key){
@@ -2094,10 +2077,10 @@ function updateLocalAerial(force){
 const btnBasemap=document.getElementById('btnBasemap');
 const basemapMenu=document.getElementById('basemapMenu');
 const basemapLbl=document.getElementById('basemapLbl');
-const BM_LABEL={sat:'Satellite',street:'Street',topo:'⛰ Topo',aerial:'Aerial',gray:'Gray',sarco:'Local HD',naip:'NAIP (USGS)'};
+const BM_LABEL={sat:'Satellite',street:'Street',topo:'⛰ Topo',aerial:'Aerial',gray:'Gray',sarco:'Local HD'};
 // The basemaps are mutually exclusive; overlays (city limits / flood / parcels / radar) sit on top.
 // All basemaps live in the low tilePane, so they always render beneath the overlays regardless of order.
-const BM_LAYER={sat:satGroup,street:street,topo:topo,aerial:aerialClean,gray:gray,sarco:sarcoGroup,naip:naipGroup};
+const BM_LAYER={sat:satGroup,street:street,topo:topo,aerial:aerialClean,gray:gray,sarco:sarcoGroup};
 let _curBasemap='sat';
 function setBasemap(which){
   Object.values(BM_LAYER).forEach(l=>{ if(map.hasLayer(l)) map.removeLayer(l); });
