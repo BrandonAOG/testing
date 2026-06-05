@@ -1716,6 +1716,14 @@ const ZONING_LIVE_CITY = {
     // ✅ verified: City of Naples public GIS (backs the official city zoning map viewer)
     "https://g.naplesgov.com/arcgis/rest/services/Planning/Zoning/FeatureServer/0/query"
   ]},
+  // ✅ City of Venice's OWN GIS (geoport.venicefl.gov — the server behind the city's Planning & Zoning
+  // web-app viewer). Zoning is layer 10 of the bldg/TRAKiT MapServer; the classifying column is
+  // "zoning_district", which carries LONG descriptive strings (e.g. "RESIDENTIAL, SINGLE FAMILY 1",
+  // "SOUTH TRAIL: SUBAREA 2 (AUC)") — veniceSetbacks()/VENICE_GIS_VALUE_MAP map those to LDC codes.
+  // Venice is a Sarasota County city with its own code, so the county layer is only a fallback.
+  VENICE: { label:"City of Venice Zoning", codeField:"zoning_district", urls:[
+    "https://geoport.venicefl.gov/server/rest/services/bldg/TRAKiT/MapServer/10/query"
+  ]},
   // City of Marco Island runs its OWN GIS (gis.cityofmarcoisland.com). Marco Island is incorporated
   // and has its own LDC (Ch. 30), so its zoning must come from the city's layer — NOT the Collier
   // County layer (which would otherwise be the fallback and return county-style codes). Zoning is
@@ -3627,6 +3635,11 @@ const VENICE_SETBACKS = {
   "GOV": { front:20, side:8,  rear:10, height:"35 ft (57 ft w/ exception)", cov:"70%", note:"Government Use." },
   // --- Planned ---
   "PUD": { front:null, side:null, rear:null, formula:true, note:"Planned Unit Development — front/side/rear, height and density are set by the approved Binding Master Plan (LDC § 2.2.4). A 25 ft buffer/setback applies around the PUD perimeter. Read the parcel's adopting PUD ordinance." },
+  "PID": { front:null, side:null, rear:null, formula:true, note:"Planned Industrial Development — front/side/rear, height and density are set by the approved Binding Master Plan (LDC § 2.2.4). Read the parcel's adopting PID ordinance." },
+  // County designations retained on annexation (Sarasota County UDC, not Venice districts).
+  "OUE": { front:50, side:50, rear:50, wf:50, height:"35 ft", cov:"20%", sideNote:"Side (single) 50 ft; side total, both sides, 100 ft.", note:"County Open Use Estate — a Sarasota County designation retained when the parcel was annexed (NOT a Venice district). Street/rear 50 ft; waterfront 50 ft; density 1 du/5 ac. Governed by Sarasota County UDC § 124-76." },
+  "OUR": { front:50, side:50, rear:50, wf:50, height:"35 ft", note:"County Open Use Rural — a Sarasota County designation retained on annexation (NOT a Venice district). All yards 50 ft; density 1 du/10 ac. Governed by Sarasota County UDC § 124-76." },
+  "ENCLAVE": { soft:true, note:"This parcel is mapped as an unincorporated enclave (surrounded by the city but not city-zoned). Zoning is governed by Sarasota County's Unified Development Code — confirm the county district and use § 124-76 for setbacks." },
   // --- Mixed-Use / form-based districts (Sec. 2.3). Setbacks are BUILD-TO min/max. ---
   "VA":   { front:"0'/2'",    side:"0'/2'",  rear:"0'/20'", wf:20,      formBased:true, height:"35 ft (45 ft w/ exception)", width:25, cov:"75%/100%", note:"Venice Avenue mixed-use (Mixed Use Downtown). Build-to zone; Venice historical architecture; no parking required." },
   "DE":   { front:"0'/20'",   side:"0'/10'", rear:"0'/20'", wf:20,      formBased:true, height:"35 ft by right (55–75 ft w/ exception, eligibility-based)", width:50, note:"Downtown Edge mixed-use (Mixed Use Downtown)." },
@@ -3652,23 +3665,49 @@ const VENICE_DISTRICT_ALIASES = {
   "LAURELWEST":"LW","LAURELEAST":"LE","KNIGHTSTRAIL":"KT","KNIGHTSTRAILTRANSITIONAL":"KTT"
 };
 // Inactive Venice districts (Table 2.2.1) — no new development under them; mapped to their successor.
-const VENICE_INACTIVE = { "RMH":"RMHP/RMHS", "CN":"(inactive)", "CG":"CM", "CI":"CM", "CSC":"(inactive)", "RE":"RSF-1", "RSF":"RSF (confirm tier)", "RMF":"RMF (confirm tier)" };
+const VENICE_INACTIVE = { "RMH":"RMHP/RMHS", "CN":"(inactive)", "CG":"CM", "CI":"CM", "CSC":"(inactive)", "RTR":"(inactive)", "ILW":"IND", "RE":"RSF-1", "RSF":"RSF (confirm tier)", "RMF":"RMF (confirm tier)" };
+/* The city's GIS "zoning_district" column carries LONG descriptive strings, not LDC codes. Map the
+   normalized value (uppercase, letters+digits only) to the code the setback table is keyed on. The
+   form-based subareas and Areas of Unique Consideration all roll up to their parent district. */
+const VENICE_GIS_VALUE_MAP = {
+  "RESIDENTIALSINGLEFAMILY1":"RSF-1","RESIDENTIALSINGLEFAMILY2":"RSF-2","RESIDENTIALSINGLEFAMILY3":"RSF-3","RESIDENTIALSINGLEFAMILY4":"RSF-4",
+  "RESIDENTIALMULTIFAMILY1":"RMF-1","RESIDENTIALMULTIFAMILY2":"RMF-2","RESIDENTIALMULTIFAMILY3":"RMF-3","RESIDENTIALMULTIFAMILY4":"RMF-4",
+  "OFFICEPROFESSIONALANDINSTITUTIONAL":"OPI",
+  "COMMERCIAL":"CM","COMMERCIALINTENSIVE":"CI","COMMERCIALGENERAL":"CG","COMMERCIALSHOPPINGCENTER":"CSC",
+  "INDUSTRIAL":"IND","INDUSTRIALLIGHTWAREHOUSING":"ILW",
+  "PLANNEDUNITDEVELOPMENT":"PUD","PLANNEDINDUSTRIALDEVELOPMENT":"PID",
+  "AIRPORTAVENUE":"AA","DOWNTOWNEDGE":"DE","KNIGHTSTRAIL":"KT","KNIGHTSTRAILTRANSITIONAL":"KTT",
+  "LAURELEAST":"LE","LAURELWEST":"LW","NORTHTRAILGATEWAY":"NTG","SEABOARDIMPROVEMENT":"SBI","VENICEAVENUE":"VA",
+  "SOUTHTRAILSUBAREA1":"ST-1","SOUTHTRAILSUBAREA2":"ST-2","SOUTHTRAILSUBAREA2AUC":"ST-2",
+  "AREASOFUNIQUECONSIDERATION1A":"ST-2","AREASOFUNIQUECONSIDERATION1B":"ST-2","AREASOFUNIQUECONSIDERATION2":"ST-2",
+  "CONSERVATION":"CON","RECREATION":"REC","GOVERNMENT":"GOV",
+  "RESIDENTIALMANUFACTUREDHOME":"RMH","RESIDENTIALTOURISTRESORT":"RTR",
+  "OPENUSEESTATE":"OUE","OPENUSEESTATE1":"OUE","OPENUSEESTATE2":"OUE","OPENUSERURAL":"OUR",
+  "ENCLAVE":"ENCLAVE"
+};
 let _veniceNoHyphen=null;
+function _veniceInactiveSoft(code){
+  const succ=VENICE_INACTIVE[code];
+  return { soft:true, note:`"${code}" is an inactive or former Venice district (LDC Table 2.2.1). New development is governed by ${succ==='(inactive)'?'its successor district':('district '+succ)} — confirm the parcel's current district before relying on a number.` };
+}
 function veniceSetbacks(districtCode){
   if(!districtCode) return null;
   const raw=String(districtCode).toUpperCase().trim();
   if(VENICE_SETBACKS[raw]) return VENICE_SETBACKS[raw];
-  if(!_veniceNoHyphen){ _veniceNoHyphen={}; for(const k in VENICE_SETBACKS) _veniceNoHyphen[k.replace(/[^A-Z0-9]/g,'')]=k; }
   const nh=raw.replace(/[^A-Z0-9]/g,'');
+  // GIS long-string value (or any code) → LDC code, then resolve that code.
+  const mapped = VENICE_GIS_VALUE_MAP[nh];
+  if(mapped){
+    if(VENICE_SETBACKS[mapped]) return VENICE_SETBACKS[mapped];
+    if(VENICE_INACTIVE[mapped]) return _veniceInactiveSoft(mapped);
+  }
+  if(!_veniceNoHyphen){ _veniceNoHyphen={}; for(const k in VENICE_SETBACKS) _veniceNoHyphen[k.replace(/[^A-Z0-9]/g,'')]=k; }
   if(_veniceNoHyphen[nh]) return VENICE_SETBACKS[_veniceNoHyphen[nh]];
   const alpha=raw.replace(/[^A-Z]/g,'');
   if(VENICE_DISTRICT_ALIASES[alpha]) return VENICE_SETBACKS[VENICE_DISTRICT_ALIASES[alpha]];
   if(VENICE_DISTRICT_ALIASES[nh]) return VENICE_SETBACKS[VENICE_DISTRICT_ALIASES[nh]];
-  // bare family (e.g. "RSF" / "RMF") or inactive code → soft entry that points the user at the right place
-  if(VENICE_INACTIVE[alpha] || VENICE_INACTIVE[raw]){
-    const succ=VENICE_INACTIVE[alpha]||VENICE_INACTIVE[raw];
-    return { soft:true, note:`"${raw}" is an inactive or family-level Venice district (LDC Table 2.2.1). New development is governed by ${succ==='(inactive)'?'its successor district':('district '+succ)} — confirm the parcel's current district before relying on a number.` };
-  }
+  if(VENICE_INACTIVE[alpha]) return _veniceInactiveSoft(alpha);
+  if(VENICE_INACTIVE[raw]) return _veniceInactiveSoft(raw);
   return null;
 }
 const VENICE_CODE_URL='https://library.municode.com/fl/venice/codes/code_of_ordinances';
