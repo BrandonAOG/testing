@@ -1763,17 +1763,15 @@ const ZONING_LIVE_CITY = {
   MOOREHAVEN: { label:"City of Moore Haven Zoning", codeField:"Z010_ZONG", urls:[
     "https://gis1.hcpao.org/arcgiscv/rest/services/Glades/GladesCounty_Zoning/MapServer/1/query"
   ]},
-  // ✅ City of North Port zoning — Hosted/Current_Zoning/FeatureServer/241. This is the layer the
-  // city's OWN public P&Z Zoning Map app queries on a parcel click (confirmed from the app's live
-  // network traffic: .../Hosted/Current_Zoning/FeatureServer/241/query). It is the authoritative,
-  // current zoning layer — NOT the stale Accela_BaseLayers/MapServer/11 permitting copy used earlier
-  // (that one returned mismatched/"V" values because it's a divergent dataset). The exact district
-  // field name on 241 isn't externally verifiable (the host serves PBF and blocks the JSON directory),
-  // so we let detectZoningFields() resolve it — its ZONE/ZONING/DISTRICT patterns catch the standard
-  // names — and northPortSetbacks() accepts both the bare ULDC codes (R-1, AC-7A, C, COR, ...) and the
-  // "(XX) Name" value format. If 241's field name turns out to be nonstandard, pin codeField/descField
-  // here once known. SR 2882 (FL State Plane ft); arcQuery sends 4326 and the server reprojects.
-  NORTHPORT: { label:"City of North Port Zoning", urls:[
+  // ✅ City of North Port zoning — Hosted/Current_Zoning/FeatureServer/241, the layer the city's OWN
+  // public P&Z Zoning Map app queries on a parcel click (confirmed from live app traffic). VERIFIED
+  // field list (from an actual /query response): the district code is in "zone_abbr" (e.g. "AC-4",
+  // "R-1") and the name in "zone_des" ("Activity Center 4"). NOTE the trap: there is also a field named
+  // "zone" (alias "Zoning Code") that is NULL on these features — and detectZoningFields() matches a
+  // bare /^ZONE$/ BEFORE ZONE_ABBR, so auto-detection picks the wrong (null/garbage) column and yields
+  // no district (this is what produced the earlier "V for the whole city"). So we PIN codeField/descField
+  // to the proven fields. SR is 2882 (FL State Plane ft); arcQuery sends 4326 and the server reprojects.
+  NORTHPORT: { label:"City of North Port Zoning", codeField:"zone_abbr", descField:"zone_des", urls:[
     "https://npgis.northportfl.gov/cnpserver/rest/services/Hosted/Current_Zoning/FeatureServer/241/query"
   ]}
 };
