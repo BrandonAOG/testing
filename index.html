@@ -1498,6 +1498,9 @@ const CHARLOTTE_INCORP = new Set(['PUNTAGORDA']);
 /* Incorporated municipalities within Sarasota County that adopt their OWN codes and must NOT inherit
    unincorporated Sarasota County's UDC (Ch. 124) setbacks. norm()-form. */
 const SARASOTA_INCORP = new Set(['SARASOTA','VENICE','NORTHPORT','LONGBOATKEY']);
+/* Incorporated cities in Hendry County — LaBelle & Clewiston run their OWN zoning/setbacks, so they
+   must NOT inherit unincorporated Hendry's Ch. 1-53 Table 53-2 standards. norm()-form. */
+const HENDRY_INCORP = new Set(['LABELLE','CLEWISTON']);
 
 /* ---------- City of Naples setback QUICK-REFERENCE (Code of Ordinances, Ch. 58) ----------
    Hand-entered from Municode. These are a CONVENIENCE COPY — the live § deep-link beside each
@@ -3794,6 +3797,141 @@ function renderMooreHavenSetbacks(districtCode){
   h+=`<a class="palink" href="https://library.municode.com/fl/moore_haven/codes/code_of_ordinances" target="_blank" rel="noopener" style="margin-top:6px">↗ Verify ${esc(secRef)} — Moore Haven Code of Ordinances (Municode)</a>`;
   h+=`<div class="note warnbox">Required minimums from the City of Moore Haven's adopted LDC (Ch. 4, § 9), keyed to the detected district. Where a district sets standards by housing type, the headline figures are the common values — check the by-type breakdown. Variances cap at 35% deviation (§ 5.4.G). Verify overlays, corner-lot rules and any PD terms before relying on these.</div>`;
   h+=renderMooreHavenGeneratorNote();
+  return h;
+}
+
+/* ============================ HENDRY COUNTY ============================
+   Hendry County Land Development Code (Code of Ordinances Part I, Chapter 1-53 ZONING). The
+   district list & full names are verified from § 1-53-2.1; the dimensional standards (minimum lot
+   size, front/side/rear setbacks, lot width, building height, min living area) all live in ONE
+   master table — § 1-53-4.1 "Table 53-2, Table of Dimensional and Density Regulations".
+   IMPORTANT — WHY THERE ARE NO HARD-CODED FEET HERE: Hendry publishes Table 53-2 as a GRAPHIC
+   (image) in both Municode and eLaws, so its per-district numbers are NOT machine-readable and were
+   NOT verifiable from text. Rather than fabricate siting numbers, each district carries its verified
+   name + the governing section, and the renderer sends the user to Table 53-2 for the exact
+   front/side/rear. (If the exact numbers get hand-verified from the table later, drop them into the
+   front/side/rear fields below and the renderer will show them automatically — same shape as the
+   Glades/Collier tables.)
+   GENERATORS: Hendry has NO dedicated emergency-/standby-generator ordinance and no special
+   mechanical-equipment yard-encroachment allowance. A permanently installed generator is an
+   accessory structure, governed by the same Table 53-2 yard setbacks for its district and the
+   accessory-use rules in § 1-53-6 (placement in side/rear yards, out of required front yards and
+   easements). That note rides on every Hendry result.
+   CITIES: LaBelle and Clewiston are incorporated and run their OWN zoning/setbacks (the county
+   zoning layer just stamps parcels inside them "LABELLE"/"CLEWISTON") — excluded via HENDRY_INCORP. */
+const HENDRY_SETBACKS = {
+  "A-1":  { name:"Agriculture / Conservation (A-1)", secRef:"§ 1-53-4.1 Table 53-2", note:"Lowest-intensity agricultural/conservation district (max ~1 du/20 ac). Large minimum parcel; see Table 53-2 for the exact lot size, yards and height." },
+  "A-2":  { name:"General Agriculture (A-2)", secRef:"§ 1-53-4.1 Table 53-2", note:"County's primary agricultural district. Non-agricultural uses on 40+ ac may need a special exception (§ 1-53-3.2). Exact lot/yard/height in Table 53-2." },
+  "A-3":  { name:"Agriculture Transitional (A-3)", secRef:"§ 1-53-4.1 Table 53-2" },
+  "RR":   { name:"Rural Residential (RR)", secRef:"§ 1-53-4.1 Table 53-2", note:"Single-family rural residential; new agricultural uses allowed on 5+ ac by special permit (§ 1-53-6)." },
+  "RR-5": { name:"Rural Residential — 5 acre (RR-5)", secRef:"§ 1-53-4.1 Table 53-2", note:"Rural residential at a 5-acre minimum lot. Exact yards in Table 53-2." },
+  "RR-F": { name:"Rural Residential Farm (RR-F)", secRef:"§ 1-53-4.1 Table 53-2", note:"Same criteria/uses as RR except as modified by § 1-53-6.7(g) (§ 1-53-2.1A)." },
+  "RR-WE":{ name:"Rural Residential — Wheeler Estates (RR-WE)", secRef:"§ 1-53-2.1 / Table 53-2", note:"Wheeler Estates overlay (former A-3/RG-1 parcels, T44S R28E). Single-family only; mobile homes & RVs as living quarters prohibited; 5-acre minimum with private-road/driveway conditions for a building permit." },
+  "RG-1": { name:"Residential / Low Density (RG-1)", secRef:"§ 1-53-4.1 Table 53-2" },
+  "RG-1M":{ name:"Residential / Low Density — Mobile Home (RG-1M)", secRef:"§ 1-53-4.1 Table 53-2" },
+  "RG-2": { name:"Residential / Medium Density (RG-2)", secRef:"§ 1-53-4.1 Table 53-2" },
+  "RG-2M":{ name:"Residential / Medium Density — Mobile Home (RG-2M)", secRef:"§ 1-53-4.1 Table 53-2" },
+  "RG-3": { name:"Residential / High Density (RG-3)", secRef:"§ 1-53-4.1 Table 53-2" },
+  "RG-3M":{ name:"Residential / High Density — Mobile Home (RG-3M)", secRef:"§ 1-53-4.1 Table 53-2" },
+  "RG-4": { name:"Residential / Multifamily (RG-4)", secRef:"§ 1-53-4.1 Table 53-2", note:"Highest residential density (multifamily). Multifamily over 25 ft tall typically must set back at least the building height — confirm in Table 53-2 & § 1-53-6." },
+  "C-1":  { name:"Convenience Commercial (C-1)", secRef:"§ 1-53-4.1 Table 53-2" },
+  "C-2":  { name:"General Commercial (C-2)", secRef:"§ 1-53-4.1 Table 53-2" },
+  "C-3":  { name:"High Intensity Commercial (C-3)", secRef:"§ 1-53-4.1 Table 53-2" },
+  "I-1":  { name:"Light Industrial (I-1)", secRef:"§ 1-53-4.1 Table 53-2" },
+  "I-2":  { name:"Heavy Industrial (I-2)", secRef:"§ 1-53-4.1 Table 53-2" },
+  "AOPD": { name:"Airglades Airport Overlay (AOPD)", secRef:"§ 1-53-6", overlay:true, note:"Airport overlay around Airglades. Aircraft Noise Control Zone land-use restrictions & sound-level-reduction requirements apply ON TOP of the underlying district's Table 53-2 standards (§ 1-53-6)." },
+  "PUD":  { name:"Planned Unit Development (PUD)", pud:true, secRef:"§ 1-53-5", note:"Stand-alone PUD ordinance. All setbacks, lot, height, density & buffers are set in this parcel's approved PUD ordinance & master plan — not Table 53-2." },
+  "DSAP": { name:"Detailed Specific Area Plan (DSAP)", pud:true, secRef:"§ 1-53-7", note:"Site-specific DSAP. Dimensional standards come from the adopted DSAP, not Table 53-2." },
+  "RDSAP":{ name:"Rural Detailed Specific Area Plan (RDSAP)", pud:true, secRef:"§ 1-53-8", note:"Rural DSAP under the Southwest Hendry County Sector Plan. Standards set by the adopted plan/order, not Table 53-2." }
+};
+const HENDRY_DISTRICT_ALIASES = {
+  "AGRICULTURECONSERVATION":"A-1","AGRICULTURALCONSERVATION":"A-1","GENERALAGRICULTURE":"A-2",
+  "AGRICULTURETRANSITIONAL":"A-3","AGRICULTURALTRANSITIONAL":"A-3",
+  "RURALRESIDENTIAL":"RR","RURALRESIDENTIALFARM":"RR-F","RURALRESIDENTIALWHEELERESTATES":"RR-WE","WHEELERESTATES":"RR-WE",
+  "RESIDENTIALLOWDENSITY":"RG-1","RESIDENTIALMEDIUMDENSITY":"RG-2","RESIDENTIALHIGHDENSITY":"RG-3","RESIDENTIALMULTIFAMILY":"RG-4",
+  "CONVENIENCECOMMERCIAL":"C-1","GENERALCOMMERCIAL":"C-2","HIGHINTENSITYCOMMERCIAL":"C-3",
+  "LIGHTINDUSTRIAL":"I-1","HEAVYINDUSTRIAL":"I-2","PLANNEDUNITDEVELOPMENT":"PUD",
+  "DETAILEDSPECIFICAREAPLAN":"DSAP","RURALDETAILEDSPECIFICAREAPLAN":"RDSAP",
+  "AIRGLADESAIRPORTOVERLAY":"AOPD","AIRPORTOVERLAY":"AOPD"
+};
+/* Resolve a Hendry district code: "A-2", "RG-2", "RG2", "RR-5", "RR5", "C-1", a mobile-home variant
+   like "RG-2M"/"RG2M", or a full-word form. */
+function hendrySetbacks(districtCode){
+  if(!districtCode) return null;
+  const raw=String(districtCode).toUpperCase().trim();
+  if(HENDRY_SETBACKS[raw]) return HENDRY_SETBACKS[raw];
+  const alpha=raw.replace(/[^A-Z]/g,'');
+  if(HENDRY_DISTRICT_ALIASES[alpha]) return HENDRY_SETBACKS[HENDRY_DISTRICT_ALIASES[alpha]];
+  // normalize: insert hyphen between a letter-run and a digit, keep a trailing M: RG2 -> RG-2, RG2M -> RG-2M, RR5 -> RR-5
+  let k=raw.replace(/\s+/g,'').replace(/^([A-Z]+)[- ]?(\d)/,'$1-$2');
+  if(HENDRY_SETBACKS[k]) return HENDRY_SETBACKS[k];
+  // letter-letter codes (A-1/A-2/A-3, C-1..C-3, I-1/I-2 already covered above); RR-F / RR-WE letter suffix:
+  if(/^RRF$/.test(alpha)) return HENDRY_SETBACKS["RR-F"];
+  if(/^RRWE$/.test(alpha)) return HENDRY_SETBACKS["RR-WE"];
+  const base=raw.split(/[\s(/]/)[0].replace(/^([A-Z]+)[- ]?(\d)/,'$1-$2');
+  if(HENDRY_SETBACKS[base]) return HENDRY_SETBACKS[base];
+  const baseAlpha=base.replace(/[^A-Z]/g,'');
+  if(HENDRY_DISTRICT_ALIASES[baseAlpha]) return HENDRY_SETBACKS[HENDRY_DISTRICT_ALIASES[baseAlpha]];
+  return null;
+}
+/* Hendry treats a generator as an accessory structure — no dedicated generator ordinance exists.
+   This note rides on every unincorporated-Hendry result so the siting rule is explicit. */
+function renderHendryGeneratorNote(){
+  let h=`<div class="freshline snap" style="margin-top:10px"><span class="badge unk">⚡ GENERATOR</span> placement · Hendry County LDC § 1-53-4.1 (Table 53-2) &amp; § 1-53-6</div>`;
+  h+=`<div class="note"><b>Hendry County has no dedicated generator ordinance and no special yard-encroachment allowance for mechanical equipment.</b> A permanently installed generator is treated as an <b>accessory structure</b>: it must observe the <b>same yard setbacks as its zoning district</b> (the front/side/rear in Table 53-2) and the accessory-use placement rules of <b>§ 1-53-6</b> — kept out of the required <b>front yard</b> and out of any platted <b>utility/drainage easement</b>, generally in a side or rear yard.</div>`;
+  h+=`<div class="note">Above-ground LP/propane tanks follow the same accessory-structure setbacks plus the Florida Fire Prevention Code separation distances. Within the <b>Airglades Airport overlay (AOPD)</b>, additional noise-zone limits apply. Confirm exact placement with <b>Hendry County Planning &amp; Zoning (863-675-5240, LaBelle)</b> before siting.</div>`;
+  h+=`<a class="palink" href="https://library.municode.com/fl/hendry_county/codes/code_of_ordinances" target="_blank" rel="noopener" style="margin-top:6px">↗ Verify §§ 1-53-4.1 &amp; 1-53-6 — Hendry County LDC (Municode)</a>`;
+  return h;
+}
+/* Render required setbacks for an unincorporated Hendry County district. The per-district feet live
+   in the graphic Table 53-2, so this names the district, cites the governing section, and points the
+   user to the table for the exact front/side/rear (rather than inventing numbers). If a future build
+   hand-enters verified front/side/rear into HENDRY_SETBACKS, they render automatically. */
+function renderHendrySetbacks(districtCode){
+  // Parcels inside LaBelle / Clewiston: the county zoning layer stamps the city name as the "code".
+  const rawU = districtCode!=null ? String(districtCode).toUpperCase().trim() : '';
+  if(rawU==='LABELLE' || rawU==='CLEWISTON'){
+    const city = rawU==='LABELLE' ? 'LaBelle' : 'Clewiston';
+    let c=`<div class="freshline snap" style="margin-top:10px"><span class="badge unk">▣ ZONING</span> Parcel is inside the City of ${esc(city)}</div>`;
+    c+=`<div class="note">This parcel lies within <b>${esc(city)}</b>, which is incorporated and administers its <b>own zoning &amp; setbacks</b> — the Hendry County district table does not apply. Look up the city district and its front/side/rear setbacks, then confirm generator/LP-tank placement with the city before siting.</div>`;
+    c+=`<a class="palink" href="https://library.municode.com/fl/hendry_county/codes/code_of_ordinances" target="_blank" rel="noopener" style="margin-top:6px">↗ Hendry County / municipal codes (Municode)</a>`;
+    return c;
+  }
+  const s=hendrySetbacks(districtCode);
+  if(!s){
+    let g=`<div class="freshline snap" style="margin-top:10px"><span class="badge unk">▣ ZONING</span> Hendry County — district not detected</div>`;
+    g+=`<div class="note">No zoning district could be read for this parcel. Look it up via Hendry County Planning &amp; Zoning (863-675-5240), then read that district's front/side/rear setbacks in <b>Table 53-2</b> (§ 1-53-4.1). The generator placement rule below applies countywide.</div>`;
+    g+=renderHendryGeneratorNote();
+    return g;
+  }
+  const secRef=s.secRef||'§ 1-53-4.1 Table 53-2';
+  const setVal=v=>{ if(v==null) return null; if(typeof v==='number') return v===0?'0 ft':v+' ft'; const t=String(v).trim(); if(!t) return null; return /[a-zA-Z]/.test(t)?t:t+' ft'; };
+  // PUD / DSAP / RDSAP: standards come from the approved plan, not Table 53-2.
+  if(s.pud){
+    let p=`<div class="freshline snap" style="margin-top:10px"><span class="badge unk">▣ ${esc(rawU.indexOf('DSAP')>=0?'DSAP':'PUD')}</span> ${esc(s.name||String(districtCode))} · setbacks set by the approved plan (Hendry LDC ${esc(secRef)})</div>`;
+    if(s.note) p+=`<div class="note">${esc(s.note)}</div>`;
+    p+=`<div class="note warnbox">Look up this parcel's specific PUD/DSAP ordinance &amp; master plan for its exact setbacks before siting a generator or LP tank. Confirm with Hendry County Planning &amp; Zoning (863-675-5240).</div>`;
+    p+=renderHendryGeneratorNote();
+    return p;
+  }
+  let h=`<div class="freshline snap" style="margin-top:10px"><span class="badge unk">▣ REQUIRED</span> setbacks · ${esc(s.name||String(districtCode))} (Hendry LDC ${esc(secRef)})</div>`;
+  // If verified feet are present, show them; otherwise direct to the graphic Table 53-2.
+  const haveNums = (s.front!=null || s.side!=null || s.rear!=null);
+  if(haveNums){
+    h+=fieldRow('Front', esc(setVal(s.front)), 'big');
+    h+=fieldRow('Side', esc(setVal(s.side)));
+    h+=fieldRow('Rear', esc(setVal(s.rear)));
+    if(s.height!=null) h+=fieldRow('Max building height', esc(setVal(s.height)));
+    if(s.minLot!=null){ const lv=(typeof s.minLot==='number')?(fmtNum(s.minLot)+' sq ft'):String(s.minLot); h+=fieldRow('Minimum lot', esc(lv)+(s.lotWidth?(' · '+s.lotWidth+' ft wide'):'')); }
+  } else {
+    h+=fieldRow('Front / side / rear', '<span class="muted">see Table 53-2 for this district</span>', 'big');
+  }
+  if(s.overlay) h+=`<div class="note"><b>Overlay:</b> this is an overlay district — its requirements apply on top of the underlying base district's Table 53-2 standards.</div>`;
+  if(s.note) h+=`<div class="note">${esc(s.note)}</div>`;
+  h+=`<div class="note"><b>Where the exact numbers live:</b> Hendry's minimum lot size and front/side/rear setbacks for <b>${esc(s.name||String(districtCode))}</b> are in <b>Table 53-2</b> (§ 1-53-4.1 of the LDC), published as a table in the code. Read the row for this district for the governing feet.</div>`;
+  h+=`<a class="palink" href="https://library.municode.com/fl/hendry_county/codes/code_of_ordinances" target="_blank" rel="noopener" style="margin-top:6px">↗ Verify ${esc(secRef)} — Hendry County LDC (Municode)</a>`;
+  h+=`<div class="note warnbox">District read live from Hendry County's zoning GIS. The per-district setback feet come from the adopted LDC's Table 53-2 (a graphic table, not a queryable number). Verify overlays (esp. the Airglades AOPD), corner-lot rules and any PUD/DSAP terms before relying on these.</div>`;
+  h+=renderHendryGeneratorNote();
   return h;
 }
 
@@ -7513,6 +7651,11 @@ async function runLookup(lat,lng,searchCtx){
   // Unincorporated Glades County (LDC Ch. 125, Art. IV, § 125-158). Moore Haven (handled above)
   // uses its own code, so exclude it here. Always renders the county generator note even with no code.
   if(norm(countyName)==='GLADES' && norm(cityName)!=='MOOREHAVEN'){ html += renderGladesSetbacks(zhit && zhit.code ? zhit.code : null); }
+  // Unincorporated Hendry County (LDC Ch. 1-53, § 1-53-4.1 Table 53-2). LaBelle & Clewiston are
+  // incorporated and run their own codes (excluded via HENDRY_INCORP); renderHendrySetbacks also
+  // self-guards if the zoning layer handed back a "LABELLE"/"CLEWISTON" city placeholder as the code.
+  // Always renders the county generator note even when no district code was detected.
+  if(norm(countyName)==='HENDRY' && !HENDRY_INCORP.has(norm(cityName))){ html += renderHendrySetbacks(zhit && zhit.code ? zhit.code : null); }
   // (building-to-line estimate feature removed)
   if(z){
     if(z.permit) html += `<a class="palink" href="${esc(z.permit)}" target="_blank" rel="noopener">↗ ${esc(jurName)} permitting / planning portal</a>`;
