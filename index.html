@@ -2234,6 +2234,34 @@ function naplesColor(code){
   const c=String(code||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
   return NAPLES_ZONE_COLOR[c] || null;
 }
+/* Glades County — per-district colors keyed to the §125-158 district list (the same codes the
+   county_zoning layer returns in its "Zoning" field). Without this the broad category colorizer
+   lumps OUA/OUFP/AR/ARS into one "other" purple, so the agricultural districts that make up most of
+   Glades become indistinguishable. Families: open-use ag = greens/teal, residential = blues/indigo,
+   commercial = reds/orange, industrial = browns, planned/public = amber/gray. Matched on the
+   normalized code (letters+digits, no hyphens), so "C-1"→"C1", "ID-2"→"ID2", "RF-1"→"RF1". */
+const GLADES_ZONE_COLOR = {
+  "OUFP":"#0d9488",  // teal — Open Use Floodplain (conservation/floodplain overlay)
+  "OUA":"#4d7c0f",   // dark olive — Open Use Agriculture (20-ac min)
+  "ARS":"#65a30d",   // green — Agricultural Residential Single-Family
+  "AR":"#84cc16",    // lime — Agricultural Residential
+  "RF1":"#bef264",   // pale lime — Residential Rural Family (RF-1)
+  "RS":"#0ea5e9",    // sky — Residential Single-Family
+  "RG":"#2563eb",    // blue — Residential General
+  "RM":"#7c6cff",    // indigo — Residential Mixed
+  "RMH":"#06b6d4",   // cyan — Residential Mobile Home
+  "C1":"#fca5a5",    // light red — Neighborhood Commercial
+  "C2":"#ef4444",    // red — Commercial General
+  "CRV":"#fb923c",   // orange — Commercial Recreational Vehicle Park
+  "ID1":"#b08968",   // tan — Light Industrial
+  "ID2":"#78350f",   // dark brown — Heavy Industrial
+  "PS":"#9aa7b3",    // gray — Public Service
+  "PD":"#f59e0b"     // amber — Planned Development
+};
+function gladesColor(code){
+  const c=String(code||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+  return GLADES_ZONE_COLOR[c] || null;
+}
 const ZL_GENERIC=[["#34d399","Estate / rural res."],["#0ea5e9","Single-family"],["#2563eb","Dense single-family"],
   ["#7c6cff","Multi-family"],["#06b6d4","Mobile / manufactured"],["#ff6b6b","Commercial"],
   ["#b06b3a","Industrial"],["#5fc26a","Agricultural"],["#ffb000","Planned / mixed"],
@@ -2242,21 +2270,28 @@ const ZL_NAPLES=[["#10b981","R1-E / RE (estate)"],["#14b8a6","R1-15"],["#0ea5e9"
   ["#2563eb","R1-7.5 (small lot)"],["#a78bfa","R3-6 / R3-12"],["#6d28d9","R3-15 / R3-18"],
   ["#e879f9","R3T (tourist MF)"],["#ef4444","C1 / C2 commercial"],["#fbbf24","D — Downtown"],
   ["#f59e0b","PD — Planned"],["#9aa7b3","Public / civic"]];
+const ZL_GLADES=[["#0d9488","OUFP — open-use floodplain"],["#4d7c0f","OUA — open-use agriculture"],
+  ["#84cc16","AR / ARS — ag-residential"],["#bef264","RF-1 — rural family"],["#0ea5e9","RS — single-family"],
+  ["#2563eb","RG — general residential"],["#7c6cff","RM — residential mixed"],["#06b6d4","RMH — mobile home"],
+  ["#fca5a5","C-1 / C-2 — commercial"],["#fb923c","C-RV — RV park"],["#b08968","ID-1 / ID-2 — industrial"],
+  ["#f59e0b","PD — planned dev."],["#9aa7b3","PS — public service"]];
 function setZoningLegend(reg){
   const body=document.getElementById('zoningLegendBody'); if(!body) return;
   const title=document.querySelector('#zoningLegend .zl-title');
   const isNaples = reg && /naples/i.test(reg.label||'');
-  const rows = isNaples ? ZL_NAPLES : ZL_GENERIC;
-  if(title) title.textContent = isNaples ? 'Naples Zoning' : 'Zoning';
+  const isGlades = reg && /glades/i.test(reg.label||'');
+  const rows = isNaples ? ZL_NAPLES : (isGlades ? ZL_GLADES : ZL_GENERIC);
+  if(title) title.textContent = isNaples ? 'Naples Zoning' : (isGlades ? 'Glades Zoning' : 'Zoning');
   body.innerHTML = rows.map(([c,l])=>`<div><i style="background:${c}"></i>${l}</div>`).join('');
 }
 function zoningStyleFor(props, reg){
   let codeF = reg && reg.codeField;
   if(!codeF){ const det=detectZoningFields(Object.keys(props||{})); codeF=det.code; }
   const code = codeF && props ? props[codeF] : null;
-  // Naples gets its fine per-district palette; everywhere else uses the broad category colors.
+  // Naples & Glades get their fine per-district palettes; everywhere else uses the broad category colors.
   let col=null;
   if(reg && /naples/i.test(reg.label||'')) col=naplesColor(code);
+  else if(reg && /glades/i.test(reg.label||'')) col=gladesColor(code);
   if(!col) col = ZONE_CAT_COLOR[zoneCategory(code)];
   return { color:col, weight:1.2, opacity:.85, fillColor:col, fillOpacity:ZONING_FILL_OPACITY };
 }
