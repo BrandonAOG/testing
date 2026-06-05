@@ -1946,13 +1946,34 @@ const LOCAL_AERIAL = {
                  "https://agis.charlottecountyfl.gov/arcgis/rest/services/Imagery/Aerials2023/ImageServer",
                  "https://agis.charlottecountyfl.gov/arcgis/rest/services/Imagery/Aerial_2023/ImageServer" ] },
   COLLIER:  { label:"Collier County", bounds:[-81.90,25.80,-80.85,26.55], kind:"export",
-    candidates:[ "https://gispub.colliercountyfl.gov/arcgis/rest/services/Aerials/Aerial_2025/ImageServer",
-                 "https://gispub.colliercountyfl.gov/arcgis/rest/services/Aerials/Aerial_2024/ImageServer",
-                 "https://gisapp.colliercountyfl.gov/arcgis/rest/services/Aerials/Aerial_2024/ImageServer" ] },
+    // Collier's public GIS server is ags2.colliercountyfl.gov/gis (folders: Public, Agency, Hosted...).
+    // Exact aerial service name couldn't be confirmed externally, so we list likely names in the Public
+    // folder; the statewide FDEP ortho is the last-resort candidate so Collier still gets HD if the
+    // county server is CORS-blocked. If none match, grab the real ImageServer URL from the county map's
+    // network tab and drop it in at the top.
+    candidates:[ "https://ags2.colliercountyfl.gov/gis/rest/services/Public/Aerials_2025/ImageServer",
+                 "https://ags2.colliercountyfl.gov/gis/rest/services/Public/Aerials_2024/ImageServer",
+                 "https://ags2.colliercountyfl.gov/gis/rest/services/Public/Aerials/ImageServer",
+                 "https://ags2.colliercountyfl.gov/gis/rest/services/Public/Imagery_2024/ImageServer",
+                 "https://ca.dep.state.fl.us/image/rest/services/FDOT_Yearly_Aerials/Aerial_Imagery_2024/ImageServer",
+                 "https://ca.dep.state.fl.us/image/rest/services/FDOT_Yearly_Aerials/Aerial_Imagery_2023/ImageServer" ] },
   MANATEE:  { label:"Manatee County", bounds:[-82.70,27.30,-82.00,27.65], kind:"export",
     candidates:[ "https://www.mymanatee.org/arcgis/rest/services/Imagery/Aerials_2025/ImageServer",
                  "https://www.mymanatee.org/arcgis/rest/services/Imagery/Aerials_2024/ImageServer",
-                 "https://maps.mymanatee.org/arcgis/rest/services/Imagery/Aerials_2024/ImageServer" ] }
+                 "https://maps.mymanatee.org/arcgis/rest/services/Imagery/Aerials_2024/ImageServer",
+                 "https://ca.dep.state.fl.us/image/rest/services/FDOT_Yearly_Aerials/Aerial_Imagery_2023/ImageServer" ] },
+  // Glades & Hendry are rural counties that outsource GIS to qPublic/Schneider — they run NO public
+  // county aerial server. Best available local-grade HD is the STATEWIDE FDEP/FDOT ortho (public,
+  // covers all 67 counties, dynamic ImageServer). FDOT confirms Hendry has a 2023 flight. Labeled
+  // honestly as statewide ortho rather than a county-flown aerial. Newest-year-first.
+  GLADES:   { label:"Glades County (FL statewide ortho)", bounds:[-81.55,26.65,-80.90,27.21], kind:"export",
+    candidates:[ "https://ca.dep.state.fl.us/image/rest/services/FDOT_Yearly_Aerials/Aerial_Imagery_2024/ImageServer",
+                 "https://ca.dep.state.fl.us/image/rest/services/FDOT_Yearly_Aerials/Aerial_Imagery_2023/ImageServer",
+                 "https://ca.dep.state.fl.us/image/rest/services/FDOT_Yearly_Aerials/Aerial_Imagery_2022/ImageServer" ] },
+  HENDRY:   { label:"Hendry County (FL statewide ortho)", bounds:[-81.57,26.32,-80.78,26.95], kind:"export",
+    candidates:[ "https://ca.dep.state.fl.us/image/rest/services/FDOT_Yearly_Aerials/Aerial_Imagery_2023/ImageServer",
+                 "https://ca.dep.state.fl.us/image/rest/services/FDOT_Yearly_Aerials/Aerial_Imagery_2024/ImageServer",
+                 "https://ca.dep.state.fl.us/image/rest/services/FDOT_Yearly_Aerials/Aerial_Imagery_2022/ImageServer" ] }
 };
 // Resolved-at-runtime state: which counties' services actually responded, and their working URLs.
 const LOCAL_AERIAL_ACTIVE = {};        // KEY -> { url, kind, label }
