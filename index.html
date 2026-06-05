@@ -884,7 +884,7 @@
     </div>
     <div class="kick">Florida Parcel &amp; Flood Instrument</div>
     <h1>Property Lookup</h1>
-    <p class="intro-note noprint">Flood &amp; jurisdiction query official servers in real time. Owner/parcel auto-uses the <b>live county feed</b> where wired (Collier, Lee, Charlotte, Manatee, Sarasota) and the dated state roll elsewhere. Add any county's live URL below. Florida only.</p>
+    <p class="intro-note noprint">Flood &amp; jurisdiction query official servers in real time. Owner/parcel auto-uses the <b>live county feed</b> where wired (Collier, Lee, Charlotte, Manatee, Sarasota, Glades) and the dated state roll elsewhere. Add any county's live URL below. Florida only.</p>
   </header>
 
   <div class="search">
@@ -1309,6 +1309,18 @@ const COUNTY_LIVE = {
   ]},
   SARASOTA: { label:"Sarasota (SWFWMD/PA)", urls:[
     "https://www25.swfwmd.state.fl.us/arcgiswmis/rest/services/r27/LocationInfo/MapServer/79/query"
+  ]},
+  GLADES  : { label:"Glades County (Property Appraiser roll, 2026-06-01)", urls:[
+    // ✅ verified queryable (capabilities:"Query") public AGOL layer on Glades County's own org —
+    // the parcel layer behind the county's FLUM Experience app. Token-free, CORS-open (the app reads
+    // it unauthenticated cross-origin). Service name carries its roll date (glades_parcels_2026_06_01).
+    // Rich layer: owner own1/own2, PARCELNO + strap, site addr_1/s_city, owner mailing o_city/o_state/o_zip,
+    // acreage, tax_val/land_cm_va/bld_val/xf_val, use_cd, zone_cd, lgl1..22 legal, 3 sales rows. Owner +
+    // parcel + site + use auto-detect & render; market/land value + year-built/living-area splice from the
+    // statewide roll fallback (this layer carries taxable value, not a single market "just value" field).
+    // qPublic "Verify on appraiser" link keys on PARCELNO (AppID=818, LayerID=14562). Source: Glades FLUM
+    // web map 13630fbe10054c46982f5b3117323f6c.
+    "https://services6.arcgis.com/90Aakxb3SLGcQGor/arcgis/rest/services/glades_parcels_2026_06_01/FeatureServer/0/query"
   ]}
 };
 
@@ -2702,11 +2714,11 @@ function detectFields(fields){
   const F=fields.map(f=>({raw:f,U:String(f).toUpperCase()}));
   const find=(res)=>{ for(const re of res){ const m=F.find(f=>re.test(f.U)); if(m) return m.raw; } return null; };
   return {
-    owner: find([/^OWN_?NAME$/,/^OWNER$/,/^OWNER_?NAME$/,/^OWNERNAME$/,/^OWNER1$/,/^NAME1$/,/^O_NAME/,/OWN.*NAME/,/^GRANTEE/]),
-    owner2:find([/^OWN_?NAME2$/,/^OWNER2$/,/^OWNER_?NAME2$/,/^NAME2$/,/OWN.*NAME2/]),
-    pid:   find([/^STRAP/,/^PARCEL_?ID$/,/^PARCELID$/,/^PARID$/,/^FOLIO/,/^PIN$/,/^APN$/,/^ACCOUNT$/,/PARCEL.*(ID|NO|NUM)/,/PROP_?ID/]),
-    site:  find([/^SITE_?ADDR/,/^PHY_?ADDR1$/,/^PHY_?ADDR$/,/SITUS/,/^S_ADDR/,/SITE.*ADDR/,/^LOCATION$/,/SITEADDRESS/,/^STUBADDRESS$/,/^ADDRESS$/,/^FULLPROPERTYADDRESS$/,/^PROPERTY_?ADDR/]),
-    city:  find([/^SITE_?CITY$/,/^PHY_?CITY$/,/SITUS.*CITY/]),
+    owner: find([/^OWN_?NAME$/,/^OWNER$/,/^OWNER_?NAME$/,/^OWNERNAME$/,/^OWNER1$/,/^OWN1$/,/^NAME1$/,/^O_NAME/,/OWN.*NAME/,/^GRANTEE/]),
+    owner2:find([/^OWN_?NAME2$/,/^OWNER2$/,/^OWNER_?NAME2$/,/^OWN2$/,/^NAME2$/,/OWN.*NAME2/]),
+    pid:   find([/^PARCELNO$/,/^STRAP/,/^PARCEL_?ID$/,/^PARCELID$/,/^PARID$/,/^FOLIO/,/^PIN$/,/^APN$/,/^ACCOUNT$/,/PARCEL.*(ID|NO|NUM)/,/PROP_?ID/]),
+    site:  find([/^SITE_?ADDR/,/^PHY_?ADDR1$/,/^PHY_?ADDR$/,/SITUS/,/^S_ADDR/,/^ADDR_?1$/,/SITE.*ADDR/,/^LOCATION$/,/SITEADDRESS/,/^STUBADDRESS$/,/^ADDRESS$/,/^FULLPROPERTYADDRESS$/,/^PROPERTY_?ADDR/]),
+    city:  find([/^SITE_?CITY$/,/^PHY_?CITY$/,/^S_CITY$/,/SITUS.*CITY/]),
     jv:    find([/^JV$/,/^JUST_?VAL/,/^JUSTVALUE$/,/^MKT_?VAL/,/^MARKET_?VAL/,/^MARKETVALUE$/,/^TOTAL_?VAL/,/^JUST$/,/^TOTVAL/]),
     land:  find([/^LND_?VAL/,/^LAND_?VAL/,/^LAND$/]),
     yr:    find([/^ACT_?YR_?BLT$/,/^YR_?BLT$/,/^YEAR_?BUILT$/,/YRBLT/,/YEARBUILT/,/ACTYRBLT/,/^EFF_?YR/,/^MAXBUILTY$/,/^NEWBUILT$/]),
@@ -2714,8 +2726,8 @@ function detectFields(fields){
     saleP: find([/^SALE_?PRC1$/,/^SALE_?PRICE$/,/^SALEAMT$/,/^LASTSALE/,/SALEPRICE/,/SALE.*AMT/,/^SALE_?PR/,/^S_1AMOUNT$/]),
     saleY: find([/^SALE_?YR1$/,/^SALE_?YEAR$/,/SALEYR/,/SALE.*YEAR/,/SALEDATE1/,/^S_1DATE$/]),
     mail:  find([/^OWN_?ADDR1$/,/^OWNER_?ADDR/,/^MAIL_?ADDR/,/^MAILING/,/^OWN_?ADDR$/,/MAILADDR/]),
-    mailCity: find([/^OWN_?CITY$/,/^MAIL_?CITY$/,/OWNER_?CITY/]),
-    use:   find([/^USE_?CODE$/,/^DOR_?UC$/,/^PA_?UC$/,/^LAND_?USE$/,/^USETYPE$/,/^USE_?DESC/,/^PROP_?USE/,/^DOR_?DESC/]),
+    mailCity: find([/^OWN_?CITY$/,/^MAIL_?CITY$/,/^O_CITY$/,/OWNER_?CITY/]),
+    use:   find([/^USE_?CODE$/,/^USE_?CD$/,/^DOR_?UC$/,/^PA_?UC$/,/^LAND_?USE$/,/^USETYPE$/,/^USE_?DESC/,/^PROP_?USE/,/^DOR_?DESC/]),
     lotSqft: find([/^LND_?SQFOOT$/,/^LOT_?SQ/,/^LOTSQFT$/,/^LAND_?SQFT$/,/^SQFT_?LND$/,/^LOTSF$/,/^LOT_?SIZE$/,/LOTSQUARE/,/^LAND_?SQ/])
   };
 }
@@ -6754,6 +6766,7 @@ function renderParcelGeneric(a, d){
   if(mail) h += fieldRow('Owner mailing', esc(mail)+(mailCity?'<br>'+esc(mailCity):''));
   if(use)  h += fieldRow('Existing use', esc(use));
   if(jv)   h += fieldRow('Just (market) value'+(a.__asmtYr?' '+esc(String(a.__asmtYr)):''), jv);
+  else if(a.__gladesMkt!=null) h += fieldRow('Market value'+(a.__asmtYr?' '+esc(String(a.__asmtYr)):'')+' (land + building)', fmtMoney(a.__gladesMkt));
   if(a.__assessedVal!=null) h += fieldRow('Assessed value', fmtMoney(a.__assessedVal));
   if(a.__taxableVal!=null)  h += fieldRow('Taxable value', fmtMoney(a.__taxableVal));
   if(land) h += fieldRow('Land value', land);
@@ -6761,6 +6774,7 @@ function renderParcelGeneric(a, d){
     const bldExtra = (a.__bldgCount!=null && Number(a.__bldgCount)>1) ? ` · ${esc(String(a.__bldgCount))} bldgs` : '';
     h += fieldRow('Year built', esc(String(yr))+effExtra+bldExtra); }
   if(sp)   h += fieldRow('Last sale', sp+(sy?' ('+esc(sy)+')':''));
+  else if(a.__saleP!=null) h += fieldRow('Last sale', fmtMoney(a.__saleP)+(a.__saleY?' ('+esc(String(a.__saleY))+')':''));
   if(a.__legal) h += fieldRow('Legal', '<span style="font-size:11px">'+esc(String(a.__legal))+'</span>');
   return h;
 }
@@ -7063,6 +7077,24 @@ async function runLookup(lat,lng,searchCtx){
       const _tv=pick(_ra,'TV_SD','TV_NSD','TAXABLE_VAL'); if(_num(_tv)) _la.__taxableVal=_tv;
       const _ay=pick(_ra,'ASMNT_YR'); if(_ay!=null&&String(_ay).trim()!=='') _la.__asmtYr=_ay;
       const _lg=pick(_ra,'S_LEGAL','LEGAL','LEGAL_1'); if(_lg!=null&&String(_lg).trim()!=='') _la.__legal=_lg;
+    }
+    // Glades' own roll fields live ON the parcel layer (land_cm_va, bld_val, xf_val, tax_val, lgl1..22).
+    // Surface them directly so value/legal render even if the statewide roll fallback missed this point.
+    // Only fills gaps — never overwrites a value already detected/spliced above. Guarded to Glades.
+    if(norm(countyName)==='GLADES'){
+      const _la=liveRes.features[0].attributes;
+      const _n=v=>v!=null&&String(v).trim()!==''&&Number(String(v).replace(/[^0-9.]/g,''))>0;
+      // market (just) value: Glades has no single JV field — sum land + building + extra-feature value.
+      if(!det.jv){ const _lc=Number(_la.land_cm_va)||0,_bv=Number(_la.bld_val)||0,_xf=Number(_la.xf_val)||0,_mk=_lc+_bv+_xf;
+        if(_mk>0){ _la.__gladesMkt=_mk; } }
+      if(!det.land && _n(_la.land_cm_va)){ _la.LND_VAL=_la.land_cm_va; det.land='LND_VAL'; }
+      if(_la.__taxableVal==null && _n(_la.tax_val)) _la.__taxableVal=_la.tax_val;
+      if(_la.__asmtYr==null && _n(_la.tax_yr)) _la.__asmtYr=_la.tax_yr;
+      if(_la.__legal==null){ const _lj=[]; for(let _i=1;_i<=22;_i++){ const _v=_la['lgl'+_i]; if(_v!=null&&String(_v).trim()!=='') _lj.push(String(_v).trim()); }
+        if(_lj.length) _la.__legal=_lj.join(' '); }
+      // most recent sale from the 3 stacked sale rows (prc1/dos1 newest)
+      if(!det.saleP){ for(const _s of ['1','2','3']){ const _p=_la['prc'+_s],_d=_la['dos'+_s];
+        if(_n(_p)){ _la.__saleP=_p; if(_d!=null&&String(_d).trim()!=='') _la.__saleY=String(_d).trim(); break; } } }
     }
     if(det.yr){ const _y=pick(liveRes.features[0].attributes,det.yr); if(_y) parcelYearBuilt=_y; }
     const le=liveMeta&&liveMeta.lastEdit;
