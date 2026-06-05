@@ -852,6 +852,7 @@
       <button data-bm="aerial" title="Aerial imagery with no place labels — unobstructed photo view">Aerial (clean)</button>
       <button data-bm="sarco" title="Local high-res county aerials — auto-switches to whichever county you're viewing (Sarasota, Lee, Charlotte, Collier, Manatee). Falls back to Esri imagery elsewhere.">📷 Local HD</button>
       <button id="localAerialRefresh" class="zl-refresh-row" title="Reload the local aerial for the county you're currently viewing (use after panning across a county line)">⟳ Refresh aerial to this view</button>
+      <button data-bm="naip" title="USGS NAIP — free national aerial (~0.6 m), independent second source for cross-checking. Lower-res than Local HD but covers everywhere and is a different flight/date.">🛩 NAIP (USGS)</button>
       <button data-bm="street">Street</button>
       <button data-bm="gray" title="Minimal light-gray basemap — makes parcel / flood / city overlays read clearly">Gray</button>
       <button data-bm="topo" title="USGS topographic / terrain basemap — elevation &amp; contour context for low-ground / pad siting">⛰ Topo</button>
@@ -2031,6 +2032,27 @@ const localAerial = new LocalAerial("", {
 const localEsriBase = L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
   {maxZoom:23,maxNativeZoom:19,updateWhenIdle:L.Browser.mobile,updateWhenZooming:false,keepBuffer:2});
 const sarcoGroup = L.layerGroup([localEsriBase, localAerial, labels]);   // the "Local HD" basemap
+
+// ---- USGS NAIP (free national aerial, independent second source) ----
+// USDA/USGS National Agriculture Imagery Program ortho, served by The National Map. ~0.6 m, natural
+// color, refreshed every 1–2 years (current vintage ~2025), public + CORS-open, already Web Mercator.
+// Lower-res than the 3-inch county flights but covers EVERYWHERE and is a genuinely different photo
+// (different flight/date), so it's useful as a cross-check. Dynamic ImageServer → per-tile exportImage.
+const NAIP_URL = "https://imagery.nationalmap.gov/arcgis/rest/services/USGSNAIPImagery/ImageServer";
+const NaipLayer = L.TileLayer.extend({
+  getTileUrl: function(coords){
+    const n = Math.pow(2, coords.z), t = 2*R_MERC/n;
+    const xmin=-R_MERC+coords.x*t, xmax=-R_MERC+(coords.x+1)*t;
+    const ymax= R_MERC-coords.y*t, ymin= R_MERC-(coords.y+1)*t;
+    return NAIP_URL + "/exportImage?f=image&format=jpgpng&transparent=false" +
+           "&bbox=" + [xmin,ymin,xmax,ymax].join(",") + "&bboxSR=3857&imageSR=3857" +
+           "&size=" + LOCAL_TILE_PX + "," + LOCAL_TILE_PX;
+  }
+});
+const naip = new NaipLayer("", { maxZoom:23, maxNativeZoom:20, minZoom:5,
+  attribution:"NAIP &copy; USGS/USDA The National Map", updateWhenIdle:L.Browser.mobile,
+  updateWhenZooming:false, keepBuffer:2, crossOrigin:true });
+const naipGroup = L.layerGroup([naip, labels]);
 // Switch the local layer to the county under the current map center; returns the active key (or null).
 let _localActiveKey = "__init__";
 function _applyLocalKey(key){
@@ -2072,10 +2094,10 @@ function updateLocalAerial(force){
 const btnBasemap=document.getElementById('btnBasemap');
 const basemapMenu=document.getElementById('basemapMenu');
 const basemapLbl=document.getElementById('basemapLbl');
-const BM_LABEL={sat:'Satellite',street:'Street',topo:'⛰ Topo',aerial:'Aerial',gray:'Gray',sarco:'Local HD'};
+const BM_LABEL={sat:'Satellite',street:'Street',topo:'⛰ Topo',aerial:'Aerial',gray:'Gray',sarco:'Local HD',naip:'NAIP (USGS)'};
 // The basemaps are mutually exclusive; overlays (city limits / flood / parcels / radar) sit on top.
 // All basemaps live in the low tilePane, so they always render beneath the overlays regardless of order.
-const BM_LAYER={sat:satGroup,street:street,topo:topo,aerial:aerialClean,gray:gray,sarco:sarcoGroup};
+const BM_LAYER={sat:satGroup,street:street,topo:topo,aerial:aerialClean,gray:gray,sarco:sarcoGroup,naip:naipGroup};
 let _curBasemap='sat';
 function setBasemap(which){
   Object.values(BM_LAYER).forEach(l=>{ if(map.hasLayer(l)) map.removeLayer(l); });
