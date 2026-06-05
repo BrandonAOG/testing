@@ -2231,7 +2231,9 @@ function zoneCategory(code){
   // mobile / manufactured home
   if(/^(MH|RMH|TT|RV|MHP|MOB)/.test(c)) return 'mobile';
   // pure agricultural (no residential intent)
-  if(/^(AG|A1|A2|A3|A$)/.test(c) || c==='A') return 'agricultural';
+  // Collier "E" = Estates (rural/agricultural-residential); bare "E" otherwise fell through to "other".
+  // Exact-match E/EST/ESTATES only, so Sanibel's E1/E2 ecological zones still land in "estate" below.
+  if(/^(AG|A1|A2|A3|A$)/.test(c) || c==='A' || c==='E' || c==='EST' || c==='ESTATES') return 'agricultural';
   // estate / rural residential / large-lot ag-residential
   if(/^(RE|RR|RA|AE|EA|RU|E1|E2|ARSF1|RSF1$|RSF2$)/.test(c)) return 'estate';
   // multifamily (RMF, RM, RT townhouse, MF)
