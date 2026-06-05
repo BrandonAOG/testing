@@ -1450,7 +1450,8 @@ const ZONING_COUNTY = {
   CHARLOTTE:{code:"https://library.municode.com/fl/charlotte_county/codes/code_of_ordinances", permit:"https://www.charlottecountyfl.gov/services/buildingconstruction/"},
   SARASOTA:{code:"https://library.municode.com/fl/sarasota_county/codes/code_of_ordinances", permit:"https://www.scgov.net/government/planning-and-development-services"},
   MANATEE:{code:"https://library.municode.com/fl/manatee_county/codes/code_of_ordinances", permit:"https://www.mymanatee.org/departments/building___development_services"},
-  GLADES:{code:"https://library.municode.com/fl/glades_county/codes/code_of_ordinances", permit:"https://gladescounty.portal.iworq.net/portalhome/gladescounty"}
+  GLADES:{code:"https://library.municode.com/fl/glades_county/codes/code_of_ordinances", permit:"https://gladescounty.portal.iworq.net/portalhome/gladescounty"},
+  HENDRY:{code:"https://library.municode.com/fl/hendry_county/codes/land_development_code", permit:"https://hendryfla.net/planning-zoning/"}
 };
 const ZONING_CITY = {
   MARCOISLAND:{code:"https://library.municode.com/fl/marco_island/codes/code_of_ordinances", zoningCh:"https://library.municode.com/fl/marco_island/codes/code_of_ordinances?nodeId=PTIICOOR_CH30LADECO", permit:"https://www.cityofmarcoisland.com/o/comi/page/permitting-portal-information"},
@@ -1688,6 +1689,19 @@ const ZONING_LIVE = {
   GLADES: { label:"Glades County Zoning", codeField:"Zoning", descField:"ZonDistNam", urls:[
     "https://gis1.hcpao.org/arcgiscv/rest/services/Glades/GladesCounty_Zoning/MapServer/2/query",
     "https://gis1.hcpao.org/arcgiscv/rest/services/Glades/GladesCounty_Zoning/MapServer/1/query"
+  ]},
+  // ✅ Hendry County zoning — the dedicated "Zoning" feature service on Hendry's own AGOL org
+  // (services7.arcgis.com/8l7Qq5t0CPLAJwJK), the polygon layer behind the county's Future Land Use &
+  // Zoning app. Token-free, CORS-open. The zoning layer is id 1 (NOT 0 — layer 0 404s). Field
+  // "Current_Zo" = the live district code (A-1, A-2, RR, RR-5, RG-1..RG-4, C-1/C-2/C-3, I-1/I-2, PUD,
+  // AOPD, DSAP, etc.); codeField+descField both pinned to it so detection can't drift to the
+  // Old_Zoning/New_Zoning/Ordinance history columns. SR 2236 (FL State Plane ft); arcQuery sends 4326
+  // and the server reprojects. NOTE: parcels inside LaBelle/Clewiston city limits return Current_Zo =
+  // "LABELLE" or "CLEWISTON" (a placeholder, not a real district) — those cities run their own zoning;
+  // handled gracefully (shows the city, points to Municode/permit). Source: Hendry Zoning service
+  // item 9ec63c115d3a40509559ebc5e2cb8991.
+  HENDRY: { label:"Hendry County Zoning", codeField:"Current_Zo", descField:"Current_Zo", urls:[
+    "https://services7.arcgis.com/8l7Qq5t0CPLAJwJK/arcgis/rest/services/Zoning/FeatureServer/1/query"
   ]}
 };
 
