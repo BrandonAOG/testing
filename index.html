@@ -1762,6 +1762,18 @@ const ZONING_LIVE_CITY = {
   // server reprojects. Moore Haven is the only city in Glades, so this is its sole zoning source.
   MOOREHAVEN: { label:"City of Moore Haven Zoning", codeField:"Z010_ZONG", urls:[
     "https://gis1.hcpao.org/arcgiscv/rest/services/Glades/GladesCounty_Zoning/MapServer/1/query"
+  ]},
+  // ✅ City of North Port zoning — North Port runs its OWN GIS server (npgis.northportfl.gov/cnpserver,
+  // the feed behind the CNP Public GIS Hub). North Port is incorporated and is its own zoning authority,
+  // so its districts come from the city layer — NOT the Sarasota County UDC layer (which would otherwise
+  // be the fallback below). Zoning is layer 11 of the Accela_BaseLayers MapServer. Field ZONE_ABBR = the
+  // district code (R-1/R-2/R-3 residential, C Commercial, COR/CT Corridor, I-1/I-2 industrial, MH, AG,
+  // EC, GU, V, NZD, and the AC-1..AC-10 Activity Center series); ZONE_DES = the full district name
+  // ("Residential, Low" etc.). codeField/descField are pinned so detection can't drift to the
+  // MunicodeLink / ZONE / editor-tracking columns. Service is SR 2882 (FL State Plane ft); arcQuery
+  // sends the point as 4326 and the server reprojects. Sarasota County's UDC layer is the fallback.
+  NORTHPORT: { label:"City of North Port Zoning", codeField:"ZONE_ABBR", descField:"ZONE_DES", urls:[
+    "https://npgis.northportfl.gov/cnpserver/rest/services/Accela_Services/Accela_BaseLayers/MapServer/11/query"
   ]}
 };
 
