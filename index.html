@@ -1705,11 +1705,13 @@ const ZONING_LIVE_CITY = {
     "https://gismapserver.leegov.com/gisserver910/rest/services/Layers/DCD_Zoning/MapServer/0/query"
   ]},
   // City of Moore Haven zoning — layer 1 "MH_Zoning" of the shared Glades service (gis1.hcpao.org).
-  // Field Z010_ZONG = the CITY's district code (R1, R2, R3, RMH-MH, C1, C2, I, P, Con, M-COM,
-  // M-HDR, M-HMS, M-MDR, M-REC). mooreHavenSetbacks() maps these to the LDC Ch. 4 table. Z020_FLUM
-  // is the future-land-use field, used as the description. SR 2881; arcQuery sends 4326 & the server
-  // reprojects. Moore Haven is the only city in Glades, so this is its sole zoning source.
-  MOOREHAVEN: { label:"City of Moore Haven Zoning", codeField:"Z010_ZONG", descField:"Z020_FLUM", urls:[
+  // Field Z010_ZONG = the CITY's district code (verified live: e.g. "M-MDR"). Codes: R1, R2, R3,
+  // RMH-MH, C1, C2, I, P, Con, M-COM, M-HDR, M-HMS, M-MDR, M-REC — mooreHavenSetbacks() maps these
+  // to the LDC Ch. 4 table, which also supplies the full district NAME. We deliberately do NOT pin a
+  // descField: the only other string column, Z020_FLUM, is a future-land-use code ("MA-Med"), not a
+  // district name, so showing it as "District name" would mislead. SR 2881; arcQuery sends 4326 & the
+  // server reprojects. Moore Haven is the only city in Glades, so this is its sole zoning source.
+  MOOREHAVEN: { label:"City of Moore Haven Zoning", codeField:"Z010_ZONG", urls:[
     "https://gis1.hcpao.org/arcgiscv/rest/services/Glades/GladesCounty_Zoning/MapServer/1/query"
   ]}
 };
