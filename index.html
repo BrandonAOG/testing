@@ -1763,18 +1763,18 @@ const ZONING_LIVE_CITY = {
   MOOREHAVEN: { label:"City of Moore Haven Zoning", codeField:"Z010_ZONG", urls:[
     "https://gis1.hcpao.org/arcgiscv/rest/services/Glades/GladesCounty_Zoning/MapServer/1/query"
   ]},
-  // ✅ City of North Port zoning — Accela_BaseLayers/MapServer/11. VERIFIED field list (direct REST
-  // read): ZONE_ABBR = the district code (R-1, R-2, R-3, MH, C, CT, COR, I-1, I-2, AG, EC, GU, and the
-  // AC-1..AC-10 Activity-Center series); ZONE_DES = the district name ("Residential, Low" etc.). Both
-  // are PINNED so field auto-detection can't drift onto a one-letter map-grid/section column — that
-  // drift is what made an earlier attempt (the public Data/Zoning/MapServer/9 layer, whose district
-  // field name isn't externally verifiable) read "V" for every parcel. We do NOT use Data/Zoning here:
-  // its values match the map but its queryable field couldn't be pinned reliably, so it mis-detected.
-  // The pinned ZONE_ABBR values line up exactly with the ULDC setback tables. If layer 11 doesn't cover
-  // a clicked point, the lookup degrades to the Municode/permit links rather than guessing. SR 2882 (FL
-  // State Plane ft); arcQuery sends the point as 4326 and the server reprojects.
-  NORTHPORT: { label:"City of North Port Zoning", codeField:"ZONE_ABBR", descField:"ZONE_DES", urls:[
-    "https://npgis.northportfl.gov/cnpserver/rest/services/Accela_Services/Accela_BaseLayers/MapServer/11/query"
+  // ✅ City of North Port zoning — Hosted/Current_Zoning/FeatureServer/241. This is the layer the
+  // city's OWN public P&Z Zoning Map app queries on a parcel click (confirmed from the app's live
+  // network traffic: .../Hosted/Current_Zoning/FeatureServer/241/query). It is the authoritative,
+  // current zoning layer — NOT the stale Accela_BaseLayers/MapServer/11 permitting copy used earlier
+  // (that one returned mismatched/"V" values because it's a divergent dataset). The exact district
+  // field name on 241 isn't externally verifiable (the host serves PBF and blocks the JSON directory),
+  // so we let detectZoningFields() resolve it — its ZONE/ZONING/DISTRICT patterns catch the standard
+  // names — and northPortSetbacks() accepts both the bare ULDC codes (R-1, AC-7A, C, COR, ...) and the
+  // "(XX) Name" value format. If 241's field name turns out to be nonstandard, pin codeField/descField
+  // here once known. SR 2882 (FL State Plane ft); arcQuery sends 4326 and the server reprojects.
+  NORTHPORT: { label:"City of North Port Zoning", urls:[
+    "https://npgis.northportfl.gov/cnpserver/rest/services/Hosted/Current_Zoning/FeatureServer/241/query"
   ]}
 };
 
