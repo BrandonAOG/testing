@@ -357,8 +357,8 @@ table.mat-table th, table.mat-table td {
 }
 @media (max-width: 480px) { table.mat-table th, table.mat-table td { padding: 2px 2px; min-height: 18px; } }
 
-table.mat-table th { background: #D35E13; color: #FFFFFF; font-weight: bold; font-size: 9px; }
-@media (max-width: 480px) { table.mat-table th { font-size: 8px; } }
+table.mat-table th { background: #D35E13; color: #FFFFFF; font-weight: bold; font-size: 10px; }
+@media (max-width: 480px) { table.mat-table th { font-size: 10px; } }
 @media screen {
 body.dark-mode table.mat-table th { background: #1E3A5F; color: #00FFC8; }
 body.dark-mode table.mat-table td { border-color: rgba(0,255,200,0.2); background: rgba(15,21,53,0.6); color: #E0F7FF; }
@@ -366,16 +366,16 @@ body.dark-mode table.mat-table td { border-color: rgba(0,255,200,0.2); backgroun
 
 table.mat-table td.row-label {
   text-align: left; font-weight: bold; background: rgba(211,94,19,0.15);
-  font-size: 9px; min-width: 100px; font-family: Arial, sans-serif;
+  font-size: 10px; min-width: 100px; font-family: Arial, sans-serif;
   white-space: normal; word-break: break-word; line-height: 1.3;
 }
-@media (max-width: 480px) { table.mat-table td.row-label { font-size: 8px; min-width: 80px; } }
+@media (max-width: 480px) { table.mat-table td.row-label { font-size: 10px; min-width: 80px; } }
 @media screen {
 body.dark-mode table.mat-table td.row-label { background: rgba(36,52,88,0.6); color: #E0F7FF; }
 }
 
 #fittings-table td.row-label { font-size: 10px; min-width: 130px; }
-#fittings-table tr.repeat-header th { background: #D35E13; color: #fff; font-size: 9px; padding: 3px 2px; text-align: center; border: 1px solid #4B5563; }
+#fittings-table tr.repeat-header th { background: #D35E13; color: #fff; font-size: 10px; padding: 3px 2px; text-align: center; border: 1px solid #4B5563; }
 #fittings-table tr.repeat-header th.row-label { background: #D35E13; }
 body.dark-mode #fittings-table tr.repeat-header th { background: #1E3A5F; color: #00FFC8; border-color: rgba(0,255,200,0.2); }
 #wireway-table  td.row-label { font-size: 10px; min-width: 110px; }
@@ -1721,14 +1721,19 @@ function showRealTablesForCapture() {
     'table.mat-table td { overflow: visible !important; vertical-align: middle !important; }',
     'table.mat-table td input[type="text"] { overflow: visible !important; height: 18px !important; line-height: 18px !important; display: block !important; }',
     '.footer-field input[type="text"] { height: 24px !important; line-height: 24px !important; overflow: visible !important; box-sizing: border-box !important; }',
+    '.footer-field label { font-size: 14px !important; line-height: 1.5 !important; }',
+    '.footer-other-label { font-size: 14px !important; line-height: 1.5 !important; }',
     '.footer-fields { overflow: visible !important; }',
     '.top-fields { grid-template-columns: 1fr 1fr !important; gap: 6px 12px !important; }',
     '.two-col { grid-template-columns: 1fr 1fr !important; gap: 8px 16px !important; }',
-    '.form-page { padding: 24px 24px 60px 24px !important; }',
+    '.form-page { padding: 24px !important; }',
+    '.form-page::before { display: none !important; }',
     '.logo-area { flex-wrap: nowrap !important; }',
     '.section-row { font-size: 13px !important; flex-wrap: wrap !important; }',
     '.needs-completed { overflow: visible !important; height: auto !important; }',
-    '.inline-input { font-size: 13px !important; width: 100px !important; }'
+    '.inline-input { font-size: 13px !important; width: 100px !important; }',
+    '.footer-other-input { font-size: 14px !important; height: 24px !important; line-height: 24px !important; overflow: visible !important; box-sizing: border-box !important; padding: 0 4px 3px !important; }',
+    '.repeat-header { display: none !important; }'
   ].join('\n');
   document.head.appendChild(style);
 }
@@ -1750,7 +1755,7 @@ function forceDesktopLayout() {
   }
   // table text inputs — bump font 14px for capture
   document.querySelectorAll('table.mat-table td input[type="text"]').forEach(el => {
-    setInline(el, { fontSize: '14px', height: 'auto', lineHeight: '1.6', padding: '2px 0', overflow: 'visible', display: 'block', boxSizing: 'border-box' });
+    setInline(el, { fontSize: '14px', height: 'auto', lineHeight: '1.45', padding: '1px 0', overflow: 'visible', display: 'block', boxSizing: 'border-box' });
   });
   document.querySelectorAll('table.mat-table td').forEach(el => {
     setInline(el, { overflow: 'visible', height: 'auto' });
@@ -1758,6 +1763,13 @@ function forceDesktopLayout() {
   // footer field inputs — bump font 14px for capture
   document.querySelectorAll('.footer-field input[type="text"]').forEach(el => {
     setInline(el, { fontSize: '14px', height: 'auto', lineHeight: '1.6', overflow: 'visible', boxSizing: 'border-box' });
+  });
+  // footer field labels (bottom texts) — bump for capture legibility
+  document.querySelectorAll('.footer-field label').forEach(el => {
+    setInline(el, { fontSize: '14px', lineHeight: '1.5' });
+  });
+  document.querySelectorAll('.footer-other-label').forEach(el => {
+    setInline(el, { fontSize: '14px', lineHeight: '1.5' });
   });
   document.querySelectorAll('.footer-field').forEach(el => {
     setInline(el, { alignItems: 'center', overflow: 'visible' });
@@ -1797,27 +1809,57 @@ function forceDesktopLayout() {
   };
 }
 
-// ===== FIT CAPTURE TO 8.5 x 11 (LETTER) =====
-// html2canvas gives us a canvas whose height = the content height, so tall
-// forms come out long & skinny. This re-draws that canvas onto a new canvas
-// locked to letter proportions (8.5:11), scaling the content to fit the width
-// and padding with white so the result is always a proper sheet of paper.
+// ===== FIT CAPTURE TO A SHEET WITH 0.15in MARGINS + DRAW THE ORANGE FRAME =====
+// The page is scaled to sit inside a 0.15in margin on all sides (matching the
+// print margins), so there's clean white space around it — no edge-to-edge
+// content and no oversized side bars. Output is at least letter height; taller
+// pages keep their natural height (margins preserved) so nothing is cropped.
+// The orange frame is painted onto the output canvas at the margin line, because
+// html2canvas does not render the on-page CSS frame reliably (it's hidden during
+// capture instead).
 function fitToLetter(srcCanvas) {
-  const LETTER_RATIO = 11 / 8.5;            // height / width
-  const outW = srcCanvas.width;             // keep the captured horizontal resolution
-  const fitH = Math.round(outW * LETTER_RATIO);
-  // If content is taller than a letter page, scale it down to fit (contain).
-  const scale = Math.min(1, fitH / srcCanvas.height);
-  const drawW = Math.round(srcCanvas.width * scale);
-  const drawH = Math.round(srcCanvas.height * scale);
+  const SHEET_W = 8.5, SHEET_H = 11, MARGIN_IN = 0.15;
+  const outW = srcCanvas.width;                       // image width = full sheet width
+  const pxPerIn = outW / SHEET_W;
+  const margin = Math.round(MARGIN_IN * pxPerIn);     // 0.15in in canvas pixels
+  const innerW = outW - margin * 2;                   // printable width inside margins
+  const letterH = Math.round(outW * SHEET_H / SHEET_W);
+  const innerH = letterH - margin * 2;                // printable height inside margins
+  const scaleX = innerW / srcCanvas.width;
+  const naturalH = srcCanvas.height * scaleX;         // height if aspect is kept
+
+  let drawW = innerW, drawH, outH;
+  if (naturalH <= innerH) {
+    // Fits a sheet naturally — keep aspect ratio, pad to letter height.
+    drawH = Math.round(naturalH);
+    outH = letterH;
+  } else {
+    // Taller than a sheet — compress vertically so it sits on exactly one page.
+    drawH = innerH;
+    outH = letterH;
+  }
+
   const out = document.createElement('canvas');
   out.width = outW;
-  out.height = fitH;
+  out.height = outH;
   const ctx = out.getContext('2d');
   ctx.fillStyle = '#fff';
-  ctx.fillRect(0, 0, outW, fitH);
-  const dx = Math.round((outW - drawW) / 2);  // center horizontally
-  ctx.drawImage(srcCanvas, 0, 0, srcCanvas.width, srcCanvas.height, dx, 0, drawW, drawH);
+  ctx.fillRect(0, 0, outW, outH);
+  ctx.drawImage(srcCanvas, 0, 0, srcCanvas.width, srcCanvas.height, margin, margin, drawW, drawH);
+
+  // Orange frame sitting on the 0.15in margin line, wrapping the whole sheet.
+  const lw = 4, r = 8;
+  const x = margin, y = margin, w = outW - margin * 2, h = outH - margin * 2;
+  ctx.strokeStyle = '#D35E13';
+  ctx.lineWidth = lw;
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y,     x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x,     y + h, r);
+  ctx.arcTo(x,     y + h, x,     y,     r);
+  ctx.arcTo(x,     y,     x + w, y,     r);
+  ctx.closePath();
+  ctx.stroke();
   return out;
 }
 
@@ -1830,7 +1872,37 @@ function measureFullHeight(page) {
     page.scrollHeight,
     page.offsetHeight,
     rect.height
-  )) + 40;
+  )) + 80;
+}
+
+// Size the table rows so the page fills a letter-proportioned sheet evenly.
+// We distribute the difference between the page's current height and a
+// letter-proportioned target across every visible table row as cell padding —
+// growing short pages (roomier, more legible cells) or gently tightening tall
+// ones — instead of leaving white space or shrinking the text. Returns a restore
+// function to undo the inline changes after capture.
+function fitPageToSheet(page) {
+  const targetH = page.offsetWidth * (11 / 8.5);
+  const rows = Array.from(page.querySelectorAll('table.mat-table tr'))
+    .filter(r => r.offsetHeight > 0);
+  if (!rows.length) return function () {};
+  const curH = page.scrollHeight;
+  const perSide = (targetH - curH) / (rows.length * 2);
+  if (Math.abs(perSide) < 0.5) return function () {};
+  const saved = [];
+  rows.forEach(r => {
+    Array.from(r.children).forEach(c => {
+      const cs = getComputedStyle(c);
+      const pt = Math.max(0, parseFloat(cs.paddingTop) + perSide);
+      const pb = Math.max(0, parseFloat(cs.paddingBottom) + perSide);
+      saved.push({ el: c, pt: c.style.paddingTop, pb: c.style.paddingBottom });
+      c.style.setProperty('padding-top', pt + 'px', 'important');
+      c.style.setProperty('padding-bottom', pb + 'px', 'important');
+    });
+  });
+  return function () {
+    saved.forEach(s => { s.el.style.paddingTop = s.pt; s.el.style.paddingBottom = s.pb; });
+  };
 }
 
 // Wait until web fonts are loaded and the swapped-in capture tables have had a
@@ -1866,8 +1938,10 @@ function saveForIPhone() {
     const lbl = document.createElement('div'); lbl.style.cssText = 'color:#ccc;font-size:11px;margin-bottom:4px;'; lbl.textContent = `Page ${idx+1} of ${pages.length}`;
     const fnlbl = document.createElement('div'); fnlbl.style.cssText = 'color:#aaa;font-size:10px;margin-bottom:8px;word-break:break-all;'; fnlbl.textContent = fname;
     const img = document.createElement('img');
+    const restoreFill = fitPageToSheet(page);
     const capH = measureFullHeight(page);
-    html2canvas(page, { scale: 2, useCORS: true, backgroundColor: '#fff', logging: false, width: 1050, windowWidth: 1050, height: capH, windowHeight: capH }).then(canvas => {
+    html2canvas(page, { scale: 2, useCORS: true, backgroundColor: '#fff', logging: false, width: 1050, windowWidth: 1050, windowHeight: capH, scrollX: 0, scrollY: 0 }).then(canvas => {
+      restoreFill();
       canvas = fitToLetter(canvas);
       img.src = canvas.toDataURL('image/jpeg', 0.85);
       img.style.cssText = 'max-width:100%;border:2px solid #555;border-radius:4px;display:block;margin:0 auto;';
@@ -1876,6 +1950,7 @@ function saveForIPhone() {
       completed++;
       if (completed === pages.length) { hideRealTablesAfterCapture(); restoreLayout(); setStatus('Images ready. Long-press each to save to Photos.'); if (wasDark) document.body.classList.add('dark-mode'); }
     }).catch(err => {
+      restoreFill();
       completed++;
       hideRealTablesAfterCapture(); restoreLayout();
       setStatus('⚠ Could not render page ' + (idx + 1) + ' — try again.');
@@ -1897,8 +1972,10 @@ function saveForAndroid() {
   let completed = 0;
   whenReadyToCapture().then(() => {
   pages.forEach((page, idx) => {
+    const restoreFill = fitPageToSheet(page);
     const capH = measureFullHeight(page);
-    html2canvas(page, { scale: 2, useCORS: true, backgroundColor: '#fff', logging: false, width: 1050, windowWidth: 1050, height: capH, windowHeight: capH }).then(canvas => {
+    html2canvas(page, { scale: 2, useCORS: true, backgroundColor: '#fff', logging: false, width: 1050, windowWidth: 1050, windowHeight: capH, scrollX: 0, scrollY: 0 }).then(canvas => {
+      restoreFill();
       canvas = fitToLetter(canvas);
       const link = document.createElement('a');
       link.download = buildFilename('jpg', idx + 1, pages.length);
@@ -1906,6 +1983,7 @@ function saveForAndroid() {
       completed++;
       if (completed === pages.length) { hideRealTablesAfterCapture(); restoreLayout(); setStatus(`${pages.length} image(s) sent to your Downloads folder.`); setTimeout(() => setStatus(''), 4000); if (wasDark) document.body.classList.add('dark-mode'); }
     }).catch(err => {
+      restoreFill();
       completed++;
       hideRealTablesAfterCapture(); restoreLayout();
       setStatus('⚠ Could not render page ' + (idx + 1) + ' — try again.');
