@@ -1894,13 +1894,28 @@ function measureFullHeight(page) {
 // ones — instead of leaving white space or shrinking the text. Returns a restore
 // function to undo the inline changes after capture.
 function fitPageToSheet(page) {
-  const targetH = page.offsetWidth * (11 / 8.5);
+  // Capture renders at a fixed 1050px width (see html2canvas width:1050), so the
+  // sheet target must be based on that width, not page.offsetWidth — otherwise on
+  // mobile the target is computed from the wrong width and the page under-fills,
+  // leaving white space at the bottom.
+  const CAPTURE_W = 1050;
+  const targetH = CAPTURE_W * (11 / 8.5);
   const rows = Array.from(page.querySelectorAll('table.mat-table tr'))
     .filter(r => r.offsetHeight > 0);
   if (!rows.length) return function () {};
+  // Measure the page height at the capture width (1050), not the phone's narrow
+  // on-screen width — a narrower width reflows content taller, which would make us
+  // under-pad and leave white space. Temporarily pin the width, read, then restore.
+  const prevWidth = page.style.width;
+  const prevMaxWidth = page.style.maxWidth;
+  page.style.setProperty('width', CAPTURE_W + 'px', 'important');
+  page.style.setProperty('max-width', CAPTURE_W + 'px', 'important');
+  void page.offsetHeight; // force reflow
   const curH = page.scrollHeight;
+  page.style.width = prevWidth;
+  page.style.maxWidth = prevMaxWidth;
   const perSide = (targetH - curH) / (rows.length * 2);
-  if (Math.abs(perSide) < 0.5) return function () {};
+  if (perSide < 0.5) return function () {};   // only grow short pages; never shrink
   const saved = [];
   rows.forEach(r => {
     Array.from(r.children).forEach(c => {
