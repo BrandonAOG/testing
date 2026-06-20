@@ -817,10 +817,6 @@ body.dark-mode .notice { color: #7DD3FC; }
   #page1 .ts-header { background: #f0f0f0 !important; padding: 3px 6px !important; }
   #page1 .ts-header-left { font-size: 9px !important; color: #D35E13 !important; }
   #page1 .ts-body { padding: 3px 6px !important; }
-  /* Keep "Team Member ___ Double Checked By ___" on one line inside the narrower TS box. */
-  #page1 .tm-dc-row { flex-wrap: nowrap !important; }
-  #page1 .tm-dc-row .inline-input { flex: 1 1 0 !important; width: auto !important; min-width: 0 !important; }
-  #page1 .tm-dc-row label { white-space: nowrap !important; }
   #page1 .ts-toggle { color: #555 !important; }
   #page1 .ts-block { border-color: #bbb !important; margin-bottom: 4px !important; }
   #page1 .add-ts-btn { display: none !important; }
@@ -1826,9 +1822,6 @@ function showRealTablesForCapture() {
     '.logo-text { font-size: 32px !important; }',
     '.logo-text .logo-generators { font-size: 20px !important; letter-spacing: 2px !important; }',
     '.section-row { font-size: 13px !important; flex-wrap: wrap !important; }',
-    '#page1 .tm-dc-row { flex-wrap: nowrap !important; }',
-    '#page1 .tm-dc-row .inline-input { flex: 1 1 0 !important; width: auto !important; min-width: 0 !important; }',
-    '#page1 .tm-dc-row label { white-space: nowrap !important; }',
     // ---- Page 1 capture: all text +3px, leaving YES/NO/radio (bare text + checkboxes) untouched ----
     '#page1 .field-row label { font-size: 15px !important; }',
     '#page1 .field-row input[type="text"], #page1 .field-row input[type="date"] { font-size: 17px !important; }',
@@ -2108,23 +2101,13 @@ function canShareFiles() {
     return navigator.canShare({ files: [probe] });
   } catch (e) { return false; }
 }
-// Is this a touch/mobile device? Desktop share sheets often lack a "Save/Download"
-// option, so we only use the Share Sheet on mobile and download on desktop.
-function isMobileDevice() {
-  var ua = navigator.userAgent || '';
-  if (isIOSDevice()) return true;
-  if (/Android/i.test(ua)) return true;
-  // Generic touch device with a coarse pointer (phones/tablets), not a desktop.
-  var coarse = window.matchMedia && window.matchMedia('(pointer: coarse)').matches;
-  return coarse && (navigator.maxTouchPoints > 0);
-}
 function saveSmart() {
-  if (isMobileDevice() && canShareFiles()) {
+  if (canShareFiles()) {
     captureAndShare();      // native Share Sheet (iOS + modern Android)
   } else if (isIOSDevice()) {
-    captureAndShare();      // older iOS → falls back to overlay internally (downloads blocked)
+    captureAndShare();      // iOS with no file-share support → falls back to overlay internally
   } else {
-    saveForAndroid();       // desktop + older Android → direct download to Downloads
+    saveForAndroid();       // download to Downloads (older Android/desktop)
   }
 }
 
