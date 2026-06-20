@@ -115,6 +115,10 @@ body.dark-mode {
   z-index: 99999;
   width: 100%;
   background: var(--panel); padding: 4px 8px;
+  /* iOS standalone (PWA) safe-area: keep the toolbar below the status bar / notch / island.
+     constant() is the iOS 11.0–11.2 / older-WebKit spelling; env() is the modern one.
+     Larger fallback so the bar still clears the status bar if the inset fails to resolve. */
+  padding-top: constant(safe-area-inset-top, 4px);
   padding-top: max(4px, env(safe-area-inset-top, 4px));
   display: flex; justify-content: center; gap: 4px; flex-wrap: nowrap; align-items: center;
   box-shadow: 0 4px 18px rgba(0,0,0,0.3);
@@ -150,6 +154,17 @@ body.dark-mode {
 
 @media (max-width: 768px) { .action-bar { padding: 4px 6px; gap: 4px; } }
 
+/* Under 395px: put "Team Member" + input on one line, and "Double Checked By" + input on the next line */
+@media screen and (max-width: 394px) {
+  .tm-dc-row { row-gap: 6px !important; }
+  .tm-dc-row > .inline-input { flex: 1 1 0 !important; width: auto !important; min-width: 0 !important; }
+  /* Force a line break BEFORE the Double Checked By label (full-width zero-height spacer),
+     so the label and its input stay together on the new line. */
+  .tm-dc-row > .dc-label { order: 3 !important; }
+  .tm-dc-row > .dc-label + .inline-input { order: 4 !important; }
+  .tm-dc-row::before { content: ""; flex-basis: 100% !important; height: 0 !important; order: 2 !important; }
+}
+
 @media screen {
 /* ===== VOICE ENTRY ===== */
 #btn-voice.listening {
@@ -159,6 +174,11 @@ body.dark-mode {
 @keyframes voicePulse {
   0%,100% { box-shadow: 0 0 0 0 rgba(220,38,38,0.5); }
   50% { box-shadow: 0 0 0 8px rgba(220,38,38,0); }
+}
+#btn-voice.voice-offline {
+  opacity: 0.4 !important;
+  filter: grayscale(1);
+  animation: none !important;
 }
 #voice-status {
   position: fixed; left: 50%; transform: translateX(-50%);
@@ -260,7 +280,12 @@ input[type="date"], input[type="number"], textarea, select {
   transition: all 0.2s; -webkit-appearance: none; appearance: none;
   caret-color: var(--cyan); max-width: 100%;
 }
+/* Keep the date value left-aligned on all platforms (iOS/Safari center it by default) */
+input[type="date"] { text-align: left !important; }
+input[type="date"]::-webkit-datetime-edit { text-align: left !important; }
+input[type="date"]::-webkit-date-and-time-value { text-align: left !important; }
 @media (max-width: 480px) { input[type="text"], input[type="email"], input[type="tel"], input[type="date"], input[type="number"], textarea, select { font-size: 10px; padding: 2px 3px; } }
+@media (max-width: 480px) { .inline-input, .inline-input.xshort, .inline-input.xshort-plus, .inline-input.short, .inline-input.long { font-size: 10px !important; } }
 @media screen {
 body.dark-mode input[type="text"], body.dark-mode input[type="email"], body.dark-mode input[type="tel"],
 body.dark-mode input[type="date"], body.dark-mode input[type="number"], body.dark-mode textarea, body.dark-mode select {
@@ -414,6 +439,15 @@ body.dark-mode #fittings-table tr.repeat-header th { background: #1E3A5F; color:
   padding: 2px 4px;
 }
 body.dark-mode .footer-other-label { color: #E0F7FF; }
+/* Keep the Other field's label + text the same size as the other footer fields on screen */
+.footer-other-label { font-size: 12.5px !important; }
+.footer-other-input { font-size: 12.5px !important; }
+@media (max-width: 480px) {
+  .footer-other-input { font-size: 11.5px !important; }
+  .footer-other-label { font-size: 11.5px !important; }
+  .footer-field input[type="text"] { font-size: 10px !important; }
+  .footer-field label { font-size: 10px !important; }
+}
 body.dark-mode .footer-other-input { border-bottom-color: rgba(0,255,200,0.3) !important; color: #E0F7FF; }
 #wireway-table td input[type="text"],
 #polaris-table td input[type="text"] {
@@ -536,6 +570,16 @@ body.dark-mode .logo-generators { color: #ffffff !important; }
 .field-row label { font-weight: bold; white-space: nowrap; font-size: 12px; color: var(--text); flex-shrink: 0; font-family: Arial, sans-serif; }
 body.dark-mode .field-row label { color: #E0F7FF; }
 .field-row input[type="text"] { flex: 1; min-width: 0; font-size: 14px; padding: 4px 4px; }
+/* On-screen: drop input values onto their underline instead of floating above it. */
+@media screen {
+  #page1 .field-row input[type="text"], #page1 .field-row input[type="date"] {
+    padding-bottom: 0 !important; line-height: 1.1 !important; vertical-align: bottom !important;
+  }
+  #page1 .inline-input {
+    min-height: 0 !important; padding-top: 0 !important; padding-bottom: 1px !important;
+    line-height: 1.1 !important; vertical-align: baseline !important;
+  }
+}
 .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px 16px; width: 100%; }
 @media (max-width: 700px) { .two-col { grid-template-columns: 1fr; gap: 8px; } }
 .section { margin-bottom: 14px; width: 100%; }
@@ -549,13 +593,14 @@ body.dark-mode .section-row label { color: #E0F7FF; }
 body.dark-mode .inline-input { border-bottom-color: #00FFC8; color: #E0F7FF; }
 .inline-input.short { width: 70px; }
 .inline-input.xshort { width: 56px; }
+.inline-input.xshort-plus { width: 85px; }
 .inline-input.long { width: 160px; }
 .textarea-field { width: 100%; border: 1px solid rgba(211,94,19,0.2); resize: vertical; font-family: Arial, sans-serif; font-size: 13px; padding: 8px; min-height: 60px; outline: none; background: var(--panel); color: var(--text); transition: all 0.3s ease; max-width: 100%; border-radius: 3px; }
 body.dark-mode .textarea-field { border-color: rgba(0,255,200,0.15); background: rgba(10,14,39,0.6); color: #E0F7FF; }
 .textarea-field:focus { border-color: var(--cyan); }
 body.dark-mode .textarea-field:focus { border-color: #00FFC8; }
 .needs-completed-row { align-items: flex-start; }
-.needs-completed { flex: 1 1 100%; width: 100%; max-width: 100%; box-sizing: border-box; resize: vertical; border: none; border-bottom: 1px solid var(--text); outline: none; font-family: Arial, sans-serif; font-size: 13px; line-height: 1.6; padding: 2px 4px; background: transparent; color: var(--text); min-height: 44px; overflow: hidden; }
+.needs-completed { flex: 1 1 100%; width: 100%; max-width: 100%; box-sizing: border-box; resize: vertical; border: none; border-bottom: 1px solid var(--text); outline: none; font-family: Arial, sans-serif; font-size: 13px; line-height: 1.2; padding: 2px 4px; background: transparent; color: var(--text); min-height: 44px; overflow: hidden; }
 body.dark-mode .needs-completed { border-bottom-color: #00FFC8; color: #E0F7FF; }
 hr.section-hr { border: none; border-top: 1px solid rgba(211,94,19,0.15); margin: 10px 0; }
 body.dark-mode hr.section-hr { border-top-color: rgba(0,255,200,0.15); }
@@ -566,7 +611,7 @@ body.dark-mode hr.section-hr { border-top-color: rgba(0,255,200,0.15); }
 body.dark-mode .ts-block { border-color: rgba(0,255,200,0.15); background: rgba(26,40,71,0.5); }
 .ts-header { display: flex; align-items: center; justify-content: space-between; background: #f0f0f0; padding: 10px 12px; cursor: pointer; user-select: none; transition: background 0.3s ease; gap: 8px; flex-wrap: wrap; font-family: Arial, sans-serif; }
 body.dark-mode .ts-header { background: rgba(36,52,88,0.7); }
-.ts-header-left { display: flex; align-items: center; gap: 8px; font-weight: bold; font-size: 13px; text-transform: uppercase; color: var(--text); flex-shrink: 0; min-width: 0; font-family: Arial, sans-serif; }
+.ts-header-left { display: flex; align-items: center; gap: 8px; font-weight: bold; font-size: 13px; text-transform: uppercase; color: #D35E13; flex-shrink: 0; min-width: 0; font-family: Arial, sans-serif; }
 body.dark-mode .ts-header-left { color: #00FFC8; }
 .ts-toggle { font-size: 13px; color: var(--text-muted); transition: transform 0.2s; flex-shrink: 0; }
 body.dark-mode .ts-toggle { color: #7DD3FC; }
@@ -761,23 +806,27 @@ body.dark-mode .notice { color: #7DD3FC; }
   #page1 .logo-always, #page1 span.logo-always { color: #111111 !important; }
   #page1 .logo-generators, #page1 span.logo-generators { color: #111111 !important; }
   #page1 .section-title { font-size: 10px !important; }
-  #page1 .section-row { font-size: 9px !important; margin-bottom: 2px !important; }
-  #page1 .field-row label { font-size: 10px !important; }
-  #page1 .field-row input[type="text"] { font-size: 10px !important; }
-  #page1 .inline-input { font-size: 9px !important; border-bottom-color: #1F2937 !important; }
+  #page1 .section-row { font-size: 10px !important; margin-bottom: 2px !important; }
+  #page1 .field-row label { font-size: 10.5px !important; }
+  #page1 .field-row input[type="text"], #page1 .field-row input[type="date"] { font-size: 10.5px !important; padding: 2px 4px 0 !important; line-height: 1.1 !important; vertical-align: bottom !important; }
+  #page1 .inline-input { font-size: 10.5px !important; border-bottom-color: #1F2937 !important; min-height: 0 !important; padding: 0 4px 1px !important; line-height: 1.1 !important; vertical-align: baseline !important; }
   #page1 .top-fields { margin-bottom: 6px !important; gap: 2px 8px !important; grid-template-columns: 1fr 1fr !important; }
   #page1 .two-col { grid-template-columns: 1fr 1fr !important; gap: 6px 12px !important; }
   #page1 .section { margin-bottom: 6px !important; }
   #page1 hr.section-hr { margin: 4px 0 !important; border-top-color: #ccc !important; }
   #page1 .ts-header { background: #f0f0f0 !important; padding: 3px 6px !important; }
-  #page1 .ts-header-left { font-size: 9px !important; color: #1F2937 !important; }
+  #page1 .ts-header-left { font-size: 9px !important; color: #D35E13 !important; }
   #page1 .ts-body { padding: 3px 6px !important; }
   #page1 .ts-toggle { color: #555 !important; }
   #page1 .ts-block { border-color: #bbb !important; margin-bottom: 4px !important; }
   #page1 .add-ts-btn { display: none !important; }
   #page1 .ts-remove-btn { display: none !important; }
-  #page1 .textarea-field { border-color: #aaa !important; min-height: 30px !important; font-size: 9px !important; }
-  #page1 .yn-checkbox-wrap { border-color: #bbb !important; font-size: 8px !important; padding: 1px 3px !important; min-height: 0 !important; min-width: 0 !important; }
+  #page1 .textarea-field { border-color: #aaa !important; min-height: 30px !important; font-size: 10px !important; padding: 1px 8px 6px !important; line-height: 1.25 !important; }
+  #page1 .needs-completed { font-size: 10.5px !important; line-height: 1.2 !important; padding: 0 4px 4px !important; }
+  #page1 .needs-completed-row { row-gap: 0 !important; line-height: 1.1 !important; margin-bottom: 2px !important; }
+  #page1 .needs-completed-row > label { line-height: 1.1 !important; margin: 0 !important; padding: 0 !important; }
+  #page1 textarea::placeholder, #page1 input::placeholder { color: transparent !important; opacity: 0 !important; }
+  #page1 .yn-checkbox-wrap { border-color: #bbb !important; font-size: 9px !important; padding: 1px 3px !important; min-height: 0 !important; min-width: 0 !important; }
   #page1 .yn-checkbox-wrap.yn-yes.checked { background: #059669 !important; color: #fff !important; }
   #page1 .yn-checkbox-wrap.yn-no.checked  { background: #DC2626 !important; color: #fff !important; }
   #page1 .yn-checkbox-wrap.yn-opt.checked { background: #D35E13 !important; color: #fff !important; }
@@ -885,8 +934,8 @@ body.dark-mode .notice { color: #7DD3FC; }
   }
 
   #page2 .footer-other-row { display: flex !important; align-items: flex-end !important; gap: 4px !important; width: 100% !important; margin-top: 3px !important; }
-  #page2 .footer-other-label { font-size: 10px !important; font-weight: bold !important; white-space: nowrap !important; flex-shrink: 0 !important; color: #1F2937 !important; }
-  #page2 .footer-other-input { flex: 1 !important; width: 100% !important; border: none !important; border-bottom: 1px solid #333 !important; background: transparent !important; font-size: 10px !important; color: #1F2937 !important; padding: 0 !important; }
+  #page2 .footer-other-label { font-size: 11.5px !important; font-weight: bold !important; white-space: nowrap !important; flex-shrink: 0 !important; color: #1F2937 !important; }
+  #page2 .footer-other-input { flex: 1 !important; width: 100% !important; border: none !important; border-bottom: 1px solid #333 !important; background: transparent !important; font-size: 11.5px !important; color: #1F2937 !important; padding: 0 !important; }
   #page2 .footer-fields { margin-top: 5px !important; padding-top: 0 !important; border-top: none !important; font-size: 10px !important; }
   #page2 .footer-row { display: flex !important; flex-wrap: wrap !important; gap: 2px 12px !important; margin-bottom: 3px !important; align-items: flex-end !important; padding: 1px 0 !important; }
   #page2 .footer-field { display: inline-flex !important; align-items: flex-end !important; gap: 3px !important; white-space: nowrap !important; }
@@ -940,6 +989,11 @@ body.dark-mode .notice { color: #7DD3FC; }
     table-layout: auto !important;
     width: 100% !important;
     border-collapse: collapse !important;
+  }
+  /* Wire tables (CU/AL/THHN): widen columns so typed lengths are visible; scroll horizontally */
+  #page2 #cu-wire-table, #page2 #al-wire-table, #page2 #thhn-table {
+    width: max-content !important;
+    min-width: 100% !important;
   }
 
   #page2 table.mat-table th {
@@ -999,6 +1053,13 @@ body.dark-mode .notice { color: #7DD3FC; }
     height: 28px !important;
     color: var(--text) !important;
   }
+  #page2 #cu-wire-table td input[type="text"],
+  #page2 #al-wire-table td input[type="text"],
+  #page2 #thhn-table td input[type="text"] { min-width: 56px !important; }
+  /* Data cells get a readable minimum so typed values are visible (wire tables scroll horizontally) */
+  #page2 #cu-wire-table td:not(.row-label),
+  #page2 #al-wire-table td:not(.row-label),
+  #page2 #thhn-table td:not(.row-label) { min-width: 60px !important; }
 
   body.dark-mode #page2 table.mat-table td input[type="text"] {
     color: #E0F7FF !important;
@@ -1174,9 +1235,9 @@ body.dark-mode .ft-label { color: #7DD3FC; }
   }
   /* Scale up all text equally for iPad */
   #page1 .section-row { font-size: 10px !important; }
-  #page1 .field-row label { font-size: 10px !important; }
-  #page1 .field-row input[type="text"] { font-size: 10px !important; }
-  #page1 .textarea-field { font-size: 10px !important; }
+  #page1 .field-row label { font-size: 10.5px !important; }
+  #page1 .field-row input[type="text"], #page1 .field-row input[type="date"] { font-size: 10.5px !important; padding: 2px 4px 0 !important; line-height: 1.1 !important; vertical-align: bottom !important; }
+  #page1 .textarea-field { font-size: 10px !important; padding: 1px 8px 6px !important; line-height: 1.25 !important; }
   #page1 .section-title { font-size: 12px !important; }
   #page1 .yn-checkbox-wrap { font-size: 9px !important; }
   #page1 input[type="checkbox"] { width: 12px !important; height: 12px !important; }
@@ -1195,6 +1256,8 @@ body.dark-mode .ft-label { color: #7DD3FC; }
   #page2 table.mat-table td input[type="text"] { font-size: 8.5px !important; }
   #page2 .footer-field label              { font-size: 8.5px !important; }
   #page2 .footer-field input[type="text"] { font-size: 8.5px !important; }
+  #page2 .footer-other-label              { font-size: 10px !important; }
+  #page2 .footer-other-input              { font-size: 10px !important; }
   #page2 .grid-section-title              { font-size: 8.5px !important; }
 }
 </style>
@@ -1207,8 +1270,7 @@ body.dark-mode .ft-label { color: #7DD3FC; }
   <button class="btn" id="btn-pdf" onclick="openPrintPreview()">📄 PDF</button>
   <button class="btn" onclick="clearForm()">🗑 CLEAR</button>
   <button class="btn" id="btn-voice" onclick="toggleVoiceEntry()">🎤 VOICE</button>
-  <button class="btn" id="btn-iphone" onclick="saveForIPhone()">📱 iPhone</button>
-  <button class="btn" id="btn-android" onclick="saveForAndroid()">🤖 Android</button>
+  <button class="btn" id="btn-capture" onclick="saveSmart()">📸 CAPTURE</button>
 
 
   <button class="theme-toggle-btn" id="theme-toggle-btn" title="Toggle dark mode" aria-label="Toggle dark mode">
@@ -1256,7 +1318,7 @@ body.dark-mode .ft-label { color: #7DD3FC; }
       <div>
         <div class="section">
           <div class="section-title">Generator</div>
-          <div class="section-row"><label><b>Team Member:</b></label><input class="inline-input xshort" type="text"><label><b>Double Checked By:</b></label><input class="inline-input xshort" type="text"></div>
+          <div class="section-row tm-dc-row"><label><b>Team Member:</b></label><input class="inline-input xshort-plus" type="text"><label class="dc-label"><b>Double Checked By:</b></label><input class="inline-input xshort-plus" type="text"></div>
           <div class="section-row"><label>Generator Size:</label><input class="inline-input short" type="text"></div>
           <div class="section-row"><label>Pad or Stand Installed:</label><input type="checkbox"> YES <input type="checkbox"> NO <input type="checkbox"> Existing</div>
           <div class="section-row"><label>Generator Set &amp; Mounted:</label><input type="checkbox"> YES <input type="checkbox"> NO</div>
@@ -1275,7 +1337,7 @@ body.dark-mode .ft-label { color: #7DD3FC; }
       <div>
         <div class="section">
           <div class="section-title">Walk Through</div>
-          <div class="section-row"><label><b>Team Member:</b></label><input class="inline-input xshort" type="text"><label><b>Double Checked By:</b></label><input class="inline-input xshort" type="text"></div>
+          <div class="section-row tm-dc-row"><label><b>Team Member:</b></label><input class="inline-input xshort-plus" type="text"><label class="dc-label"><b>Double Checked By:</b></label><input class="inline-input xshort-plus" type="text"></div>
           <div class="section-row"><label>Service Change:</label><input type="checkbox"> YES <input type="checkbox"> NO</div>
           <div class="section-row"><label>Harness Plugged In Transfer Switch(es):</label><input type="checkbox"> YES <input type="checkbox"> NO</div>
           <div class="section-row"><label>Grounding Updated:</label><input type="checkbox"> YES <input type="checkbox"> NO</div>
@@ -1290,7 +1352,7 @@ body.dark-mode .ft-label { color: #7DD3FC; }
         <hr class="section-hr">
         <div class="section">
           <div class="section-title">Inspection(s)</div>
-          <div class="section-row"><label><b>Team Member:</b></label><input class="inline-input xshort" type="text"><label><b>Double Checked By:</b></label><input class="inline-input xshort" type="text"></div>
+          <div class="section-row tm-dc-row"><label><b>Team Member:</b></label><input class="inline-input xshort-plus" type="text"><label class="dc-label"><b>Double Checked By:</b></label><input class="inline-input xshort-plus" type="text"></div>
           <div class="section-row"><label>Private Provider:</label><input type="checkbox"> YES <input type="checkbox"> NO</div>
           <div class="section-row"><label>County:</label><input type="checkbox"> YES <input type="checkbox"> NO</div>
           <div class="section-row"><label>Service Change:</label><input type="checkbox"> YES <input type="checkbox"> NO</div>
@@ -1309,10 +1371,10 @@ body.dark-mode .ft-label { color: #7DD3FC; }
         <hr class="section-hr">
         <div class="section">
           <div class="section-title">Clean Up</div>
-          <div class="section-row"><label><b>Team Member:</b></label><input class="inline-input xshort" type="text"><label><b>Double Checked By:</b></label><input class="inline-input xshort" type="text"></div>
+          <div class="section-row tm-dc-row"><label><b>Team Member:</b></label><input class="inline-input xshort-plus" type="text"><label class="dc-label"><b>Double Checked By:</b></label><input class="inline-input xshort-plus" type="text"></div>
           <div class="section-row"><b>EVERYTHING PICKED UP AND CLEAN:</b><input type="checkbox"> YES</div>
           <div class="section-row"><label>Ready for H/O Training:</label><input type="checkbox"> YES <input type="checkbox"> NO</div>
-          <div class="section-row"><label>Why Not:</label><input class="inline-input long" type="text"></div>
+          <textarea class="textarea-field" rows="2" placeholder="Why Not:"></textarea>
         </div>
       </div>
     </div>
@@ -1326,7 +1388,7 @@ body.dark-mode .ft-label { color: #7DD3FC; }
     <div id="mobile-p2-accordions"></div>
 
     <div class="grid-section">
-      <table class="mat-table">
+      <table class="mat-table" id="cu-wire-table">
         <thead><tr>
           <th style="width:80px;">CU Wire /<br>Length</th>
           <th>500 CU</th><th>350 CU</th><th>250 CU</th>
@@ -1346,7 +1408,7 @@ body.dark-mode .ft-label { color: #7DD3FC; }
     </div>
 
     <div class="grid-section">
-      <table class="mat-table">
+      <table class="mat-table" id="al-wire-table">
         <thead><tr>
           <th style="width:80px;">AL Wire /<br>Length</th>
           <th>500 AL</th><th>350 AL</th><th>250 AL</th>
@@ -1365,7 +1427,7 @@ body.dark-mode .ft-label { color: #7DD3FC; }
     </div>
 
     <div class="grid-section">
-      <table class="mat-table">
+      <table class="mat-table" id="thhn-table">
         <thead><tr>
           <th style="width:80px;">THHN /<br>Length</th>
           <th>14 AWG</th><th>12 AWG</th><th>10 AWG</th>
@@ -1447,7 +1509,6 @@ body.dark-mode .ft-label { color: #7DD3FC; }
   </div>
 </div>
 
-<p class="notice">📱 iPhone: press &amp; hold images to save  |  🤖 Android: images download to gallery</p>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
@@ -1485,6 +1546,22 @@ function adjustTopPadding() {
   const bar = document.getElementById('action-bar');
   const wrapper = document.querySelector('.page-wrapper');
   const status = document.getElementById('save-status');
+  // iOS standalone (added to Home Screen) with a translucent status bar overlaps the top
+  // of the page. On older iOS (e.g. 14.5) env(safe-area-inset-top) may not resolve, so the
+  // toolbar can hide behind the clock / island. Enforce a minimum top inset in that mode.
+  if (bar) {
+    var isStandalone = (window.navigator.standalone === true) ||
+      (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+    var probe = document.createElement('div');
+    probe.style.cssText = 'position:fixed;top:0;height:env(safe-area-inset-top,0px);';
+    document.body.appendChild(probe);
+    var inset = probe.offsetHeight || 0;
+    document.body.removeChild(probe);
+    if (isStandalone && inset < 20) {
+      // env() did not provide a usable inset; use a sensible default that clears the status bar.
+      bar.style.paddingTop = '44px';
+    }
+  }
   if (bar && wrapper) wrapper.style.paddingTop = bar.offsetHeight + 'px';
   if (bar && status) status.style.top = bar.offsetHeight + 'px';
 }
@@ -1580,7 +1657,7 @@ function buildTSBlock(num) {
   });
   const body = document.createElement("div"); body.className = "ts-body";
   body.innerHTML = `
-    <div class="section-row"><label><b>Team Member:</b></label><input class="inline-input xshort" type="text"><label><b>Double Checked By:</b></label><input class="inline-input xshort" type="text"></div>
+    <div class="section-row tm-dc-row"><label><b>Team Member:</b></label><input class="inline-input xshort-plus" type="text"><label class="dc-label"><b>Double Checked By:</b></label><input class="inline-input xshort-plus" type="text"></div>
     <div class="section-row"><label>Transfer Switch Type:</label><input type="checkbox"> ASE <input type="checkbox"> NSE <input type="checkbox"> Existing</div>
     <div class="section-row"><input type="checkbox"> 16space <input type="checkbox"> 20space <input type="checkbox"> 100A <input type="checkbox"> 200A <input type="checkbox"> 300A <input type="checkbox"> 400A <input type="checkbox"> 600A <label>Quantity:</label><input class="inline-input xshort" type="text"></div>
     <div class="section-row"><label>Transfer Switch Location:</label><input type="checkbox"> INSIDE <input type="checkbox"> OUTSIDE</div>
@@ -1724,7 +1801,8 @@ function showRealTablesForCapture() {
     '#page2 table.mat-table th { font-size: 14px !important; }',
     '#page2 table.mat-table td.row-label { font-size: 14px !important; line-height: 1.3 !important; padding: 2px 3px !important; }',
     '#page2 table.mat-table:not(#fittings-table):not(#wireway-table):not(#polaris-table) td.row-label { width: 88px !important; min-width: 0 !important; }',
-    '#page2 #fittings-table td.row-label { width: 129px !important; min-width: 0 !important; }',
+    '#page2 #fittings-table td.row-label { width: 180px !important; min-width: 0 !important; }',
+    '#page2 #fittings-table th:first-child, #page2 #fittings-table tr.repeat-header th.row-label { width: 180px !important; min-width: 0 !important; }',
     '#page2 #wireway-table td.row-label { width: 103px !important; min-width: 0 !important; }',
     '#page2 #polaris-table td.row-label { width: 103px !important; min-width: 0 !important; }',
     '#page2 .wireway-polaris-row { display: flex !important; gap: 8px !important; align-items: flex-start !important; }',
@@ -1734,18 +1812,33 @@ function showRealTablesForCapture() {
     'table.mat-table td input[type="text"] { overflow: visible !important; height: auto !important; line-height: 1.3 !important; display: block !important; }',
     '.footer-field input[type="text"] { height: 24px !important; line-height: 24px !important; overflow: visible !important; box-sizing: border-box !important; }',
     '.footer-field label { font-size: 15px !important; line-height: 1.5 !important; }',
-    '.footer-other-label { font-size: 15px !important; line-height: 1.5 !important; }',
+    '.footer-other-label { font-size: 16.5px !important; line-height: 1.5 !important; }',
     '.footer-fields { overflow: visible !important; }',
     '.top-fields { grid-template-columns: 1fr 1fr !important; gap: 6px 12px !important; }',
     '.two-col { grid-template-columns: 1fr 1fr !important; gap: 8px 16px !important; }',
     '.form-page { padding: 24px !important; }',
     '.form-page::before { display: none !important; }',
-    '.logo-area { flex-wrap: nowrap !important; }',
+    '.logo-area { flex-wrap: nowrap !important; gap: 24px !important; align-items: center !important; }',
+    '.logo-area img { width: 56px !important; height: 56px !important; object-fit: contain !important; aspect-ratio: 1 / 1 !important; }',
+    '.logo-text { font-size: 32px !important; }',
+    '.logo-text .logo-generators { font-size: 20px !important; letter-spacing: 2px !important; }',
     '.section-row { font-size: 13px !important; flex-wrap: wrap !important; }',
+    // ---- Page 1 capture: all text +3px, leaving YES/NO/radio (bare text + checkboxes) untouched ----
+    '#page1 .field-row label { font-size: 15px !important; }',
+    '#page1 .field-row input[type="text"], #page1 .field-row input[type="date"] { font-size: 17px !important; }',
+    '#page1 .section-title { font-size: 16px !important; }',
+    '#page1 .section-row label { font-size: 16px !important; }',
+    '#page1 .section-row > b { font-size: 16px !important; }',
+    '#page1 .section-row label b { font-size: 16px !important; }',
+    '#page1 .inline-input { font-size: 16px !important; }',
+    '#page1 .textarea-field { font-size: 16px !important; }',
+    '#page1 .needs-completed { font-size: 16px !important; }',
     '.needs-completed { overflow: visible !important; height: auto !important; }',
     '.inline-input { font-size: 13px !important; width: 100px !important; }',
-    '.footer-other-input { font-size: 14px !important; height: 24px !important; line-height: 24px !important; overflow: visible !important; box-sizing: border-box !important; padding: 0 4px 3px !important; }',
-    '.repeat-header { display: none !important; }'
+    '.footer-other-input { font-size: 15.5px !important; height: 24px !important; line-height: 24px !important; overflow: visible !important; box-sizing: border-box !important; padding: 0 4px 3px !important; }',
+    '.repeat-header { display: none !important; }',
+    '#page1 .add-ts-btn { display: none !important; }',
+    '#page1 .ts-remove-btn { display: none !important; }'
   ].join('\n');
   document.head.appendChild(style);
 }
@@ -1781,7 +1874,7 @@ function forceDesktopLayout() {
     setInline(el, { fontSize: '15px', lineHeight: '1.5' });
   });
   document.querySelectorAll('.footer-other-label').forEach(el => {
-    setInline(el, { fontSize: '15px', lineHeight: '1.5' });
+    setInline(el, { fontSize: '16.5px', lineHeight: '1.5' });
   });
   document.querySelectorAll('.footer-field').forEach(el => {
     setInline(el, { alignItems: 'center', overflow: 'visible' });
@@ -1796,16 +1889,37 @@ function forceDesktopLayout() {
     const cs = window.getComputedStyle(ta);
     div.style.cssText = [
       'flex:1 1 100%', 'width:100%', 'max-width:100%', 'box-sizing:border-box',
-      'border-bottom:1px solid ' + cs.borderBottomColor,
-      'font-family:Arial, sans-serif', 'font-size:14px', 'line-height:1.6',
+      'border-bottom:1px solid #1F2937',
+      'font-family:Arial, sans-serif', 'font-size:16px', 'line-height:1.2',
       'padding:2px 4px', 'min-height:44px', 'white-space:pre-wrap',
-      'word-break:break-word', 'overflow-wrap:anywhere', 'color:' + cs.color
+      'word-break:break-word', 'overflow-wrap:anywhere', 'color:#111111'
     ].join(';');
     div.textContent = ta.value;
     ta.style.setProperty('display', 'none', 'important');
     ta.parentNode.insertBefore(div, ta.nextSibling);
     mirrors.push({ ta, div });
   });
+  // Same html2canvas single-line quirk affects the bordered ".textarea-field"
+  // (e.g. "Any Miscues or Delays during the job") — swap it for a wrapping div
+  // mirror that keeps its boxed look during capture.
+  document.querySelectorAll('textarea.textarea-field').forEach(ta => {
+    const div = document.createElement('div');
+    div.className = 'textarea-field-mirror';
+    const cs = window.getComputedStyle(ta);
+    div.style.cssText = [
+      'width:100%', 'max-width:100%', 'box-sizing:border-box',
+      'border:1px solid ' + cs.borderTopColor, 'border-radius:3px',
+      'font-family:Arial, sans-serif', 'font-size:16px', 'line-height:1.6',
+      'padding:8px', 'min-height:' + cs.minHeight, 'white-space:pre-wrap',
+      'word-break:break-word', 'overflow-wrap:anywhere',
+      'background:#ffffff', 'color:#111111'
+    ].join(';');
+    div.textContent = ta.value;
+    ta.style.setProperty('display', 'none', 'important');
+    ta.parentNode.insertBefore(div, ta.nextSibling);
+    mirrors.push({ ta, div });
+  });
+  // (textarea-field mirror end)
   return () => {
     mirrors.forEach(({ ta, div }) => {
       if (div.parentNode) div.parentNode.removeChild(div);
@@ -1940,6 +2054,26 @@ function whenReadyToCapture() {
     // two RAFs ensures the just-injected capture styles have been laid out
     requestAnimationFrame(() => requestAnimationFrame(resolve));
   }));
+}
+
+// ===== SMART CAPTURE =====
+// One button for all devices. iOS Safari blocks programmatic file downloads, so on
+// iOS we show the rendered images in an overlay (long-press to save to Photos).
+// Everywhere else we trigger a direct download to the Downloads folder.
+function isIOSDevice() {
+  var ua = navigator.userAgent || '';
+  var iOS = /iPad|iPhone|iPod/.test(ua);
+  // iPadOS 13+ reports as Mac; detect by touch points on a Mac-like UA.
+  var iPadOS = (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  // Any iOS browser is really Safari/WebKit under the hood.
+  return iOS || iPadOS;
+}
+function saveSmart() {
+  if (isIOSDevice()) {
+    saveForIPhone();   // overlay + long-press to save to Photos
+  } else {
+    saveForAndroid();  // direct download to Downloads
+  }
 }
 
 function saveForIPhone() {
@@ -2114,23 +2248,23 @@ window.addEventListener('beforeprint', () => {
     const s = document.createElement('style');
     s.id = 'multi-ts-print';
     s.textContent = `
-      #page1 .section-row { font-size: 8px !important; margin-bottom: 1px !important; }
-      #page1 .field-row label { font-size: 8px !important; }
-      #page1 .field-row input[type="text"] { font-size: 8px !important; }
-      #page1 .inline-input { font-size: 8px !important; }
+      #page1 .section-row { font-size: 10px !important; margin-bottom: 1px !important; }
+      #page1 .field-row label { font-size: 10.5px !important; }
+      #page1 .field-row input[type="text"], #page1 .field-row input[type="date"] { font-size: 10.5px !important; padding: 2px 4px 0 !important; line-height: 1.1 !important; vertical-align: bottom !important; }
+      #page1 .inline-input { font-size: 10.5px !important; }
       #page1 .section { margin-bottom: 4px !important; }
       #page1 .section-title { font-size: 9px !important; margin-bottom: 2px !important; }
       #page1 .ts-block { margin-bottom: 2px !important; border-color: #bbb !important; }
       #page1 .ts-header { padding: 2px 4px !important; }
-      #page1 .ts-header-left { font-size: 8px !important; }
+      #page1 .ts-header-left { font-size: 8px !important; color: #D35E13 !important; }
       #page1 .ts-body { padding: 2px 4px !important; }
-      #page1 .ts-body .section-row { font-size: 8px !important; margin-bottom: 1px !important; }
-      #page1 .yn-checkbox-wrap { font-size: 7px !important; padding: 0px 2px !important; min-height: 0 !important; min-width: 0 !important; }
+      #page1 .ts-body .section-row { font-size: 10px !important; margin-bottom: 1px !important; }
+      #page1 .yn-checkbox-wrap { font-size: 9px !important; padding: 0px 2px !important; min-height: 0 !important; min-width: 0 !important; }
       #page1 input[type="checkbox"] { width: 8px !important; height: 8px !important; min-width: 8px !important; }
       #page1 .two-col { gap: 4px 8px !important; }
       #page1 hr.section-hr { margin: 2px 0 !important; }
       #page1 .top-fields { margin-bottom: 4px !important; gap: 1px 6px !important; }
-      #page1 .textarea-field { min-height: 20px !important; font-size: 8px !important; }
+      #page1 .textarea-field { min-height: 20px !important; font-size: 10px !important; padding: 1px 8px 5px !important; line-height: 1.2 !important; }
     `;
     document.head.appendChild(s);
   }
@@ -2190,7 +2324,8 @@ function buildMobileAccordions() {
       const rows = Array.from(table.querySelectorAll('tbody tr'));
 
       rows.forEach(tr => {
-        const rowLabel = tr.querySelector('td.row-label')?.textContent.trim() || '';
+        var _rl = tr.querySelector('td.row-label');
+        const rowLabel = (_rl && _rl.textContent ? _rl.textContent.trim() : '');
         const realInputs = Array.from(tr.querySelectorAll('input'));
 
         // Sub-accordion wrapper
@@ -2460,8 +2595,8 @@ if (document.readyState === 'loading') {
     [/\bautomatic transfer switch\b/g, 'transfer switch'],
     [/\ba ?t ?s\b|\ba\.t\.s\b|\bat and s\b|\bat s\b/g, 'transfer switch'],
     // bare "switch" -> "transfer switch", but NOT when "transfer" already precedes it
-    // (avoids "transfer transfer switch"). Also leaves "load shed"/"disconnect" etc. alone.
-    [/\b(?<!transfer )switch\b/g, 'transfer switch'],
+    // (avoids "transfer transfer switch"). Rewritten without lookbehind for older iOS Safari.
+    [/(transfer\s+)?\bswitch\b/g, function(_m, pre){ return pre ? pre + 'switch' : 'transfer switch'; }],
     // "service changed" -> "service change" (tense), and inspection/walkthrough section cues
     [/\bservice changed\b/g, 'service change'],
     [/\binspections?\b|\binspect\b/g, 'inspected'],
@@ -3345,7 +3480,8 @@ if (document.readyState === 'loading') {
       } else {
         target = blocks[blocks.length - 1];
       }
-      const label = (target.querySelector('.ts-header-left')?.textContent || 'Transfer Switch').trim();
+      var _hl = target.querySelector('.ts-header-left');
+      const label = ((_hl && _hl.textContent ? _hl.textContent : 'Transfer Switch')).trim();
       target.remove();
       if (typeof renumberTS === 'function') renumberTS();
       if (typeof saveFormData === 'function') saveFormData();
@@ -3642,6 +3778,11 @@ if (document.readyState === 'loading') {
     clearTimeout(idleTimer); idleTimer = null;
     showStatus(reason || 'Voice off', '', 6000);
   }
+  // Called by the offline watcher: if the mic is on when the connection drops,
+  // shut it down (recognition can't reach Apple/Google servers offline).
+  window.__voiceHandleOffline = function() {
+    if (listening) turnVoiceOff('🎤 Voice stopped — lost internet connection');
+  };
   function armIdleTimer() {
     clearTimeout(idleTimer);
     if (!listening) return;
@@ -3702,6 +3843,11 @@ if (document.readyState === 'loading') {
   window.toggleVoiceEntry = function() {
     const btn = document.getElementById('btn-voice');
     if (!SR) { showStatus('Voice not supported in this browser — try Chrome or Safari', 'err', 5000); return; }
+    // Speech recognition streams audio to Apple/Google servers, so it can't work offline.
+    if (navigator.onLine === false) {
+      showStatus('🎤 Voice needs an internet connection — it won\u2019t work offline', 'err', 5000);
+      return;
+    }
 
     if (listening) {
       restartOnEnd = false;
@@ -3857,6 +4003,32 @@ if (document.readyState === 'loading') {
       }
     }, 400);
   });
+})();
+
+// ===== VOICE OFFLINE WATCHER =====
+// Speech recognition needs the internet, so reflect connection state on the VOICE
+// button: grey it out + relabel when offline, restore when back online.
+(function () {
+  function updateVoiceOnlineState() {
+    var b = document.getElementById('btn-voice');
+    if (!b) return;
+    var offline = (navigator.onLine === false);
+    if (offline) {
+      b.classList.add('voice-offline');
+      b.setAttribute('title', 'Voice needs internet — unavailable offline');
+      b.setAttribute('aria-disabled', 'true');
+      if (typeof window.__voiceHandleOffline === 'function') window.__voiceHandleOffline();
+    } else {
+      b.classList.remove('voice-offline');
+      b.setAttribute('title', 'Voice entry');
+      b.removeAttribute('aria-disabled');
+    }
+  }
+  window.addEventListener('online', updateVoiceOnlineState);
+  window.addEventListener('offline', updateVoiceOnlineState);
+  window.addEventListener('load', updateVoiceOnlineState);
+  // run once now in case load already fired
+  updateVoiceOnlineState();
 })();
 
 // ===== SERVICE WORKER =====
