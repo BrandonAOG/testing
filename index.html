@@ -2082,26 +2082,36 @@ function whenReadyToCapture() {
 }
 
 // ===== SMART CAPTURE =====
-// One button for all devices. iOS Safari blocks programmatic file downloads, so on
-// iOS we show the rendered images in an overlay (long-press to save to Photos).
-// Everywhere else we trigger a direct download to the Downloads folder.
+// One button for all devices. We prefer the native Share Sheet (works on iOS and
+// modern Android Chrome) — it lets the user save to Photos/Gallery, AirDrop, email,
+// message, etc. in one tap. If the browser can't share files, we fall back to a
+// direct download (Android/desktop) or the long-press overlay (older iOS).
 function isIOSDevice() {
   var ua = navigator.userAgent || '';
   var iOS = /iPad|iPhone|iPod/.test(ua);
   // iPadOS 13+ reports as Mac; detect by touch points on a Mac-like UA.
   var iPadOS = (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  // Any iOS browser is really Safari/WebKit under the hood.
   return iOS || iPadOS;
 }
+// Quick capability probe: can this browser share files at all?
+function canShareFiles() {
+  try {
+    if (!navigator.canShare) return false;
+    var probe = new File(['x'], 'probe.jpg', { type: 'image/jpeg' });
+    return navigator.canShare({ files: [probe] });
+  } catch (e) { return false; }
+}
 function saveSmart() {
-  if (isIOSDevice()) {
-    saveForIPhone();   // overlay + long-press to save to Photos
+  if (canShareFiles()) {
+    captureAndShare();      // native Share Sheet (iOS + modern Android)
+  } else if (isIOSDevice()) {
+    captureAndShare();      // iOS with no file-share support → falls back to overlay internally
   } else {
-    saveForAndroid();  // direct download to Downloads
+    saveForAndroid();       // download to Downloads (older Android/desktop)
   }
 }
 
-function saveForIPhone() {
+function captureAndShare() {
   setStatus('Rendering pages, please wait…');
   const pages = document.querySelectorAll('.form-page');
   const wasDark = document.body.classList.contains('dark-mode');
@@ -2145,7 +2155,13 @@ function saveForIPhone() {
 
   renderAll().then(function (results) {
     var files = results.map(function (r) { return r.file; });
-    // Prefer the native Share Sheet (Save Image, AirDrop, Messages, Mail, Files…).
+    function fallback() {
+      // If sharing isn't available/failed: overlay on iOS (downloads are blocked),
+      // direct download everywhere else.
+      if (isIOSDevice()) { showImageOverlay(results, wasDark); }
+      else { downloadResults(results); }
+    }
+    // Prefer the native Share Sheet (Save to Photos/Gallery, AirDrop, Drive, email…).
     // NOTE: share ONLY the files — no title/text. If a title is included, iOS writes
     // that text out as a separate .txt document when "Save to Files" is used.
     if (navigator.canShare && navigator.canShare({ files: files })) {
@@ -2154,20 +2170,33 @@ function saveForIPhone() {
       }).then(function () {
         cleanup(); setStatus('');
       }).catch(function (err) {
-        // User cancelled the sheet, or share failed — fall back to the overlay.
         cleanup();
+        // User dismissed the sheet — do nothing. Any other error → fallback.
         if (err && err.name === 'AbortError') { setStatus(''); }
-        else { showImageOverlay(results, wasDark); }
+        else { fallback(); }
       });
     } else {
-      // Older iOS without file sharing — use the long-press overlay.
       cleanup();
-      showImageOverlay(results, wasDark);
+      fallback();
     }
   }).catch(function () {
     cleanup();
     setStatus('⚠ Could not render pages — try again.');
   });
+}
+
+// Direct-download fallback (Android/desktop without file sharing).
+function downloadResults(results) {
+  results.forEach(function (r) {
+    var link = document.createElement('a');
+    link.download = r.fname;
+    link.href = r.dataURL;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  });
+  setStatus(results.length + ' image(s) saved to your Downloads folder.');
+  setTimeout(function () { setStatus(''); }, 4000);
 }
 
 // Fallback overlay (older iOS): show images, long-press to save to Photos.
