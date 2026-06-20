@@ -2147,10 +2147,11 @@ function saveForIPhone() {
   renderAll().then(function (results) {
     var files = results.map(function (r) { return r.file; });
     // Prefer the native Share Sheet (Save Image, AirDrop, Messages, Mail, Files…).
+    // NOTE: share ONLY the files — no title/text. If a title is included, iOS writes
+    // that text out as a separate .txt document when "Save to Files" is used.
     if (navigator.canShare && navigator.canShare({ files: files })) {
       navigator.share({
-        files: files,
-        title: 'Electrical Installation Checklist'
+        files: files
       }).then(function () {
         cleanup(); setStatus('');
       }).catch(function (err) {
