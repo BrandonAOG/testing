@@ -2083,6 +2083,69 @@ function saveForIPhone() {
   if (wasDark) document.body.classList.remove('dark-mode');
   showRealTablesForCapture();
   const restoreLayout = forceDesktopLayout();
+
+  function cleanup() {
+    hideRealTablesAfterCapture();
+    restoreLayout();
+    if (wasDark) document.body.classList.add('dark-mode');
+  }
+  function dataURLtoFile(dataURL, filename) {
+    var parts = dataURL.split(',');
+    var mime = parts[0].match(/:(.*?);/)[1];
+    var bin = atob(parts[1]);
+    var len = bin.length;
+    var arr = new Uint8Array(len);
+    for (var i = 0; i < len; i++) arr[i] = bin.charCodeAt(i);
+    return new File([arr], filename, { type: mime });
+  }
+
+  // Render every page to a File, then open the native iOS Share Sheet.
+  function renderAll() {
+    return whenReadyToCapture().then(function () {
+      var jobs = Array.prototype.map.call(pages, function (page, idx) {
+        var fname = buildFilename('jpg', idx + 1, pages.length);
+        var restoreFill = fitPageToSheet(page);
+        var capH = measureFullHeight(page);
+        return html2canvas(page, { scale: 2, useCORS: true, backgroundColor: '#fff', logging: false, width: 1050, windowWidth: 1050, windowHeight: capH, scrollX: 0, scrollY: 0 })
+          .then(function (canvas) {
+            restoreFill();
+            canvas = fitToLetter(canvas);
+            return { file: dataURLtoFile(canvas.toDataURL('image/jpeg', 0.85), fname), dataURL: canvas.toDataURL('image/jpeg', 0.85), fname: fname };
+          })
+          .catch(function (err) { restoreFill(); throw err; });
+      });
+      return Promise.all(jobs);
+    });
+  }
+
+  renderAll().then(function (results) {
+    var files = results.map(function (r) { return r.file; });
+    // Prefer the native Share Sheet (Save Image, AirDrop, Messages, Mail, Files…).
+    if (navigator.canShare && navigator.canShare({ files: files })) {
+      navigator.share({
+        files: files,
+        title: 'Electrical Installation Checklist'
+      }).then(function () {
+        cleanup(); setStatus('');
+      }).catch(function (err) {
+        // User cancelled the sheet, or share failed — fall back to the overlay.
+        cleanup();
+        if (err && err.name === 'AbortError') { setStatus(''); }
+        else { showImageOverlay(results, wasDark); }
+      });
+    } else {
+      // Older iOS without file sharing — use the long-press overlay.
+      cleanup();
+      showImageOverlay(results, wasDark);
+    }
+  }).catch(function () {
+    cleanup();
+    setStatus('⚠ Could not render pages — try again.');
+  });
+}
+
+// Fallback overlay (older iOS): show images, long-press to save to Photos.
+function showImageOverlay(results, wasDark) {
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:999999;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;padding:16px;overflow-y:auto;';
   const closeBtn = document.createElement('button');
@@ -2091,35 +2154,18 @@ function saveForIPhone() {
   const container = document.createElement('div');
   container.style.cssText = 'display:flex;flex-direction:column;gap:12px;width:100%;max-width:600px;';
   overlay.appendChild(closeBtn); overlay.appendChild(container); document.body.appendChild(overlay);
-  let completed = 0;
-  whenReadyToCapture().then(() => {
-  pages.forEach((page, idx) => {
+  results.forEach(function (r, idx) {
     const wrapper = document.createElement('div'); wrapper.style.cssText = 'text-align:center;';
-    const fname = buildFilename('jpg', idx + 1, pages.length);
-    const lbl = document.createElement('div'); lbl.style.cssText = 'color:#ccc;font-size:11px;margin-bottom:4px;'; lbl.textContent = `Page ${idx+1} of ${pages.length}`;
-    const fnlbl = document.createElement('div'); fnlbl.style.cssText = 'color:#aaa;font-size:10px;margin-bottom:8px;word-break:break-all;'; fnlbl.textContent = fname;
+    const lbl = document.createElement('div'); lbl.style.cssText = 'color:#ccc;font-size:11px;margin-bottom:4px;'; lbl.textContent = 'Page ' + (idx + 1) + ' of ' + results.length;
+    const fnlbl = document.createElement('div'); fnlbl.style.cssText = 'color:#aaa;font-size:10px;margin-bottom:8px;word-break:break-all;'; fnlbl.textContent = r.fname;
     const img = document.createElement('img');
-    const restoreFill = fitPageToSheet(page);
-    const capH = measureFullHeight(page);
-    html2canvas(page, { scale: 2, useCORS: true, backgroundColor: '#fff', logging: false, width: 1050, windowWidth: 1050, windowHeight: capH, scrollX: 0, scrollY: 0 }).then(canvas => {
-      restoreFill();
-      canvas = fitToLetter(canvas);
-      img.src = canvas.toDataURL('image/jpeg', 0.85);
-      img.style.cssText = 'max-width:100%;border:2px solid #555;border-radius:4px;display:block;margin:0 auto;';
-      img.alt = fname;
-      wrapper.appendChild(lbl); wrapper.appendChild(fnlbl); wrapper.appendChild(img); container.appendChild(wrapper);
-      completed++;
-      if (completed === pages.length) { hideRealTablesAfterCapture(); restoreLayout(); setStatus('Images ready. Long-press each to save to Photos.'); if (wasDark) document.body.classList.add('dark-mode'); }
-    }).catch(err => {
-      restoreFill();
-      completed++;
-      hideRealTablesAfterCapture(); restoreLayout();
-      setStatus('⚠ Could not render page ' + (idx + 1) + ' — try again.');
-      if (wasDark) document.body.classList.add('dark-mode');
-    });
+    img.src = r.dataURL;
+    img.style.cssText = 'max-width:100%;border:2px solid #555;border-radius:4px;display:block;margin:0 auto;';
+    img.alt = r.fname;
+    wrapper.appendChild(lbl); wrapper.appendChild(fnlbl); wrapper.appendChild(img); container.appendChild(wrapper);
   });
-  });
-  closeBtn.onclick = () => { hideRealTablesAfterCapture(); restoreLayout(); setStatus(''); if (wasDark) document.body.classList.add('dark-mode'); document.body.removeChild(overlay); };
+  setStatus('Images ready. Long-press each to save to Photos.');
+  closeBtn.onclick = function () { setStatus(''); document.body.removeChild(overlay); };
 }
 
 // ===== ANDROID =====
