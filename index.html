@@ -1920,6 +1920,32 @@ function forceDesktopLayout() {
     mirrors.push({ ta, div });
   });
   // (textarea-field mirror end)
+  // Native <input type="date"> stores YYYY-MM-DD and html2canvas renders that raw
+  // ISO value (year first). Swap it for a text mirror showing MM/DD/YYYY for capture.
+  document.querySelectorAll('input[type="date"]').forEach(function (di) {
+    var span = document.createElement('span');
+    span.className = 'date-capture-mirror';
+    var cs = window.getComputedStyle(di);
+    var formatted = '';
+    var v = di.value; // YYYY-MM-DD
+    if (v && /^\d{4}-\d{2}-\d{2}$/.test(v)) {
+      var p = v.split('-');
+      formatted = p[1] + '/' + p[2] + '/' + p[0]; // MM/DD/YYYY
+    }
+    span.textContent = formatted;
+    span.style.cssText = [
+      'display:inline-block', 'flex:' + (cs.flex || '1'),
+      'min-width:0', 'width:' + (cs.width || 'auto'),
+      'font-family:Arial, sans-serif', 'font-size:' + cs.fontSize,
+      'line-height:' + cs.lineHeight, 'color:#111111',
+      'border-bottom:1px solid ' + (cs.borderBottomColor || '#1F2937'),
+      'padding:' + cs.padding, 'text-align:left', 'box-sizing:border-box',
+      'white-space:nowrap'
+    ].join(';');
+    di.style.setProperty('display', 'none', 'important');
+    di.parentNode.insertBefore(span, di.nextSibling);
+    mirrors.push({ ta: di, div: span });
+  });
   return () => {
     mirrors.forEach(({ ta, div }) => {
       if (div.parentNode) div.parentNode.removeChild(div);
