@@ -1910,17 +1910,35 @@ function hideRealTablesAfterCapture() {
 // ===== IPHONE =====
 function forceDesktopLayout() {
   const saved = [];
-  // ---- html2canvas 1.4.1 value fix ----
-  // html2canvas reads the `value` ATTRIBUTE off the DOM, not the live `.value`
-  // the user typed. So typed-in fields (especially the page-2 material tables and
-  // footer fields) render BLANK on capture. Mirror each input's live value into
-  // its value attribute now, and record what to restore afterward.
-  const valueSync = [];
-  document.querySelectorAll('input[type="text"], input[type="tel"], input[type="number"], input[inputmode="numeric"]').forEach(el => {
-    const hadAttr = el.hasAttribute('value');
-    const prevAttr = hadAttr ? el.getAttribute('value') : null;
-    el.setAttribute('value', el.value);
-    valueSync.push({ el, hadAttr, prevAttr });
+  // ---- html2canvas 1.4.1 value fix (span-mirror method) ----
+  // html2canvas does not reliably paint the live `.value` of <input> elements —
+  // on mobile Safari especially, typed values render BLANK. The bulletproof fix
+  // (same trick already used for textareas/dates below) is to overlay a static
+  // text span showing the value during capture, hide the real input, then undo.
+  // We only mirror inputs that actually have a value, so empty cells stay clean.
+  const valueMirrors = [];
+  document.querySelectorAll('#page1 input[type="text"], #page2 input[type="text"], .footer-field input[type="text"], .footer-other-input').forEach(el => {
+    const v = (el.value || '').trim();
+    if (!v) return;
+    const cs = window.getComputedStyle(el);
+    const span = document.createElement('span');
+    span.className = 'value-capture-mirror';
+    span.textContent = v;
+    span.style.cssText = [
+      'display:flex', 'align-items:center', 'justify-content:center',
+      'box-sizing:border-box',
+      'width:' + (el.offsetWidth ? el.offsetWidth + 'px' : '100%'),
+      'height:' + (el.offsetHeight ? el.offsetHeight + 'px' : 'auto'),
+      'font-family:Arial, sans-serif',
+      'font-size:' + (parseInt(cs.fontSize, 10) >= 13 ? cs.fontSize : '13px'),
+      'line-height:1.2', 'color:#111111',
+      'text-align:center', 'white-space:nowrap',
+      'overflow:visible', 'padding:0', 'margin:0',
+      'vertical-align:middle'
+    ].join(';');
+    el.style.setProperty('display', 'none', 'important');
+    el.parentNode.insertBefore(span, el.nextSibling);
+    valueMirrors.push({ el, span });
   });
   function setInline(el, styles) {
     const prev = {};
@@ -2019,9 +2037,9 @@ function forceDesktopLayout() {
     mirrors.push({ ta: di, div: span });
   });
   return () => {
-    valueSync.forEach(({ el, hadAttr, prevAttr }) => {
-      if (hadAttr) el.setAttribute('value', prevAttr);
-      else el.removeAttribute('value');
+    valueMirrors.forEach(({ el, span }) => {
+      if (span.parentNode) span.parentNode.removeChild(span);
+      el.style.removeProperty('display');
     });
     mirrors.forEach(({ ta, div }) => {
       if (div.parentNode) div.parentNode.removeChild(div);
