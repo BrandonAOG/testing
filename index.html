@@ -2444,7 +2444,13 @@ function saveFormData() {
     const data = {};
     data._ts = document.querySelectorAll('.ts-block').length;
     // Text inputs and textareas — keyed by index among all saveable fields
-    document.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"], input[type="date"], input[type="number"], textarea').forEach((el, i) => {
+    // NOTE: exclude dynamically-built mobile accordion inputs (.mob-card-input).
+    // They are created/destroyed by screen width + build timing, so including them
+    // makes the position-based f_<i> keys unstable — saved values then restore into
+    // the WRONG inputs (or into accordion inputs), leaving the real page-2 table
+    // cells empty. The accordion syncs into the real inputs on its own, so saving
+    // only the real inputs is correct and keeps indices stable.
+    document.querySelectorAll('input[type="text"]:not(.mob-card-input), input[type="email"], input[type="tel"], input[type="date"], input[type="number"]:not(.mob-card-input), textarea').forEach((el, i) => {
       data['f_' + i] = el.value;
     });
     // Checkboxes
@@ -2474,7 +2480,7 @@ function restoreFormData() {
       _tsGuard++;
     }
     if (typeof renumberTS === 'function') renumberTS();
-    document.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"], input[type="date"], input[type="number"], textarea').forEach((el, i) => {
+    document.querySelectorAll('input[type="text"]:not(.mob-card-input), input[type="email"], input[type="tel"], input[type="date"], input[type="number"]:not(.mob-card-input), textarea').forEach((el, i) => {
       if (data['f_' + i] !== undefined) el.value = data['f_' + i];
     });
     document.querySelectorAll('input[type="checkbox"]').forEach((el, i) => {
@@ -2490,7 +2496,7 @@ function restoreFormData() {
 }
 
 function attachAutosave() {
-  document.querySelectorAll('input[type="text"], input[type="email"], input[type="tel"], input[type="date"], input[type="number"], textarea').forEach(el => {
+  document.querySelectorAll('input[type="text"]:not(.mob-card-input), input[type="email"], input[type="tel"], input[type="date"], input[type="number"]:not(.mob-card-input), textarea').forEach(el => {
     if (el.dataset.autosave) return;
     el.dataset.autosave = '1';
     el.addEventListener('input', saveFormData);
@@ -2663,6 +2669,7 @@ function buildMobileAccordions() {
             inp.value = realInput.value;
             inp.addEventListener('input', () => {
               realInput.value = inp.value;
+              if (typeof saveFormData === 'function') saveFormData();
               const hasRow = Array.from(subBody.querySelectorAll('.mob-card-input')).some(el => el.value.trim() !== '');
               subDot.style.display = hasRow ? 'inline-block' : 'none';
               const hasAny = Array.from(body.querySelectorAll('.mob-card-input')).some(el => el.value.trim() !== '');
@@ -2717,6 +2724,7 @@ function buildMobileAccordions() {
 
         inp.addEventListener('input', () => {
           realInput.value = inp.value;
+          if (typeof saveFormData === 'function') saveFormData();
           const hasAny = Array.from(body.querySelectorAll('.mob-card-input')).some(el => el.value.trim() !== '');
           headerBtn.classList.toggle('has-data', hasAny);
         });
@@ -2757,6 +2765,7 @@ function buildMobileAccordions() {
             inp.value = realInput.value;
             inp.addEventListener('input', () => {
               realInput.value = inp.value;
+              if (typeof saveFormData === 'function') saveFormData();
               const hasAny = Array.from(body.querySelectorAll('.mob-card-input')).some(el => el.value.trim() !== '');
               headerBtn.classList.toggle('has-data', hasAny);
             });
