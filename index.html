@@ -271,11 +271,13 @@ body.dark-mode #save-status { color: #7DD3FC; }
   pointer-events: none; z-index: 0;
 }
 @media (max-width: 768px) { .form-page { padding: 16px; } }
+body.dark-mode .form-page::before { border-color: #00FFC8; }
 @media (max-width: 480px) { .form-page { padding: 12px; } }
 @media screen {
 body.dark-mode .form-page {
   background: linear-gradient(135deg, rgba(15,21,53,0.95) 0%, rgba(10,14,39,0.98) 100%);
   box-shadow: 0 0 1px rgba(0,255,200,0.3), 0 0 20px rgba(0,255,200,0.15);
+  border-color: #00FFC8;
 }
 }
 
@@ -1143,16 +1145,6 @@ body.dark-mode .notice { color: #7DD3FC; }
 @media print and (max-width: 767px) {
 
   @page { size: 8.5in 11in; margin: 0.15in; }
-
-  /* On mobile the centered 7.4in scaled inner overflows the printable width and
-     the border gets clipped — use full width and no scale so it fits the page. */
-  #page2-inner {
-    width: 100% !important;
-    max-width: 100% !important;
-    transform: none !important;
-    transform-origin: top left !important;
-    margin: 0 !important;
-  }
 
   /* Tighten grid sections so everything fits */
   #page2 .grid-section { margin-bottom: 2px !important; }
