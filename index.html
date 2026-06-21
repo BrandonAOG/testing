@@ -2700,7 +2700,10 @@ function setStatus(msg) {
   var restoreTimer = null;
   var restored = false;
 
+  var active = false;
   function forceLightForPrint() {
+    if (active) return;            // already forced light this print cycle
+    active = true;
     wasDark = document.body.classList.contains('dark-mode');
     restored = false;
     if (wasDark) document.body.classList.remove('dark-mode');
@@ -2712,6 +2715,7 @@ function setStatus(msg) {
   function restoreDark() {
     if (restored) return;
     restored = true;
+    active = false;
     clearTimeout(restoreTimer);
     if (wasDark) {
       document.body.classList.add('dark-mode');
@@ -2727,6 +2731,20 @@ function setStatus(msg) {
   window.addEventListener('beforeprint', function() {
     forceLightForPrint();
   });
+
+  // Safari fires beforeprint/afterprint unreliably (especially when a real
+  // printer is detected and a richer preview sheet is shown). matchMedia
+  // 'print' is the more dependable signal in WebKit — use it to force light
+  // when print starts and restore when it ends.
+  if (window.matchMedia) {
+    var mql = window.matchMedia('print');
+    var mqlHandler = function(m) {
+      if (m.matches) forceLightForPrint();   // entering print/preview
+      else restoreDark();                    // leaving print/preview
+    };
+    if (mql.addEventListener) mql.addEventListener('change', mqlHandler);
+    else if (mql.addListener) mql.addListener(mqlHandler);   // older WebKit
+  }
 })();
 
 /* ================================================================
