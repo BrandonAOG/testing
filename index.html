@@ -1144,6 +1144,16 @@ body.dark-mode .notice { color: #7DD3FC; }
 
   @page { size: 8.5in 11in; margin: 0.15in; }
 
+  /* On mobile the centered 7.4in scaled inner overflows the printable width and
+     the border gets clipped — use full width and no scale so it fits the page. */
+  #page2-inner {
+    width: 100% !important;
+    max-width: 100% !important;
+    transform: none !important;
+    transform-origin: top left !important;
+    margin: 0 !important;
+  }
+
   /* Tighten grid sections so everything fits */
   #page2 .grid-section { margin-bottom: 2px !important; }
 
