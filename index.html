@@ -2279,6 +2279,9 @@ window.__captureDebug = function () {
   // ---- 2) LOCALSTORAGE / AUTOSAVE ALIGNMENT ----
   L.push('-- AUTOSAVE (localStorage) --');
   try {
+    var attached = document.querySelectorAll('[data-autosave="1"]').length;
+    L.push('inputs with listener attached: ' + attached + (attached===0?'  <-- AUTOSAVE NOT WIRED':''));
+    L.push('saveFormData is fn: ' + (typeof saveFormData==='function') + '  | attachAutosave is fn: ' + (typeof attachAutosave==='function'));
     var keyName = (typeof SAVE_KEY !== 'undefined') ? SAVE_KEY : null;
     L.push('SAVE_KEY = ' + keyName);
     var raw = keyName ? localStorage.getItem(keyName) : null;
