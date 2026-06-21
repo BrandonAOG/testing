@@ -1816,8 +1816,38 @@ function openPrintPreview() {
     document.body.classList.remove('dark-mode');
     void document.body.offsetHeight;
   }
+
+  // Mobile (iPhone Safari) only: the desktop CSS scales #page2-inner to 7.4in ×
+  // 1.081 which overflows the narrow mobile print width and clips the border.
+  // Apply a full-width / no-scale fix as inline styles ONLY on mobile so it can't
+  // affect desktop print (whose @media rules desktop also matches). Removed after.
+  const isMobilePrint = window.matchMedia && window.matchMedia('screen and (max-width: 767px)').matches;
+  const p2inner = document.getElementById('page2-inner');
+  let _p2Saved = null;
+  if (isMobilePrint && p2inner) {
+    _p2Saved = {
+      width: p2inner.style.width, maxWidth: p2inner.style.maxWidth,
+      transform: p2inner.style.transform, transformOrigin: p2inner.style.transformOrigin,
+      margin: p2inner.style.margin
+    };
+    p2inner.style.setProperty('width', '100%', 'important');
+    p2inner.style.setProperty('max-width', '100%', 'important');
+    p2inner.style.setProperty('transform', 'none', 'important');
+    p2inner.style.setProperty('transform-origin', 'top left', 'important');
+    p2inner.style.setProperty('margin', '0', 'important');
+  }
+
   window.print();
   document.title = origTitle;
+
+  // Remove the mobile-only inline page2-inner fix after printing.
+  if (_p2Saved && p2inner) {
+    ['width','maxWidth','transform','transformOrigin','margin'].forEach(function (k) {
+      const cssK = k.replace(/([A-Z])/g, '-$1').toLowerCase();
+      p2inner.style.removeProperty(cssK);
+      if (_p2Saved[k]) p2inner.style[k] = _p2Saved[k];
+    });
+  }
 }
 
 // ===== CAPTURE HELPER: swap mobile accordion <=> real tables =====
