@@ -885,10 +885,9 @@ body.dark-mode .notice { color: #7DD3FC; }
      doc9 base CSS handles mobile layout without it. */
   #page2-inner {
     display: block !important;
-    width: 7.4in !important;
+    width: 100% !important;
     margin: 0 auto !important;
-    transform-origin: top center !important;
-    transform: scale(1.081) !important;
+    transform: none !important;
     border: 2px solid #D35E13 !important;
     border-radius: 4px !important;
     padding: 8px !important;
@@ -1244,6 +1243,12 @@ body.dark-mode .ft-label { color: #7DD3FC; }
    Forces same compact layout as iPhone print.
    Scoped to iPad viewport range only — never affects desktop or iPhone. */
 @media print and (min-width: 768px) and (max-width: 1366px) {
+  /* Desktop only: scale page 2 to fill the sheet (mobile keeps natural width). */
+  #page2-inner {
+    width: 7.4in !important;
+    transform-origin: top center !important;
+    transform: scale(1.081) !important;
+  }
   input[type="text"], input[type="number"], input[type="date"], input[type="email"], input[type="tel"], textarea, select { border-color: transparent !important; border-bottom-color: #333 !important; }
   #page2 table.mat-table td input[type="text"] { border: none !important; }
   #page2 .footer-field input[type="text"] { border-color: transparent !important; border-bottom: 1px solid #333 !important; }
@@ -1279,6 +1284,12 @@ body.dark-mode .ft-label { color: #7DD3FC; }
    min-width: 1367px sits above the iPad block (max 1366px),
    so this ONLY fires on desktop Mac. Mobile & iPad untouched. */
 @media print and (min-width: 1367px) {
+  /* Desktop only: scale page 2 to fill the sheet (mobile keeps natural width). */
+  #page2-inner {
+    width: 7.4in !important;
+    transform-origin: top center !important;
+    transform: scale(1.081) !important;
+  }
   #page2 table.mat-table th               { font-size: 8.5px !important; }
   #page2 table.mat-table td               { font-size: 8.5px !important; }
   #page2 table.mat-table td.row-label     { font-size: 8.5px !important; }
@@ -1816,41 +1827,8 @@ function openPrintPreview() {
     document.body.classList.remove('dark-mode');
     void document.body.offsetHeight;
   }
-
-  // Mobile (iPhone Safari) only: the desktop CSS scales #page2-inner to 7.4in ×
-  // 1.081 which overflows the narrow mobile print width and clips the border.
-  // Apply a full-width / no-scale fix as inline styles ONLY on mobile so it can't
-  // affect desktop print (whose @media rules desktop also matches). Removed after.
-  const ua = navigator.userAgent || '';
-  const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-  const isNarrow = window.matchMedia && window.matchMedia('screen and (max-width: 767px)').matches;
-  const isMobilePrint = isIOS || isNarrow || (navigator.maxTouchPoints > 1 && /Mobile|Android/.test(ua));
-  const p2inner = document.getElementById('page2-inner');
-  let _p2Saved = null;
-  if (isMobilePrint && p2inner) {
-    _p2Saved = {
-      width: p2inner.style.width, maxWidth: p2inner.style.maxWidth,
-      transform: p2inner.style.transform, transformOrigin: p2inner.style.transformOrigin,
-      margin: p2inner.style.margin
-    };
-    p2inner.style.setProperty('width', '100%', 'important');
-    p2inner.style.setProperty('max-width', '100%', 'important');
-    p2inner.style.setProperty('transform', 'none', 'important');
-    p2inner.style.setProperty('transform-origin', 'top left', 'important');
-    p2inner.style.setProperty('margin', '0', 'important');
-  }
-
   window.print();
   document.title = origTitle;
-
-  // Remove the mobile-only inline page2-inner fix after printing.
-  if (_p2Saved && p2inner) {
-    ['width','maxWidth','transform','transformOrigin','margin'].forEach(function (k) {
-      const cssK = k.replace(/([A-Z])/g, '-$1').toLowerCase();
-      p2inner.style.removeProperty(cssK);
-      if (_p2Saved[k]) p2inner.style[k] = _p2Saved[k];
-    });
-  }
 }
 
 // ===== CAPTURE HELPER: swap mobile accordion <=> real tables =====
