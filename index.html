@@ -2127,11 +2127,15 @@ function fitToLetter(srcCanvas) {
 // the largest of every height signal the browser gives us, plus a safety pad.
 function measureFullHeight(page) {
   const rect = page.getBoundingClientRect();
+  // Small safety pad: enough to avoid clipping the last row's bottom border, but
+  // not so much that it adds a visible white strip under the fitted content. (Was
+  // 80px, which — combined with fitPageToSheet padding to the frame — left a gap
+  // above the bottom border on capture.)
   return Math.ceil(Math.max(
     page.scrollHeight,
     page.offsetHeight,
     rect.height
-  )) + 80;
+  )) + 6;
 }
 
 // Size the table rows so the page fills a letter-proportioned sheet evenly.
@@ -2145,8 +2149,24 @@ function fitPageToSheet(page) {
   // sheet target must be based on that width, not page.offsetWidth — otherwise on
   // mobile the target is computed from the wrong width and the page under-fills,
   // leaving white space at the bottom.
+  //
+  // IMPORTANT: fitToLetter() draws the captured content into the INNER printable
+  // box (sheet minus 0.15in margins on every side) and paints the orange frame on
+  // the margin line. So to fill all the way down to the frame with no gap, we must
+  // pad the content to the INNER height ratio, not the full 11/8.5 sheet ratio.
+  // Using the full-sheet ratio (the old behavior) left the content short of the
+  // frame by roughly the top+bottom margins — the white space you saw.
   const CAPTURE_W = 1050;
-  const targetH = CAPTURE_W * (11 / 8.5);
+  const SHEET_W = 8.5, SHEET_H = 11, MARGIN_IN = 0.15;
+  const pxPerIn = CAPTURE_W / SHEET_W;
+  const margin = Math.round(MARGIN_IN * pxPerIn);
+  const innerW = CAPTURE_W - margin * 2;
+  const letterH = Math.round(CAPTURE_W * SHEET_H / SHEET_W);
+  const innerH = letterH - margin * 2;
+  // fitToLetter scales the 1050-wide capture down to innerW, so a source pixel
+  // maps by scaleX. The source height that fills innerH after that scale is:
+  const scaleX = innerW / CAPTURE_W;
+  const targetH = innerH / scaleX;   // source-space height that exactly fills the frame
   const rows = Array.from(page.querySelectorAll('table.mat-table tr'))
     .filter(r => r.offsetHeight > 0);
   if (!rows.length) return function () {};
