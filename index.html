@@ -1243,7 +1243,9 @@ body.dark-mode .miscues-textarea {
   hr.section-hr { margin: 1pt 0 !important; }
   .section-row .inline-input { width: 7ch !important; font-size: 7pt !important; }
   .section-row .inline-input[style*="25ch"] { width: 17ch !important; }
+  .section-row .inline-input[style*="20ch"] { width: 17ch !important; }
   .section-row .inline-input[style*="15ch"] { width: 17ch !important; }
+  .section-row .inline-input[style*="10ch"] { width: 10ch !important; }
   .inline-input, .full-line-input {
     font-size: 9pt !important; line-height: 1.2 !important;
     min-height: 0 !important; padding: 0 2pt !important; clip-path: none !important;
@@ -1443,24 +1445,24 @@ body.dark-mode .miscues-textarea {
       <div>
         <div class="section">
           <div class="section-title">GAS</div>
-          <div class="section-row"><b>Team Member:</b>&nbsp;<input class="inline-input" style="width:25ch;" type="text"></div>
-          <div class="section-row"><b>Checked By:</b>&nbsp;<input class="inline-input" style="width:25ch;" type="text"></div>
+          <div class="section-row"><b>Team Member:</b>&nbsp;<input class="inline-input" style="width:20ch;" type="text"></div>
+          <div class="section-row"><b>Checked By:</b>&nbsp;<input class="inline-input" style="width:20ch;" type="text"></div>
           <div class="section-row">Natural Gas: <input type="checkbox"> YES <input type="checkbox"> NO</div>
           <div class="section-row">LP Tank Installation: <input type="checkbox"> YES <input type="checkbox"> NO</div>
           <div class="section-row">LP Tank Size: <input class="inline-input" style="width:15ch;" type="text"> <input type="checkbox"> AG <input type="checkbox"> UG</div>
-          <div class="section-row">Tank Serial #: <input class="inline-input" style="width:15ch;" type="text"></div>
+          <div class="section-row">Tank Serial #: <input class="inline-input" style="width:20ch;" type="text"></div>
           <div class="section-row">Existing Gas: <input type="checkbox"> YES <input type="checkbox"> NO</div>
-          <div class="section-row">Surface Mounted Length: <input class="inline-input" style="width:40px;" type="text"></div>
-          <div class="section-row">Underground Length: <input class="inline-input" style="width:40px;" type="text"></div>
-          <div class="section-row">Attic CSST Length: <input class="inline-input" style="width:40px;" type="text"></div>
+          <div class="section-row">Surface Mounted Length: <input class="inline-input" style="width:10ch;" type="text"></div>
+          <div class="section-row">Underground Length: <input class="inline-input" style="width:10ch;" type="text"></div>
+          <div class="section-row">Attic CSST Length: <input class="inline-input" style="width:10ch;" type="text"></div>
           <div class="section-row" style="flex-direction:column;align-items:flex-start;gap:2px;"><b>Needs Completed:</b><textarea class="multiline" rows="5" maxlength="325" placeholder="Enter items to be completed…"></textarea><div class="print-proxy"></div></div>
           <div class="section-row"><input type="text" class="full-line-input" placeholder="Additional notes"></div>
         </div>
         <hr class="section-hr">
         <div class="section">
           <div class="section-title">CLEAN UP</div>
-          <div class="section-row"><b>Team Member:</b>&nbsp;<input class="inline-input" style="width:25ch;" type="text"></div>
-          <div class="section-row"><b>Checked By:</b>&nbsp;<input class="inline-input" style="width:25ch;" type="text"></div>
+          <div class="section-row"><b>Team Member:</b>&nbsp;<input class="inline-input" style="width:20ch;" type="text"></div>
+          <div class="section-row"><b>Checked By:</b>&nbsp;<input class="inline-input" style="width:20ch;" type="text"></div>
           <div class="section-row" style="font-weight:bold;">EVERYTHING CLEAN: <input type="checkbox"> YES</div>
           <div class="section-row">Ready for H/O Training: <input type="checkbox"> YES <input type="checkbox"> NO</div>
           <div class="section-row" style="flex-direction:column;align-items:flex-start;gap:2px;"><b>Why Not:</b><textarea class="multiline" rows="5" maxlength="325" placeholder="Enter reason…"></textarea><div class="print-proxy"></div></div>
@@ -1475,8 +1477,8 @@ body.dark-mode .miscues-textarea {
       <div>
         <div class="section">
           <div class="section-title">WALK THROUGH</div>
-          <div class="section-row"><b>Team Member:</b>&nbsp;<input class="inline-input" style="width:25ch;" type="text"></div>
-          <div class="section-row"><b>Checked By:</b>&nbsp;<input class="inline-input" style="width:25ch;" type="text"></div>
+          <div class="section-row"><b>Team Member:</b>&nbsp;<input class="inline-input" style="width:20ch;" type="text"></div>
+          <div class="section-row"><b>Checked By:</b>&nbsp;<input class="inline-input" style="width:20ch;" type="text"></div>
           <div class="section-row">Gas Affidavit Form: <input type="checkbox"> YES <input type="checkbox"> NO</div>
           <div class="section-row">Leak Check: <input type="checkbox"> YES <input type="checkbox"> NO</div>
           <div class="section-row">Sediment Trap (Liq. Cooled Only): <input type="checkbox"> YES <input type="checkbox"> NO</div>
@@ -1491,8 +1493,8 @@ body.dark-mode .miscues-textarea {
         <hr class="section-hr">
         <div class="section">
           <div class="section-title">INSPECTION(S)</div>
-          <div class="section-row"><b>Team Member:</b>&nbsp;<input class="inline-input" style="width:25ch;" type="text"></div>
-          <div class="section-row"><b>Checked By:</b>&nbsp;<input class="inline-input" style="width:25ch;" type="text"></div>
+          <div class="section-row"><b>Team Member:</b>&nbsp;<input class="inline-input" style="width:20ch;" type="text"></div>
+          <div class="section-row"><b>Checked By:</b>&nbsp;<input class="inline-input" style="width:20ch;" type="text"></div>
           <div class="section-row">Private provider: <input type="checkbox"> YES <input type="checkbox"> NO</div>
           <div class="section-row">FIRE Inspector: <input type="checkbox"> YES <input type="checkbox"> NO</div>
           <div class="section-row">County: <input type="checkbox"> YES <input type="checkbox"> NO</div>
@@ -1902,6 +1904,9 @@ function injectCaptureStyles() {
     .full-line-input { width:100%!important; box-sizing:border-box!important; }
     .field-row input[type="text"], .field-row input[type="date"] { flex:1 1 auto!important; width:auto!important; min-width:0!important; box-sizing:border-box!important; }
     .section-row .inline-input:not(.xshort) { flex:1 1 auto!important; width:auto!important; min-width:40px!important; box-sizing:border-box!important; }
+    .section-row .inline-input[style*="15ch"] { flex:0 0 auto!important; width:15ch!important; min-width:0!important; }
+    .section-row .inline-input[style*="20ch"] { flex:0 0 auto!important; width:20ch!important; min-width:0!important; }
+    .section-row .inline-input[style*="10ch"] { flex:0 0 auto!important; width:10ch!important; min-width:0!important; }
     textarea { font-size:9pt!important; line-height:1.35!important; overflow:visible!important; background:transparent!important; color:#1F2937!important; }
     .action-bar, .notice, #save-status { display:none!important; }
     .page2-tables-split { display:flex!important; flex-direction:row!important; gap:0 6pt!important; width:100%!important; }
@@ -2044,9 +2049,18 @@ function forceDesktopLayout() {
   document.querySelectorAll('.field-row input[type="text"], .field-row input[type="date"]').forEach(el => {
     setInline(el, { flex: '1 1 auto', width: '100%', minWidth: '0', boxSizing: 'border-box' });
   });
-  // inline-inputs that aren't xshort stretch to fill
+  // inline-inputs that aren't xshort stretch to fill — except fixed 15ch ones
   document.querySelectorAll('.section-row .inline-input:not(.xshort)').forEach(el => {
-    setInline(el, { flex: '1 1 auto', width: '100%', minWidth: '40px', boxSizing: 'border-box' });
+    const style = el.getAttribute('style') || '';
+    if (style.includes('15ch')) {
+      setInline(el, { flex: '0 0 auto', width: '15ch', minWidth: '0', boxSizing: 'border-box' });
+    } else if (style.includes('20ch')) {
+      setInline(el, { flex: '0 0 auto', width: '20ch', minWidth: '0', boxSizing: 'border-box' });
+    } else if (style.includes('10ch')) {
+      setInline(el, { flex: '0 0 auto', width: '10ch', minWidth: '0', boxSizing: 'border-box' });
+    } else {
+      setInline(el, { flex: '1 1 auto', width: '100%', minWidth: '40px', boxSizing: 'border-box' });
+    }
   });
   // table number inputs — force height:auto and bump font for capture
   document.querySelectorAll('table.mat-table td input[type="number"]').forEach(el => {
@@ -2408,7 +2422,7 @@ function setStatus(msg) {
     // ── inline inputs — shorten team member fields ──
     document.querySelectorAll('.section-row .inline-input').forEach(el => {
       const style = el.getAttribute('style') || '';
-      const w = style.includes('25ch') ? '17ch' : style.includes('15ch') ? '17ch' : '7ch';
+      const w = style.includes('25ch') ? '17ch' : style.includes('20ch') ? '17ch' : style.includes('15ch') ? '17ch' : style.includes('10ch') ? '10ch' : '7ch';
       save(el, 'width:' + w + '!important;font-size:7pt!important;line-height:1.2!important;min-height:0!important;padding:0 2pt!important;clip-path:none!important;-webkit-appearance:none!important;');
     });
     document.querySelectorAll('.section-row .inline-input').forEach(el =>
