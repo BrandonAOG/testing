@@ -1821,7 +1821,10 @@ function openPrintPreview() {
   // 1.081 which overflows the narrow mobile print width and clips the border.
   // Apply a full-width / no-scale fix as inline styles ONLY on mobile so it can't
   // affect desktop print (whose @media rules desktop also matches). Removed after.
-  const isMobilePrint = window.matchMedia && window.matchMedia('screen and (max-width: 767px)').matches;
+  const ua = navigator.userAgent || '';
+  const isIOS = /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isNarrow = window.matchMedia && window.matchMedia('screen and (max-width: 767px)').matches;
+  const isMobilePrint = isIOS || isNarrow || (navigator.maxTouchPoints > 1 && /Mobile|Android/.test(ua));
   const p2inner = document.getElementById('page2-inner');
   let _p2Saved = null;
   if (isMobilePrint && p2inner) {
