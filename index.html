@@ -644,6 +644,59 @@ body.dark-mode .miscues-textarea {
     print-color-adjust: exact !important;
   }
 
+  /* ── 1b. Neutralize dark-mode's hardcoded (non-variable) colors so
+     print is always light even if the dark-mode class is still on the
+     body when the print/preview renders (some printers fire events that
+     race the JS class toggle). ── */
+  body.dark-mode,
+  body.dark-mode .form-page {
+    background: #FFFFFF !important;
+    background-image: none !important;
+    color: #1F2937 !important;
+  }
+  body.dark-mode input[type="text"],
+  body.dark-mode input[type="date"],
+  body.dark-mode textarea,
+  body.dark-mode textarea.multiline,
+  body.dark-mode .miscues-textarea,
+  body.dark-mode .miscues-editable,
+  body.dark-mode div.multiline.editable,
+  body.dark-mode .inline-input,
+  body.dark-mode .full-line-input,
+  body.dark-mode .reg-field input {
+    background: transparent !important;
+    color: #1F2937 !important;
+    border-color: #999 !important;
+  }
+  body.dark-mode table.mat-table td {
+    background: #FFFFFF !important;
+    color: #1F2937 !important;
+    border-color: #333 !important;
+  }
+  body.dark-mode table.mat-table tbody tr:nth-child(even) td {
+    background: rgba(211,94,19,0.4) !important;
+  }
+  body.dark-mode table.mat-table th,
+  body.dark-mode table.mat-table td.row-label.section-header {
+    background: #D35E13 !important;
+    color: #FFFFFF !important;
+  }
+  body.dark-mode table.mat-table td.row-label {
+    background: #fafafa !important;
+    color: #1F2937 !important;
+  }
+  body.dark-mode table.mat-table tbody tr:nth-child(even) td.row-label {
+    background: rgba(211,94,19,0.4) !important;
+  }
+  body.dark-mode .inline-input,
+  body.dark-mode .full-line-input,
+  body.dark-mode .reg-field input { border-bottom-color: #999 !important; }
+  body.dark-mode .logo-text span,
+  body.dark-mode .section-title { color: #D35E13 !important; }
+  body.dark-mode .yn-checkbox-wrap.yn-opt.checked {
+    background: #D35E13 !important; color: #fff !important;
+  }
+
   /* ── 2. Hide UI chrome ── */
   .action-bar,
   .notice,
@@ -1388,7 +1441,7 @@ body.dark-mode .miscues-textarea {
 <!-- ========== ACTION BAR ========== -->
 <div class="action-bar" id="action-bar">
   <button class="btn" onclick="window.location.href='../'">🏠 HOME</button>
-  <button class="btn" onclick="(function(){ document.title = buildFileName('pdf', null).replace('.pdf',''); const wasDark = document.body.classList.contains('dark-mode'); document.body.classList.remove('dark-mode'); setTimeout(function(){ window.print(); setTimeout(function(){ if(wasDark) document.body.classList.add('dark-mode'); }, 1000); }, 100); })()">📄 PDF</button>
+  <button class="btn" onclick="(function(){ document.title = buildFileName('pdf', null).replace('.pdf',''); setTimeout(function(){ window.print(); }, 100); })()">📄 PDF</button>
   <button class="btn" id="btn-capture" onclick="saveSmart()">📸 CAPTURE</button>
   <button class="btn" onclick="clearForm()">🗑 CLEAR</button>
   <button class="theme-toggle-btn" id="theme-toggle-btn" title="Toggle dark mode" aria-label="Toggle dark mode">
@@ -2664,44 +2717,16 @@ function setStatus(msg) {
       document.body.classList.add('dark-mode');
       wasDark = false;
     }
-    // Clean up Safari-specific listeners
-    document.removeEventListener('visibilitychange', onVisibility);
-    window.removeEventListener('focus', onFocus);
-    window.removeEventListener('pageshow', onPageShow);
   }
 
-  // afterprint — works on Chrome/desktop, unreliable on Safari
+  // afterprint — the reliable signal that printing/preview is done.
   window.addEventListener('afterprint', restoreDark);
 
-  // beforeprint — set up Safari-specific restore triggers
+  // beforeprint — force light. CSS @media print also forces light, so even
+  // if restore races a printer's dialog events, the output stays light.
   window.addEventListener('beforeprint', function() {
     forceLightForPrint();
-    var wentHidden = false;
-
-    // visibilitychange fires when print dialog opens/closes on most iOS
-    function onVisibility() {
-      if (document.hidden) { wentHidden = true; }
-      else if (wentHidden) { restoreDark(); }
-    }
-    // focus fires on iPhone when returning from print dialog
-    function onFocus() { if (wentHidden) restoreDark(); }
-    // pageshow fires on return in some Safari versions
-    function onPageShow() { setTimeout(restoreDark, 200); }
-
-    // Store as named refs so we can remove them in restoreDark
-    window.onVisibility = onVisibility;
-    window.onFocus = onFocus;
-    window.onPageShow = onPageShow;
-
-    document.addEventListener('visibilitychange', onVisibility);
-    window.addEventListener('focus', onFocus);
-    window.addEventListener('pageshow', onPageShow, { once: true });
   });
-
-  // Make refs accessible to restoreDark cleanup
-  function onVisibility() {}
-  function onFocus() {}
-  function onPageShow() {}
 })();
 
 /* ================================================================
