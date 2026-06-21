@@ -2228,6 +2228,53 @@ function saveSmart() {
   }
 }
 
+// ===== DEBUG OVERLAY (temporary — remove after diagnosing mobile capture) =====
+// Shows on-screen what the capture state actually is, since phones have no console.
+// Call AFTER showRealTablesForCapture()+forceDesktopLayout() so it reflects the
+// exact DOM the screenshot will see. Returns a promise that resolves when the
+// user taps "Continue capture", so capture pauses until you've read it.
+window.__captureDebug = function () {
+  function px(n){ return Math.round(n) + 'px'; }
+  var lines = [];
+  var p2 = Array.prototype.slice.call(document.querySelectorAll('#page2 input[type="text"]'));
+  var filled = p2.filter(function(el){ return (el.value||'').trim() !== ''; });
+  lines.push('page2 text inputs: ' + p2.length + ' | filled: ' + filled.length);
+  var mirrors = document.querySelectorAll('.value-capture-mirror');
+  lines.push('value-capture-mirror spans: ' + mirrors.length);
+  filled.slice(0,6).forEach(function(el, i){
+    var cs = getComputedStyle(el);
+    var wrap = el.closest('.value-capture-wrap');
+    var span = wrap ? wrap.querySelector('.value-capture-mirror') : null;
+    lines.push('['+i+'] "'+el.value+'" disp='+cs.display+' col='+cs.color+
+               ' box='+px(el.offsetWidth)+'x'+px(el.offsetHeight)+
+               ' wrap='+(wrap?'Y':'N')+' span='+(span?('Y('+px(span.offsetWidth)+'x'+px(span.offsetHeight)+')'):'N'));
+  });
+  var pageW = (document.querySelector('#page2') || document.body).offsetWidth;
+  lines.push('#page2 width: ' + px(pageW));
+  ['cu-wire-table','al-wire-table','thhn-table','fittings-table','wireway-table','polaris-table'].forEach(function(id){
+    var t = document.getElementById(id);
+    if (t) lines.push('  '+id+': '+px(t.offsetWidth)+(t.offsetWidth>pageW+1?'  <-- WIDER (clips)':''));
+  });
+  lines.push('matchMedia(max-width:767px): ' + window.matchMedia('(max-width: 767px)').matches);
+  lines.push('window.innerWidth: ' + window.innerWidth);
+
+  return new Promise(function(resolve){
+    var box = document.createElement('div');
+    box.id = '__capdbg';
+    box.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;z-index:2147483647;'+
+      'background:#000;color:#0f0;font:11px/1.35 monospace;padding:14px;overflow:auto;'+
+      'white-space:pre-wrap;word-break:break-word;';
+    var btn = document.createElement('button');
+    btn.textContent = '▶ Continue capture';
+    btn.style.cssText = 'position:sticky;top:0;display:block;width:100%;margin-bottom:10px;'+
+      'padding:12px;background:#D35E13;color:#fff;border:none;border-radius:6px;font:bold 14px sans-serif;';
+    var pre = document.createElement('div');
+    pre.textContent = 'CAPTURE DEBUG\n=============\n' + lines.join('\n');
+    box.appendChild(btn); box.appendChild(pre); document.body.appendChild(box);
+    btn.onclick = function(){ if (box.parentNode) box.parentNode.removeChild(box); resolve(); };
+  });
+};
+
 function captureAndShare() {
   setStatus('Rendering pages, please wait…');
   const pages = document.querySelectorAll('.form-page');
@@ -2235,6 +2282,9 @@ function captureAndShare() {
   if (wasDark) document.body.classList.remove('dark-mode');
   showRealTablesForCapture();
   const restoreLayout = forceDesktopLayout();
+  // DEBUG: pause and show state before rendering. Remove this block + __captureDebug to revert.
+  window.__captureDebug().then(__continueCaptureAndShare);
+  function __continueCaptureAndShare() {
 
   function cleanup() {
     hideRealTablesAfterCapture();
@@ -2300,6 +2350,7 @@ function captureAndShare() {
     cleanup();
     setStatus('⚠ Could not render pages — try again.');
   });
+  } // end __continueCaptureAndShare (DEBUG wrapper)
 }
 
 // Direct-download fallback (Android/desktop without file sharing).
@@ -2349,6 +2400,8 @@ function saveForAndroid() {
   showRealTablesForCapture();
   const restoreLayout = forceDesktopLayout();
   let completed = 0;
+  // DEBUG: pause and show state before rendering. Remove this wrapper to revert.
+  window.__captureDebug().then(() => {
   whenReadyToCapture().then(() => {
   pages.forEach((page, idx) => {
     const restoreFill = fitPageToSheet(page);
@@ -2371,6 +2424,7 @@ function saveForAndroid() {
     });
   });
   });
+  }); // end __captureDebug wrapper (DEBUG)
 }
 
 function setStatus(msg) {
