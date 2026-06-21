@@ -1888,6 +1888,7 @@ function injectCaptureStyles() {
   el.id = 'capture-print-styles';
   el.textContent = `
     .form-page { background:#fff!important; color:#1F2937!important; padding:16px!important; box-sizing:border-box!important; }
+    #page2.form-page { padding:6px!important; }
     .two-col { display:grid!important; grid-template-columns:1fr 1fr!important; gap:0 6pt!important; width:100%!important; box-sizing:border-box!important; }
     .two-col > div { min-width:0!important; overflow:visible!important; box-sizing:border-box!important; }
     .top-fields { display:flex!important; flex-wrap:wrap!important; gap:0 10pt!important; margin-bottom:2pt!important; }
@@ -1944,7 +1945,20 @@ function injectCaptureStyles() {
     #page1 textarea.multiline, #page1 .miscues-textarea, #page1 .print-proxy { font-size:12pt!important; line-height:1.4!important; }
     #page1 .section { margin-bottom:4pt!important; }
     #page1 hr.section-hr { margin:5pt 0!important; }
-    #page2 textarea.multiline, #page2 .print-proxy { font-size:11pt!important; line-height:1.4!important; }
+    #page2 textarea.multiline, #page2 .print-proxy { font-size:12.5pt!important; line-height:1.35!important; }
+    /* ── Page 2 image-capture: bigger text, no number clipping ── */
+    #page2 table.mat-table { font-size:12.5pt!important; table-layout:fixed!important; width:100%!important; }
+    #page2 table.mat-table th, #page2 table.mat-table td { font-size:12.5pt!important; padding:3px 3px!important; overflow:visible!important; }
+    #page2 table.mat-table td.row-label.section-header { font-size:12.5pt!important; padding:3px 3px!important; }
+    #page2 table.mat-table td input[type="number"] { font-size:12.5pt!important; width:100%!important; text-align:center!important; overflow:visible!important; padding:0!important; box-sizing:border-box!important; }
+    #page2 table.mat-table col.col-data { width:10%!important; }
+    #page2 .reg-row, #page2 .reg-title, #page2 .reg-field, #page2 .reg-field label { font-size:12.5pt!important; }
+    #page2 .reg-field input { font-size:12.5pt!important; }
+    #page2 .other-title { font-size:12.5pt!important; padding:3px 8px!important; }
+    #page2 .grid-section { margin-bottom:5px!important; }
+    /* Alternating orange tint on page2 label cells too (not just inputs) */
+    #page2 table.mat-table tbody tr:nth-child(even) td.row-label { background:rgba(211,94,19,0.4)!important; }
+    #page2 table.mat-table tbody tr:nth-child(even) td.row-label.section-header { background:#D35E13!important; }
   `;
   document.head.appendChild(el);
   populateCaptureProxies();
@@ -2039,7 +2053,8 @@ function forceDesktopLayout() {
   });
   // form-page
   document.querySelectorAll('.form-page').forEach(el => {
-    setInline(el, { padding: '16px', boxSizing: 'border-box' });
+    const onPage2 = el.id === 'page2';
+    setInline(el, { padding: onPage2 ? '6px' : '16px', boxSizing: 'border-box' });
   });
   // full-line-inputs stretch to 100%
   document.querySelectorAll('.full-line-input').forEach(el => {
@@ -2064,10 +2079,16 @@ function forceDesktopLayout() {
   });
   // table number inputs — force height:auto and bump font for capture
   document.querySelectorAll('table.mat-table td input[type="number"]').forEach(el => {
-    setInline(el, { height: 'auto', lineHeight: '1.6', padding: '3px 0', overflow: 'visible', display: 'block', boxSizing: 'border-box', fontSize: '12.5px' });
+    const onPage2 = !!el.closest('#page2');
+    if (onPage2) {
+      setInline(el, { height: 'auto', lineHeight: '1.2', padding: '0', overflow: 'visible', display: 'block', boxSizing: 'border-box', fontSize: '12.5pt', width: '100%', textAlign: 'center' });
+    } else {
+      setInline(el, { height: 'auto', lineHeight: '1.6', padding: '3px 0', overflow: 'visible', display: 'block', boxSizing: 'border-box', fontSize: '12.5px' });
+    }
   });
   document.querySelectorAll('table.mat-table td').forEach(el => {
-    setInline(el, { overflow: 'visible', height: 'auto', padding: '3px' });
+    const onPage2 = !!el.closest('#page2');
+    setInline(el, { overflow: 'visible', height: 'auto', padding: onPage2 ? '3px 3px' : '3px' });
   });
   return () => saved.forEach(({ el, prev, props }) => {
     props.forEach(k => {
@@ -2094,8 +2115,11 @@ const LETTER_MARGIN_BOTTOM = 2;     // thin bottom so content fills vertically
 
 /* Composite a rendered page canvas onto a fixed Letter-sized canvas,
    inset by the side/top margins. Content is scaled to fit the printable
-   area while preserving aspect ratio and top-aligned. */
-function toLetterCanvas(srcCanvas, scale) {
+   area while preserving aspect ratio and top-aligned.
+   If fillHeight is true and the content is shorter than the printable
+   height, it is stretched vertically to fill the sheet (used for page 2,
+   which is table-heavy so a slight vertical stretch is imperceptible). */
+function toLetterCanvas(srcCanvas, scale, fillHeight) {
   const s = scale || 1;
   const out = document.createElement('canvas');
   out.width  = LETTER_W * s;
@@ -2115,7 +2139,12 @@ function toLetterCanvas(srcCanvas, scale) {
   // down to fit height (no clipping). Top-aligned.
   let drawW = printableW;
   let drawH = srcCanvas.height * (drawW / srcCanvas.width);
-  if (drawH > printableH) {
+  if (fillHeight) {
+    // Always span the full printable width and exactly fill the height
+    // (vertical stretch/compress) — keeps tables edge-to-edge, no side gaps.
+    drawW = printableW;
+    drawH = printableH;
+  } else if (drawH > printableH) {
     drawH = printableH;
     drawW = srcCanvas.width * (drawH / srcCanvas.height);
   }
@@ -2176,7 +2205,7 @@ function saveForIPhone() {
         windowHeight: captureH
       }).then(canvas => {
         page.style.width = oW; page.style.maxWidth = oM; page.style.minWidth = om;
-        const letterCanvas = toLetterCanvas(canvas, 2);
+        const letterCanvas = toLetterCanvas(canvas, 2, idx === 1);
         const wrap = document.createElement('div');
         wrap.style.cssText = 'text-align:center;';
         const lbl = document.createElement('div');
@@ -2252,7 +2281,7 @@ function saveForAndroid() {
         windowHeight: captureH
       }).then(canvas => {
         page.style.width = oW; page.style.maxWidth = oM; page.style.minWidth = om;
-        const letterCanvas = toLetterCanvas(canvas, 2);
+        const letterCanvas = toLetterCanvas(canvas, 2, idx === 1);
         const a = document.createElement('a');
         a.download = pages.length === 1
           ? buildFileName('jpg', null)
