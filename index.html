@@ -2363,17 +2363,23 @@ window.__captureDebug = function () {
       var page2 = document.getElementById('page2');
       if (!page2 || typeof html2canvas !== 'function') { imgWrap.textContent='page2/html2canvas missing'; return; }
       try {
-        html2canvas(page2, { scale: 1, useCORS: true, backgroundColor: '#fff', logging: false, width: 1050, windowWidth: 1050 }).then(function(canvas){
+        // Run through the SAME pipeline as the real capture so the preview is
+        // faithful: fit to letter sheet, render at 1050 width, then fit-to-letter.
+        var restoreFill = (typeof fitPageToSheet==='function') ? fitPageToSheet(page2) : function(){};
+        var capH = (typeof measureFullHeight==='function') ? measureFullHeight(page2) : page2.scrollHeight;
+        html2canvas(page2, { scale: 1, useCORS: true, backgroundColor: '#fff', logging: false, width: 1050, windowWidth: 1050, windowHeight: capH, scrollX: 0, scrollY: 0 }).then(function(canvas){
+          try { restoreFill(); } catch(e){}
+          if (typeof fitToLetter==='function') { try { canvas = fitToLetter(canvas); } catch(e){} }
           imgWrap.innerHTML = '';
           var note = document.createElement('div');
           note.style.cssText = 'color:#0ff;margin:6px 0;';
-          note.textContent = 'Rendered page2 ('+canvas.width+'x'+canvas.height+') — does the fittings "4" show?';
+          note.textContent = 'REAL pipeline render ('+canvas.width+'x'+canvas.height+', letter '+ (canvas.width/canvas.height).toFixed(3) +') — values present?';
           var img = document.createElement('img');
-          img.src = canvas.toDataURL('image/jpeg', 0.85);
+          img.src = canvas.toDataURL('image/jpeg', 0.9);
           img.style.cssText = 'width:100%;border:2px solid #2563EB;display:block;';
           imgWrap.appendChild(note); imgWrap.appendChild(img);
           prev.textContent = '🖼 Re-render';
-        }).catch(function(e){ imgWrap.textContent = 'render error: '+e.message; prev.textContent='🖼 Render pg2'; });
+        }).catch(function(e){ try{restoreFill();}catch(_){} imgWrap.textContent = 'render error: '+e.message; prev.textContent='🖼 Render pg2'; });
       } catch(e){ imgWrap.textContent = 'render threw: '+e.message; prev.textContent='🖼 Render pg2'; }
     };
     bar.appendChild(go); bar.appendChild(copy); bar.appendChild(prev);
