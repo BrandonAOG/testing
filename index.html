@@ -1850,6 +1850,13 @@ function showRealTablesForCapture() {
     '#mobile-p2-accordions { display: none !important; }',
     // ---- Match PDF print: full-width fixed-layout tables on page 2 ----
     '#page2 table.mat-table { width: 100% !important; border-collapse: collapse !important; table-layout: fixed !important; }',
+    // Neutralize the mobile (max-width:767px) wire-table sizing that otherwise
+    // wins on specificity and leaves these tables at width:max-content — which
+    // renders wider than the sheet and gets CLIPPED on the right during capture.
+    '#page2 #cu-wire-table, #page2 #al-wire-table, #page2 #thhn-table { width: 100% !important; min-width: 0 !important; max-width: 100% !important; table-layout: fixed !important; }',
+    '#page2 #cu-wire-table td:not(.row-label), #page2 #al-wire-table td:not(.row-label), #page2 #thhn-table td:not(.row-label) { min-width: 0 !important; }',
+    '#page2 #cu-wire-table td input[type="text"], #page2 #al-wire-table td input[type="text"], #page2 #thhn-table td input[type="text"] { min-width: 0 !important; width: 100% !important; height: auto !important; font-size: 13px !important; }',
+    '#page2 table.mat-table td input[type="text"] { height: auto !important; min-width: 0 !important; }',
     '#page2 table.mat-table th, #page2 table.mat-table td { font-size: 13px !important; line-height: 1.3 !important; padding: 2px 2px !important; white-space: normal !important; word-break: break-word !important; }',
     '#page2 table.mat-table th { font-size: 14px !important; }',
     '#page2 table.mat-table td.row-label { font-size: 14px !important; line-height: 1.3 !important; padding: 2px 3px !important; }',
