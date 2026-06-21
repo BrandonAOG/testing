@@ -1929,34 +1929,29 @@ function forceDesktopLayout() {
     if (!v) return;
     const cs = window.getComputedStyle(el);
     const fs = parseInt(cs.fontSize, 10) >= 13 ? cs.fontSize : '13px';
-    // Wrap the input so we can overlay an absolutely-positioned text span that
-    // fills the input's box exactly — robust even inside flex parents (ft-cell)
-    // and table cells where a flow span would collapse to zero width.
-    const wrap = document.createElement('span');
-    wrap.className = 'value-capture-wrap';
-    wrap.style.cssText = 'position:relative;display:inline-block;width:100%;';
+    const h = el.offsetHeight || 16;
+    // In-flow span mirror. html2canvas 1.4.1 paints plain inline-block text spans
+    // reliably, but mishandles absolutely-positioned/flex overlays — so we REPLACE
+    // the input in the layout (hide it, insert a span in its place) rather than
+    // overlay. The span copies the input's box metrics so the cell keeps its size.
     const span = document.createElement('span');
     span.className = 'value-capture-mirror';
     span.textContent = v;
     span.style.cssText = [
-      'position:absolute', 'top:0', 'left:0', 'right:0', 'bottom:0',
-      'display:flex', 'align-items:center', 'justify-content:center',
-      'box-sizing:border-box', 'width:100%', 'height:100%',
-      'min-height:' + (el.offsetHeight ? el.offsetHeight + 'px' : '16px'),
+      'display:inline-block',
+      'width:' + (el.offsetWidth ? el.offsetWidth + 'px' : '100%'),
+      'height:' + h + 'px',
+      'line-height:' + h + 'px',
+      'box-sizing:border-box',
       'font-family:Arial, sans-serif', 'font-size:' + fs,
-      'line-height:1.2', 'color:#111111',
-      'text-align:center', 'white-space:nowrap',
-      'overflow:visible', 'padding:0', 'margin:0', 'z-index:2'
+      'color:#111111', 'text-align:center',
+      'white-space:nowrap', 'overflow:visible',
+      'padding:0', 'margin:0', 'vertical-align:middle'
     ].join(';');
-    // Keep the input in place (occupies layout) but make its own text invisible,
-    // so the box keeps its size and the span sits perfectly over it.
-    const prevColor = el.style.color;
-    const prevVis = el.style.visibility;
-    el.style.setProperty('color', 'transparent', 'important');
-    el.parentNode.insertBefore(wrap, el);
-    wrap.appendChild(el);
-    wrap.appendChild(span);
-    valueMirrors.push({ el, wrap, span, prevColor, prevVis });
+    const prevDisp = el.style.display;
+    el.style.setProperty('display', 'none', 'important');
+    el.parentNode.insertBefore(span, el.nextSibling);
+    valueMirrors.push({ el, span, prevDisp });
   });
   function setInline(el, styles) {
     const prev = {};
@@ -2055,13 +2050,9 @@ function forceDesktopLayout() {
     mirrors.push({ ta: di, div: span });
   });
   return () => {
-    valueMirrors.forEach(({ el, wrap, span, prevColor, prevVis }) => {
-      if (wrap.parentNode) {
-        wrap.parentNode.insertBefore(el, wrap);
-        wrap.parentNode.removeChild(wrap);
-      }
-      if (prevColor) el.style.setProperty('color', prevColor); else el.style.removeProperty('color');
-      if (prevVis) el.style.setProperty('visibility', prevVis); else el.style.removeProperty('visibility');
+    valueMirrors.forEach(({ el, span, prevDisp }) => {
+      if (span && span.parentNode) span.parentNode.removeChild(span);
+      if (prevDisp) el.style.setProperty('display', prevDisp); else el.style.removeProperty('display');
     });
     mirrors.forEach(({ ta, div }) => {
       if (div.parentNode) div.parentNode.removeChild(div);
@@ -2329,7 +2320,11 @@ window.__captureDebug = function () {
 
   // ---- 6) MIRROR SPANS ----
   L.push('-- CAPTURE MIRRORS --');
-  L.push('value-capture-mirror spans: ' + document.querySelectorAll('.value-capture-mirror').length);
+  var msp = document.querySelectorAll('.value-capture-mirror');
+  L.push('value-capture-mirror spans: ' + msp.length);
+  Array.prototype.slice.call(msp).slice(0,6).forEach(function(s){
+    L.push('   "'+s.textContent+'" '+px(s.offsetWidth)+'x'+px(s.offsetHeight)+' disp='+getComputedStyle(s).display);
+  });
 
   var text = L.join('\n');
 
@@ -2340,24 +2335,49 @@ window.__captureDebug = function () {
       'background:#000;color:#0f0;font:11px/1.35 monospace;padding:12px;overflow:auto;'+
       'white-space:pre-wrap;word-break:break-word;-webkit-user-select:text;user-select:text;';
     var bar = document.createElement('div');
-    bar.style.cssText = 'position:sticky;top:0;display:flex;gap:8px;margin-bottom:10px;background:#000;padding-bottom:6px;';
+    bar.style.cssText = 'position:sticky;top:0;display:flex;gap:8px;margin-bottom:10px;background:#000;padding-bottom:6px;flex-wrap:wrap;';
     var go = document.createElement('button');
     go.textContent = '▶ Continue';
-    go.style.cssText = 'flex:1;padding:12px;background:#D35E13;color:#fff;border:none;border-radius:6px;font:bold 14px sans-serif;';
+    go.style.cssText = 'flex:1;min-width:120px;padding:12px;background:#D35E13;color:#fff;border:none;border-radius:6px;font:bold 14px sans-serif;';
     var copy = document.createElement('button');
     copy.textContent = '⧉ Copy';
-    copy.style.cssText = 'flex:0 0 90px;padding:12px;background:#059669;color:#fff;border:none;border-radius:6px;font:bold 14px sans-serif;';
+    copy.style.cssText = 'flex:0 0 80px;padding:12px;background:#059669;color:#fff;border:none;border-radius:6px;font:bold 14px sans-serif;';
+    var prev = document.createElement('button');
+    prev.textContent = '🖼 Render pg2';
+    prev.style.cssText = 'flex:0 0 110px;padding:12px;background:#2563EB;color:#fff;border:none;border-radius:6px;font:bold 13px sans-serif;';
     copy.onclick = function(){
       try {
         if (navigator.clipboard && navigator.clipboard.writeText) {
-          navigator.clipboard.writeText(text).then(function(){ copy.textContent='✓ Copied'; }, function(){ copy.textContent='select+copy'; });
-        } else { var r=document.createRange(); r.selectNode(pre); var s=getSelection(); s.removeAllRanges(); s.addRange(r); copy.textContent='selected'; }
+          navigator.clipboard.writeText(text).then(function(){ copy.textContent='✓'; }, function(){ copy.textContent='sel'; });
+        } else { var r=document.createRange(); r.selectNode(pre); var s=getSelection(); s.removeAllRanges(); s.addRange(r); copy.textContent='sel'; }
       } catch(e){ copy.textContent='err'; }
     };
     var pre = document.createElement('div');
     pre.textContent = text;
-    bar.appendChild(go); bar.appendChild(copy);
-    box.appendChild(bar); box.appendChild(pre); document.body.appendChild(box);
+    var imgWrap = document.createElement('div');
+    imgWrap.style.cssText = 'margin-top:10px;';
+    // Live-render page 2 with html2canvas right now and show it, so we can SEE
+    // whether the value mirrors actually paint into the canvas.
+    prev.onclick = function(){
+      prev.textContent = '…rendering';
+      var page2 = document.getElementById('page2');
+      if (!page2 || typeof html2canvas !== 'function') { imgWrap.textContent='page2/html2canvas missing'; return; }
+      try {
+        html2canvas(page2, { scale: 1, useCORS: true, backgroundColor: '#fff', logging: false, width: 1050, windowWidth: 1050 }).then(function(canvas){
+          imgWrap.innerHTML = '';
+          var note = document.createElement('div');
+          note.style.cssText = 'color:#0ff;margin:6px 0;';
+          note.textContent = 'Rendered page2 ('+canvas.width+'x'+canvas.height+') — does the fittings "4" show?';
+          var img = document.createElement('img');
+          img.src = canvas.toDataURL('image/jpeg', 0.85);
+          img.style.cssText = 'width:100%;border:2px solid #2563EB;display:block;';
+          imgWrap.appendChild(note); imgWrap.appendChild(img);
+          prev.textContent = '🖼 Re-render';
+        }).catch(function(e){ imgWrap.textContent = 'render error: '+e.message; prev.textContent='🖼 Render pg2'; });
+      } catch(e){ imgWrap.textContent = 'render threw: '+e.message; prev.textContent='🖼 Render pg2'; }
+    };
+    bar.appendChild(go); bar.appendChild(copy); bar.appendChild(prev);
+    box.appendChild(bar); box.appendChild(pre); box.appendChild(imgWrap); document.body.appendChild(box);
     go.onclick = function(){ if (box.parentNode) box.parentNode.removeChild(box); resolve(); };
   });
 };
