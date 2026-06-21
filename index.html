@@ -1921,24 +1921,35 @@ function forceDesktopLayout() {
     const v = (el.value || '').trim();
     if (!v) return;
     const cs = window.getComputedStyle(el);
+    const fs = parseInt(cs.fontSize, 10) >= 13 ? cs.fontSize : '13px';
+    // Wrap the input so we can overlay an absolutely-positioned text span that
+    // fills the input's box exactly — robust even inside flex parents (ft-cell)
+    // and table cells where a flow span would collapse to zero width.
+    const wrap = document.createElement('span');
+    wrap.className = 'value-capture-wrap';
+    wrap.style.cssText = 'position:relative;display:inline-block;width:100%;';
     const span = document.createElement('span');
     span.className = 'value-capture-mirror';
     span.textContent = v;
     span.style.cssText = [
+      'position:absolute', 'top:0', 'left:0', 'right:0', 'bottom:0',
       'display:flex', 'align-items:center', 'justify-content:center',
-      'box-sizing:border-box',
-      'width:' + (el.offsetWidth ? el.offsetWidth + 'px' : '100%'),
-      'height:' + (el.offsetHeight ? el.offsetHeight + 'px' : 'auto'),
-      'font-family:Arial, sans-serif',
-      'font-size:' + (parseInt(cs.fontSize, 10) >= 13 ? cs.fontSize : '13px'),
+      'box-sizing:border-box', 'width:100%', 'height:100%',
+      'min-height:' + (el.offsetHeight ? el.offsetHeight + 'px' : '16px'),
+      'font-family:Arial, sans-serif', 'font-size:' + fs,
       'line-height:1.2', 'color:#111111',
       'text-align:center', 'white-space:nowrap',
-      'overflow:visible', 'padding:0', 'margin:0',
-      'vertical-align:middle'
+      'overflow:visible', 'padding:0', 'margin:0', 'z-index:2'
     ].join(';');
-    el.style.setProperty('display', 'none', 'important');
-    el.parentNode.insertBefore(span, el.nextSibling);
-    valueMirrors.push({ el, span });
+    // Keep the input in place (occupies layout) but make its own text invisible,
+    // so the box keeps its size and the span sits perfectly over it.
+    const prevColor = el.style.color;
+    const prevVis = el.style.visibility;
+    el.style.setProperty('color', 'transparent', 'important');
+    el.parentNode.insertBefore(wrap, el);
+    wrap.appendChild(el);
+    wrap.appendChild(span);
+    valueMirrors.push({ el, wrap, span, prevColor, prevVis });
   });
   function setInline(el, styles) {
     const prev = {};
@@ -2037,9 +2048,13 @@ function forceDesktopLayout() {
     mirrors.push({ ta: di, div: span });
   });
   return () => {
-    valueMirrors.forEach(({ el, span }) => {
-      if (span.parentNode) span.parentNode.removeChild(span);
-      el.style.removeProperty('display');
+    valueMirrors.forEach(({ el, wrap, span, prevColor, prevVis }) => {
+      if (wrap.parentNode) {
+        wrap.parentNode.insertBefore(el, wrap);
+        wrap.parentNode.removeChild(wrap);
+      }
+      if (prevColor) el.style.setProperty('color', prevColor); else el.style.removeProperty('color');
+      if (prevVis) el.style.setProperty('visibility', prevVis); else el.style.removeProperty('visibility');
     });
     mirrors.forEach(({ ta, div }) => {
       if (div.parentNode) div.parentNode.removeChild(div);
