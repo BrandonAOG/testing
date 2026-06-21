@@ -271,13 +271,11 @@ body.dark-mode #save-status { color: #7DD3FC; }
   pointer-events: none; z-index: 0;
 }
 @media (max-width: 768px) { .form-page { padding: 16px; } }
-body.dark-mode .form-page::before { border-color: #00FFC8; }
 @media (max-width: 480px) { .form-page { padding: 12px; } }
 @media screen {
 body.dark-mode .form-page {
   background: linear-gradient(135deg, rgba(15,21,53,0.95) 0%, rgba(10,14,39,0.98) 100%);
   box-shadow: 0 0 1px rgba(0,255,200,0.3), 0 0 20px rgba(0,255,200,0.15);
-  border-color: #00FFC8;
 }
 }
 
@@ -417,6 +415,16 @@ body.dark-mode table.mat-table td.row-label { background: rgba(36,52,88,0.6); co
 #fittings-table tr.repeat-header th { background: #D35E13; color: #fff; font-size: 9px; padding: 3px 2px; text-align: center; border: 1px solid #4B5563; }
 #fittings-table tr.repeat-header th.row-label { background: #D35E13; }
 body.dark-mode #fittings-table tr.repeat-header th { background: #1E3A5F; color: #00FFC8; border-color: rgba(0,255,200,0.2); }
+
+/* Mobile: collapsible large fitting sizes (5", 4", 3-1/2", 3") */
+#fittings-toggle-th { cursor: pointer; -webkit-user-select: none; user-select: none; }
+.big-toggle-ind { display: none; }
+@media screen and (max-width: 480px) {
+  .big-toggle-ind { display: inline-block; margin-left: 4px; font-size: 9px; opacity: 0.85; }
+  .big-toggle-ind::after { content: "\25C0"; } /* left triangle = tap to hide */
+  #fittings-table.big-collapsed .big-toggle-ind::after { content: "\25B6"; } /* right triangle = tap to show */
+  #fittings-table.big-collapsed .big-col { display: none; }
+}
 #wireway-table  td.row-label { font-size: 10px; min-width: 110px; }
 #polaris-table  td.row-label { font-size: 10px; min-width: 110px; }
 
@@ -885,9 +893,9 @@ body.dark-mode .notice { color: #7DD3FC; }
      doc9 base CSS handles mobile layout without it. */
   #page2-inner {
     display: block !important;
-    width: 100% !important;
-    margin: 0 auto !important;
-    transform: none !important;
+    width: 7.4in !important;
+    transform-origin: top left !important;
+    transform: scale(1.081) !important;
     border: 2px solid #D35E13 !important;
     border-radius: 4px !important;
     padding: 8px !important;
@@ -1243,12 +1251,6 @@ body.dark-mode .ft-label { color: #7DD3FC; }
    Forces same compact layout as iPhone print.
    Scoped to iPad viewport range only — never affects desktop or iPhone. */
 @media print and (min-width: 768px) and (max-width: 1366px) {
-  /* Desktop only: scale page 2 to fill the sheet (mobile keeps natural width). */
-  #page2-inner {
-    width: 7.4in !important;
-    transform-origin: top center !important;
-    transform: scale(1.081) !important;
-  }
   input[type="text"], input[type="number"], input[type="date"], input[type="email"], input[type="tel"], textarea, select { border-color: transparent !important; border-bottom-color: #333 !important; }
   #page2 table.mat-table td input[type="text"] { border: none !important; }
   #page2 .footer-field input[type="text"] { border-color: transparent !important; border-bottom: 1px solid #333 !important; }
@@ -1284,12 +1286,6 @@ body.dark-mode .ft-label { color: #7DD3FC; }
    min-width: 1367px sits above the iPad block (max 1366px),
    so this ONLY fires on desktop Mac. Mobile & iPad untouched. */
 @media print and (min-width: 1367px) {
-  /* Desktop only: scale page 2 to fill the sheet (mobile keeps natural width). */
-  #page2-inner {
-    width: 7.4in !important;
-    transform-origin: top center !important;
-    transform: scale(1.081) !important;
-  }
   #page2 table.mat-table th               { font-size: 8.5px !important; }
   #page2 table.mat-table td               { font-size: 8.5px !important; }
   #page2 table.mat-table td.row-label     { font-size: 8.5px !important; }
@@ -1485,8 +1481,8 @@ body.dark-mode .ft-label { color: #7DD3FC; }
     <div class="grid-section">
       <table class="mat-table" id="fittings-table">
         <thead><tr>
-          <th style="width:110px;">FITTINGS</th>
-          <th>5"</th><th>4"</th><th>3-1/2"</th><th>3"</th><th>2-1/2"</th>
+          <th style="width:110px;" id="fittings-toggle-th">FITTINGS<span class="big-toggle-ind no-print"></span></th>
+          <th class="big-col">5"</th><th class="big-col">4"</th><th class="big-col">3-1/2"</th><th class="big-col">3"</th><th>2-1/2"</th>
           <th>2"</th><th>1-1/2"</th><th>1-1/4"</th><th>1"</th><th>¾"</th><th>½"</th>
         </tr></thead>
         <tbody id="fittings-body"></tbody>
@@ -1626,9 +1622,10 @@ fittings.forEach((name, idx) => {
     const emptyTh = document.createElement("th");
     emptyTh.className = "row-label";
     repeatHeader.appendChild(emptyTh);
-    fittingSizes.forEach(size => {
+    fittingSizes.forEach((size, sIdx) => {
       const th = document.createElement("th");
       th.textContent = size;
+      if (sIdx < 4) th.classList.add("big-col");
       repeatHeader.appendChild(th);
     });
     document.getElementById("fittings-body").appendChild(repeatHeader);
@@ -1638,14 +1635,24 @@ fittings.forEach((name, idx) => {
   lbl.className = "row-label"; lbl.textContent = name;
   tr.appendChild(lbl);
   const allowAlpha = (name === "PVC Pipe" || name === "Seal Tight Car-Flex Hose");
-  fittingSizes.forEach(() => {
+  fittingSizes.forEach((size, sIdx) => {
     const td = document.createElement("td");
+    if (sIdx < 4) td.classList.add("big-col");
     const inp = document.createElement("input"); inp.type = "text";
     if (allowAlpha) { inp.inputMode = "text"; } else { inp.inputMode = "numeric"; inp.pattern = "[0-9]*"; }
     td.appendChild(inp); tr.appendChild(td);
   });
   document.getElementById("fittings-body").appendChild(tr);
 });
+
+// Collapsible large fitting sizes — mobile only, default collapsed
+(function(){
+  const tbl = document.getElementById("fittings-table");
+  const th  = document.getElementById("fittings-toggle-th");
+  if (!tbl || !th) return;
+  if (window.matchMedia("(max-width: 480px)").matches) tbl.classList.add("big-collapsed");
+  th.addEventListener("click", () => tbl.classList.toggle("big-collapsed"));
+})();
 
 ['4" x 4"','6" x 6"','8" x 8"','10" x 10"','12" x 12"'].forEach(name => {
   const tr = document.createElement("tr");
