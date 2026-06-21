@@ -2087,16 +2087,11 @@ function fitToLetter(srcCanvas) {
   const scaleX = innerW / srcCanvas.width;
   const naturalH = srcCanvas.height * scaleX;         // height if aspect is kept
 
-  let drawW = innerW, drawH, outH;
-  if (naturalH <= innerH) {
-    // Fits a sheet naturally — keep aspect ratio, pad to letter height.
-    drawH = Math.round(naturalH);
-    outH = letterH;
-  } else {
-    // Taller than a sheet — compress vertically so it sits on exactly one page.
-    drawH = innerH;
-    outH = letterH;
-  }
+  // Always fill the printable box top-to-bottom: stretch the content vertically to
+  // innerH rather than keeping aspect ratio and padding with white. This grows the
+  // whole page evenly down to the bottom frame (no white gap), and compresses it if
+  // it's taller than one sheet. Width always fills innerW.
+  let drawW = innerW, drawH = innerH, outH = letterH;
 
   const out = document.createElement('canvas');
   out.width = outW;
@@ -2145,18 +2140,12 @@ function measureFullHeight(page) {
 // ones — instead of leaving white space or shrinking the text. Returns a restore
 // function to undo the inline changes after capture.
 function fitPageToSheet(page) {
-  // Capture renders at a fixed 1050px width (see html2canvas width:1050), so the
-  // sheet target must be based on that width, not page.offsetWidth — otherwise on
-  // mobile the target is computed from the wrong width and the page under-fills,
-  // leaving white space at the bottom.
-  //
-  // IMPORTANT: fitToLetter() draws the captured content into the INNER printable
-  // box (sheet minus 0.15in margins on every side) and paints the orange frame on
-  // the margin line. So to fill all the way down to the frame with no gap, we must
-  // pad the content to the INNER height ratio, not the full 11/8.5 sheet ratio.
-  // Using the full-sheet ratio (the old behavior) left the content short of the
-  // frame by roughly the top+bottom margins — the white space you saw.
-  const CAPTURE_W = 1050;
+  // No-op: even page fill is now done in fitToLetter() by stretching the captured
+  // content vertically to the printable box, rather than padding table rows. This
+  // keeps the layout untouched and lets the whole page grow evenly to the frame.
+  return function () {};
+}
+function fitPageToSheet_unused(page) {
   const SHEET_W = 8.5, SHEET_H = 11, MARGIN_IN = 0.15;
   const pxPerIn = CAPTURE_W / SHEET_W;
   const margin = Math.round(MARGIN_IN * pxPerIn);
