@@ -1581,14 +1581,15 @@ body.dark-mode .miscues-textarea {
   body:not(.printing):not(.capturing) table.mat-table {
     width: 100% !important; table-layout: fixed !important; font-size: 12px !important;
   }
-  body:not(.printing):not(.capturing) table.mat-table col.col-data { width: 30px !important; }
+  body:not(.printing):not(.capturing) table.mat-table col.col-data { width: 52px !important; }
+  body:not(.printing):not(.capturing) table.mat-table col.col-label { width: 1% !important; }
 
   body:not(.printing):not(.capturing) table.mat-table th {
     font-size: 12px !important; padding: 7px 2px !important;
   }
   body:not(.printing):not(.capturing) table.mat-table td.row-label {
     font-size: 12px !important; padding: 6px 8px !important; line-height: 1.2 !important;
-    text-align: left !important;
+    text-align: left !important; white-space: nowrap !important;
   }
   body:not(.printing):not(.capturing) table.mat-table td.row-label.section-header {
     font-size: 12px !important; padding: 7px 4px !important;
@@ -1656,7 +1657,6 @@ body.dark-mode .miscues-textarea {
 </style>
 </head>
 <body>
-<div class="build-badge">✓ build 3 · native tables</div>
 <style>
 .build-badge{position:fixed;bottom:8px;left:8px;z-index:99999;
   font:600 11px/1 -apple-system,system-ui,sans-serif;
