@@ -1569,85 +1569,34 @@ body.dark-mode .miscues-textarea {
   }
 }
 
-/* ===== MOBILE — MATERIAL TABLES, COMPACT ALIGNED (screen only) =====
-   Keep every table on screen but tighten it: show the 5 sizes ONCE as a
-   sticky column header per table, line the inputs up underneath in aligned
-   columns, drop the per-input labels. Much shorter than per-row cards.
-   Guarded with :not(.printing):not(.capturing) so the PDF/exports keep the
-   real table layout (the @media print block fully restores tables anyway). */
+/* ===== MOBILE — MATERIAL TABLES, NATIVE LAYOUT (screen only) =====
+   Keep the real desktop table look (orange titles, section bands, striping)
+   and just shrink it to fit the phone, with bigger inputs so they're easy to
+   tap and >=16px text so iOS doesn't zoom on focus. The table already uses
+   table-layout:fixed/width:100%, so it fits without horizontal scroll. */
 @media screen and (max-width: 767px) {
-  body:not(.printing):not(.capturing) .grid-section { overflow-x: visible !important; }
+  body:not(.printing):not(.capturing) .grid-section {
+    overflow-x: visible !important; margin-bottom: 14px !important;
+  }
+  body:not(.printing):not(.capturing) table.mat-table {
+    width: 100% !important; table-layout: fixed !important; font-size: 12px !important;
+  }
+  body:not(.printing):not(.capturing) table.mat-table col.col-data { width: 38px !important; }
 
-  body:not(.printing):not(.capturing) table.mat-table,
-  body:not(.printing):not(.capturing) table.mat-table thead,
-  body:not(.printing):not(.capturing) table.mat-table tbody {
-    display: block !important; width: 100% !important; border: 0 !important;
+  body:not(.printing):not(.capturing) table.mat-table th {
+    font-size: 12px !important; padding: 7px 2px !important;
   }
-  body:not(.printing):not(.capturing) table.mat-table colgroup { display: none !important; }
-
-  /* Sticky header per table: title pill (row 1) + size labels (row 2),
-     the 5 size cells aligned to the input columns below. */
-  body:not(.printing):not(.capturing) table.mat-table thead {
-    position: sticky !important;
-    top: calc(44px + env(safe-area-inset-top, 0px)) !important;
-    z-index: 5 !important; background: var(--panel) !important;
-    padding-bottom: 4px !important;
+  body:not(.printing):not(.capturing) table.mat-table td.row-label {
+    font-size: 12px !important; padding: 6px 8px !important; line-height: 1.2 !important;
   }
-  body:not(.printing):not(.capturing) table.mat-table thead tr {
-    display: grid !important; grid-template-columns: repeat(5, 1fr) !important;
-    gap: 6px !important; align-items: end !important;
+  body:not(.printing):not(.capturing) table.mat-table td.row-label.section-header {
+    font-size: 12px !important; padding: 7px 4px !important;
   }
-  body:not(.printing):not(.capturing) table.mat-table thead th:first-child {
-    grid-column: 1 / -1 !important; text-align: left !important;
-    font-size: 13px !important; font-weight: 700 !important;
-    color: var(--header-fg) !important; background: var(--header-bg) !important;
-    padding: 6px 10px !important; border-radius: 7px !important; margin-bottom: 4px !important;
-  }
-  body:not(.printing):not(.capturing) table.mat-table thead th:not(:first-child) {
-    text-align: center !important; font-size: 11px !important; font-weight: 600 !important;
-    color: var(--text-muted) !important; background: transparent !important; padding: 0 !important;
-  }
-
-  /* Material row: label on its own line, then 5 inputs in aligned columns */
-  body:not(.printing):not(.capturing) table.mat-table tbody tr {
-    display: grid !important; grid-template-columns: repeat(5, 1fr) !important;
-    gap: 6px !important; align-items: center !important;
-    padding: 3px 0 5px !important; margin: 0 !important;
-    border: 0 !important; border-bottom: 1px solid var(--border) !important;
-    background: transparent !important;
-  }
-  body:not(.printing):not(.capturing) table.mat-table tbody td.row-label {
-    grid-column: 1 / -1 !important; text-align: left !important;
-    font-size: 13px !important; font-weight: 600 !important; line-height: 1.25 !important;
-    color: var(--text) !important; background: transparent !important;
-    padding: 0 0 3px !important; border: 0 !important;
-  }
-
-  /* Section-header row = slim group band */
-  body:not(.printing):not(.capturing) table.mat-table tbody tr:has(td.section-header) {
-    display: block !important; border-bottom: 0 !important; background: transparent !important;
-    padding: 0 !important; margin: 8px 0 4px !important;
-  }
-  body:not(.printing):not(.capturing) table.mat-table tbody td.row-label.section-header {
-    grid-column: 1 / -1 !important;
-    background: var(--header-bg) !important; color: var(--header-fg) !important;
-    text-align: center !important; font-size: 12px !important; font-weight: 700 !important;
-    padding: 5px 8px !important; border-radius: 6px !important; padding-bottom: 5px !important;
-  }
-
-  /* Data cell = bare number input (size known from the sticky header) */
-  body:not(.printing):not(.capturing) table.mat-table tbody td:not(.row-label) {
-    display: block !important; border: 0 !important; padding: 0 !important; background: transparent !important;
-  }
-  body:not(.printing):not(.capturing) table.mat-table tbody td:not(.row-label)::before {
-    content: none !important; display: none !important;
-  }
-  body:not(.printing):not(.capturing) table.mat-table tbody td:not(.row-label) input[type="number"] {
-    width: 100% !important; height: 34px !important; text-align: center !important;
+  body:not(.printing):not(.capturing) table.mat-table td { padding: 2px !important; }
+  body:not(.printing):not(.capturing) table.mat-table td input[type="number"] {
+    width: 100% !important; height: 30px !important; text-align: center !important;
     font-size: 16px !important;                 /* >=16px stops iOS zoom-on-focus */
-    border: 1px solid var(--border) !important; border-radius: 6px !important;
-    background: var(--bg) !important; color: var(--text) !important;
-    box-sizing: border-box !important; padding: 0 2px !important;
+    padding: 0 !important; box-sizing: border-box !important;
   }
 }
 
@@ -1706,7 +1655,7 @@ body.dark-mode .miscues-textarea {
 </style>
 </head>
 <body>
-<div class="build-badge">✓ build 2 · compact tables</div>
+<div class="build-badge">✓ build 3 · native tables</div>
 <style>
 .build-badge{position:fixed;bottom:8px;left:8px;z-index:99999;
   font:600 11px/1 -apple-system,system-ui,sans-serif;
