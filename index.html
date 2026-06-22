@@ -1654,13 +1654,17 @@ body.dark-mode .ft-label { color: #7DD3FC; }
   #page2 .footer-fields .footer-other-input {
     width: 100% !important;
     box-sizing: border-box !important;
-    height: 40px !important;
+    height: 72px !important;
+    min-height: 72px !important;
     border: 1px solid var(--border-bright) !important;
     border-radius: 6px !important;
-    padding: 2px 10px !important;
+    padding: 8px 10px !important;
     background: var(--bg) !important;
     color: var(--text) !important;
     font-size: 16px !important;
+    line-height: 1.4 !important;
+    font-family: Arial, sans-serif !important;
+    resize: vertical !important;
   }
 }
 </style>
@@ -1903,7 +1907,7 @@ body.dark-mode .ft-label { color: #7DD3FC; }
       </div>
       <div class="footer-other-row">
         <label class="footer-other-label">Other:</label>
-        <input type="text" class="footer-other-input">
+        <textarea class="footer-other-input" rows="2"></textarea>
       </div>
     </div>
 
@@ -3748,7 +3752,7 @@ if (document.readyState === 'loading') {
       children.forEach(node => {
         if (node.nodeType === 1 && (node.tagName === 'LABEL' || node.tagName === 'B')) {
           currentLabel = node.textContent.trim().replace(/:$/,'');
-        } else if (node.nodeType === 1 && node.tagName === 'INPUT' && (node.type === 'text' || node.type === 'date')) {
+        } else if (node.nodeType === 1 && ((node.tagName === 'INPUT' && (node.type === 'text' || node.type === 'date')) || node.tagName === 'TEXTAREA')) {
           if (currentLabel) {
             const base = labelPhrase(currentLabel);
             const phrases = [base].concat(ALIASES[base] || []);
