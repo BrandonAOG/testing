@@ -1569,6 +1569,82 @@ body.dark-mode .miscues-textarea {
   }
 }
 
+/* ===== MOBILE — MATERIAL TABLES AS CARDS (screen only) =====
+   Turn the cramped 6-column count matrices into one card per material row,
+   with each pipe size labeled (labels are copied from the table header into
+   data-size by JS). Guarded with :not(.printing):not(.capturing) so the PDF
+   and image exports keep the real table layout. */
+@media screen and (max-width: 767px) {
+  body:not(.printing):not(.capturing) .grid-section { overflow-x: visible !important; }
+
+  body:not(.printing):not(.capturing) table.mat-table,
+  body:not(.printing):not(.capturing) table.mat-table tbody {
+    display: block !important; width: 100% !important; border: 0 !important;
+  }
+  body:not(.printing):not(.capturing) table.mat-table colgroup { display: none !important; }
+
+  /* Header row -> keep the table title as a pill, drop the size cells */
+  body:not(.printing):not(.capturing) table.mat-table thead,
+  body:not(.printing):not(.capturing) table.mat-table thead tr { display: block !important; }
+  body:not(.printing):not(.capturing) table.mat-table thead th { display: none !important; }
+  body:not(.printing):not(.capturing) table.mat-table thead th:first-child {
+    display: block !important; text-align: left !important;
+    font-size: 14px !important; font-weight: 700 !important;
+    color: var(--header-fg) !important; background: var(--header-bg) !important;
+    padding: 8px 12px !important; border-radius: 8px !important;
+    margin-bottom: 8px !important;
+  }
+
+  /* Each data row -> a card; the 5 inputs auto-fit into a labeled grid */
+  body:not(.printing):not(.capturing) table.mat-table tbody tr {
+    display: grid !important;
+    grid-template-columns: repeat(auto-fit, minmax(56px, 1fr)) !important;
+    gap: 8px !important;
+    border: 1px solid var(--border-bright) !important; border-radius: 10px !important;
+    padding: 10px 12px !important; margin: 0 0 10px !important;
+    background: var(--panel) !important;
+  }
+
+  /* Row label = card title (spans full width) */
+  body:not(.printing):not(.capturing) table.mat-table tbody td.row-label {
+    grid-column: 1 / -1 !important;
+    display: block !important; text-align: left !important;
+    font-weight: 700 !important; font-size: 14px !important;
+    background: transparent !important; color: var(--text) !important;
+    padding: 0 0 2px !important; border: 0 !important;
+  }
+
+  /* Section-header row = group band (no surrounding card) */
+  body:not(.printing):not(.capturing) table.mat-table tbody tr:has(td.section-header) {
+    display: block !important; border: 0 !important; background: transparent !important;
+    padding: 0 !important; margin: 8px 0 4px !important;
+  }
+  body:not(.printing):not(.capturing) table.mat-table tbody td.row-label.section-header {
+    grid-column: 1 / -1 !important;
+    background: var(--header-bg) !important; color: var(--header-fg) !important;
+    text-align: center !important; font-size: 13px !important; font-weight: 700 !important;
+    padding: 6px 10px !important; border-radius: 8px !important;
+  }
+
+  /* Data cell = a labeled number input */
+  body:not(.printing):not(.capturing) table.mat-table tbody td:not(.row-label) {
+    display: flex !important; flex-direction: column !important; align-items: stretch !important;
+    border: 0 !important; padding: 0 !important; background: transparent !important;
+  }
+  body:not(.printing):not(.capturing) table.mat-table tbody td:not(.row-label)::before {
+    content: attr(data-size);
+    font-size: 11px !important; line-height: 1 !important; color: var(--text-muted) !important;
+    text-align: center !important; margin-bottom: 4px !important; white-space: nowrap !important;
+  }
+  body:not(.printing):not(.capturing) table.mat-table tbody td:not(.row-label) input[type="number"] {
+    width: 100% !important; height: 40px !important; text-align: center !important;
+    font-size: 16px !important;                 /* >=16px stops iOS zoom-on-focus */
+    border: 1px solid var(--border) !important; border-radius: 8px !important;
+    background: var(--bg) !important; color: var(--text) !important;
+    box-sizing: border-box !important; padding: 0 4px !important;
+  }
+}
+
 </style>
 </head>
 <body>
@@ -1873,6 +1949,23 @@ const MISC_ROWS = [
 (function() {
   const b = document.getElementById('nipples-right-body');
   MISC_ROWS.forEach(r => addRow(b, r.label, 5, r.isHeader || false));
+})();
+
+/* Copy each table's size headers onto its data cells (data-size) so the
+   mobile card layout can label every number input. Screen-only CSS reads it;
+   it has no effect on desktop or print. */
+(function labelMatTableCells() {
+  document.querySelectorAll('table.mat-table').forEach(function(t) {
+    var sizes = Array.prototype.slice.call(t.querySelectorAll('thead th'))
+      .slice(1)                                   // drop the title cell
+      .map(function(th) { return th.textContent.trim(); });
+    t.querySelectorAll('tbody tr').forEach(function(tr) {
+      var dataCells = tr.querySelectorAll('td:not(.row-label)');
+      Array.prototype.forEach.call(dataCells, function(td, i) {
+        if (sizes[i]) td.setAttribute('data-size', sizes[i]);
+      });
+    });
+  });
 })();
 
 /* ================================================================
