@@ -6111,6 +6111,13 @@ function aogSimplePrint() {
   b.style.colorScheme = 'light';
   b.classList.add('preparing-print');
 
+  /* Pin the viewport to the 1050px print width so iOS lays the sheet out at
+     1050 and scales it to fit the page, instead of rendering at the phone's
+     narrow viewport and clipping the right edge. Restored in clear(). */
+  var vp = document.querySelector('meta[name="viewport"]');
+  var origVP = vp ? vp.getAttribute('content') : null;
+  if (vp) vp.setAttribute('content', 'width=1050, initial-scale=1, viewport-fit=cover');
+
   if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
 
   var cleared = false;
@@ -6118,6 +6125,7 @@ function aogSimplePrint() {
     if (cleared) return;
     cleared = true;
     b.classList.remove('preparing-print');
+    if (vp && origVP !== null) vp.setAttribute('content', origVP);
     if (b.classList.contains('aog-was-dark')) {
       b.classList.remove('aog-was-dark');
       b.classList.add('dark-mode');
