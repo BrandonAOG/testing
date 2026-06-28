@@ -12,14 +12,14 @@ for willful infringement under 17 U.S.C. § 504, plus attorney's fees.
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="mobile-web-app-capable" content="yes">
 <title>Generator Installation Estimate</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;500;600&display=swap" rel="stylesheet">
 <link rel="manifest" href="../manifest.json">
-<meta name="theme-color" content="#FBBF24">
+<meta name="theme-color" content="#D35E13">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="AOG Forms">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf-lib/1.17.1/pdf-lib.min.js" defer></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js" defer></script>
 
 <script>
@@ -1025,6 +1025,19 @@ body.dark-mode input[type="date"], body.dark-mode input[type="number"], body.dar
 }
 
 input[type="date"] { min-height: var(--h-phone-input-date); padding: var(--pd-phone-input-date); cursor: pointer; color-scheme: light; }
+/* Old iOS renders "mm/dd/yyyy" (shows as ///) inside an empty date input.
+   When empty we tag it .date-empty and make its own text transparent so the
+   slashes don't show; the value reappears the moment a date is picked. */
+input[type="date"].date-empty { color: transparent !important; }
+input[type="date"].date-empty::-webkit-datetime-edit,
+input[type="date"].date-empty::-webkit-datetime-edit-fields-wrapper,
+input[type="date"].date-empty::-webkit-datetime-edit-text,
+input[type="date"].date-empty::-webkit-datetime-edit-month-field,
+input[type="date"].date-empty::-webkit-datetime-edit-day-field,
+input[type="date"].date-empty::-webkit-datetime-edit-year-field {
+  color: transparent !important;
+  opacity: 0 !important;
+}
 body.dark-mode input[type="date"] { color-scheme: dark; }
 input::placeholder, textarea::placeholder { color: var(--text-dim) !important; opacity: 1; }
 body.dark-mode input::placeholder, body.dark-mode textarea::placeholder { color: rgba(125,211,252,0.4) !important; }
@@ -1204,7 +1217,7 @@ body.dark-mode::-webkit-scrollbar-thumb:hover { background: linear-gradient(180d
 body.mobile-safari { -webkit-print-color-adjust: exact; }
 
 @media print {
-  @page { size: 8.7in 11in; margin: 0.15in 0.15in 0.06in 0.15in !important; }
+  @page { size: 8.5in 11in; margin: 0.12in 0.15in !important; }
   html {
     height: auto !important; margin: 0 !important; padding: 0 !important;
     overflow: visible !important;
@@ -1373,6 +1386,30 @@ body.mobile-safari { -webkit-print-color-adjust: exact; }
   .doc-title { align-self: center !important; }
 }
 
+/* ===================================================================
+   MOBILE PRINT LOGIC (ported) — landscape + 835px layout, mobile only.
+   Desktop print (above) stays portrait and unchanged.
+   =================================================================== */
+@media print and (max-device-width: 1024px) {
+  /* Mobile only: print in landscape. */
+  @page { size: 11in 8.5in; margin: 0.15in 0.2in; }
+
+  /* Lay the printable canvas out at a fixed 835px (~8.7in) and let the print
+     engine scale it to fit the sheet (consistent layout, no reflow/blow-up). */
+  html, body {
+    width: 835px !important;
+    min-width: 835px !important;
+    max-width: 835px !important;
+    margin: 0 !important;
+  }
+  .page {
+    width: 835px !important;
+    min-width: 835px !important;
+    max-width: 835px !important;
+    margin: 0 !important;
+  }
+}
+
 
 /* ===== ACTION BAR (matches breaker.html) ===== */
 .action-bar {
@@ -1383,11 +1420,18 @@ body.mobile-safari { -webkit-print-color-adjust: exact; }
   background: var(--panel);
   padding: 4px 8px;
   padding-top: max(4px, env(safe-area-inset-top, 4px));
-  display: flex; gap: 4px; flex-wrap: nowrap; align-items: center; justify-content: safe center;
+  display: flex; gap: 4px; flex-wrap: nowrap; align-items: center; justify-content: flex-start;
   overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
   box-shadow: 0 4px 18px rgba(0,0,0,0.3);
   border-bottom: 1px solid var(--border-bright);
   transition: background-color 0.3s ease; box-sizing: border-box;
+}
+/* Installed PWA (home-screen) on iOS: env(safe-area-inset-top) is unreliable in
+   standalone mode (reports 0 on iOS 14 under the notch), so use a hardcoded
+   status-bar clearance, taking the larger of the inset or 47px on newer devices.
+   The page's top padding is then measured to match the bar by adjustTopPadding(). */
+body.pwa-standalone .action-bar {
+  padding-top: max(47px, env(safe-area-inset-top, 47px)) !important;
 }
 body.dark-mode .action-bar {
   background: linear-gradient(90deg, rgba(15,21,53,0.9) 0%, rgba(26,40,71,0.8) 50%, rgba(15,21,53,0.9) 100%);
@@ -1421,6 +1465,9 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
 
 /* ===== iPAD SCREEN — all elements ===== */
 @media screen and (min-width: 768px) {
+  /* On wide screens all buttons fit, so re-center them (phones stay left-aligned
+     so the HOME button isn't clipped when the row overflows and scrolls). */
+  .action-bar { justify-content: center; }
   body.mobile-safari .company-name                      { font-size: var(--fs-ipad-company-name) !important; }
   body.mobile-safari .doc-title                         { font-size: var(--fs-ipad-doc-title) !important; }
   body.mobile-safari .section-header                    { font-size: var(--fs-ipad-section-header) !important; padding: var(--pd-ipad-section-header) !important; }
@@ -1613,6 +1660,17 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
     if (document.body) { document.body.classList.add('mobile-safari'); }
     else { document.addEventListener('DOMContentLoaded', function () { document.body.classList.add('mobile-safari'); }); }
   }
+
+  // Installed-PWA (home-screen) mode. On iOS 14 standalone, env(safe-area-inset-top)
+  // wrongly reports 0 under the notch/status bar, so the toolbar slips underneath.
+  // Tag the document so CSS can apply a hardcoded status-bar clearance.
+  var _standalone = (navigator.standalone === true) ||
+    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+  if (_standalone) {
+    document.documentElement.classList.add('pwa-standalone');
+    if (document.body) { document.body.classList.add('pwa-standalone'); }
+    else { document.addEventListener('DOMContentLoaded', function () { document.body.classList.add('pwa-standalone'); }); }
+  }
 })();
 </script>
 
@@ -1621,13 +1679,12 @@ body.dark-mode .action-bar .theme-toggle-btn { background: rgba(0,255,200,0.08);
 
 <div class="action-bar" id="action-bar">
   <a class="ab-btn" href="../">🏠 HOME</a>
-  <a class="ab-btn" onclick="printForm()" style="cursor:pointer;">📄 PDF</a>
+  <a class="ab-btn" onclick="aogSimplePrint()" style="cursor:pointer;">📄 PDF</a>
   <a class="ab-btn" id="btn-capture" onclick="saveSmart()" style="cursor:pointer;">📸 CAPTURE</a>
-  <a class="ab-btn" onclick="sendEmail()" style="cursor:pointer;">✉ EMAIL</a>
+  <a class="ab-btn" onclick="saveFillablePdf()" style="cursor:pointer;">📝 EDIT PDF</a>
   <a class="ab-btn" onclick="confirmClear()" style="cursor:pointer;">🗑 CLEAR</a>
-  <a class="ab-btn" onclick="saveAsExcel()" style="cursor:pointer;">📊 EXCEL</a>
   <a class="ab-btn" onclick="document.getElementById('load-draft-input').click()" style="cursor:pointer;">📂 LOAD</a>
-  <input type="file" id="load-draft-input" accept=".json,.xlsx" style="display:none;" onchange="loadDraftFile(this)">
+  <input type="file" id="load-draft-input" accept=".json,.pdf,.xlsx" style="display:none;" onchange="loadDraftFile(this)">
   <button class="theme-toggle-btn" id="theme-toggle-btn" title="Toggle dark mode" aria-label="Toggle dark mode">
     <svg class="theme-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
       <circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/>
@@ -2029,6 +2086,7 @@ function restoreDraft() {
       } catch(e) {}
     });
   } catch(e) {}
+  if (window._refreshAllDateEmpty) window._refreshAllDateEmpty();
 }
 
 setInterval(saveDraft, 30000);
@@ -2078,16 +2136,28 @@ function saveDraftFile() {
   setTimeout(function() { setStatus(''); }, 4000);
 }
 
-// ── LOAD DRAFT FILE (JSON or XLSX) ──
+// ── LOAD DRAFT FILE (JSON, PDF, or legacy XLSX) ──
 function loadDraftFile(input) {
   var file = input.files && input.files[0];
   if (!file) return;
 
+  var isPdf   = file.name.match(/\.pdf$/i);
   var isExcel = file.name.match(/\.xlsx$/i);
 
+  if (isPdf) {
+    var readerP = new FileReader();
+    readerP.onload = function(e) {
+      loadFromFillablePdf(new Uint8Array(e.target.result), file.name);
+      input.value = '';
+    };
+    readerP.readAsArrayBuffer(file);
+    return;
+  }
+
   if (isExcel) {
-    var reader = new FileReader();
-    reader.onload = function(e) {
+    // Read-only: lets older .xlsx exports still load back into the form.
+    var readerX = new FileReader();
+    readerX.onload = function(e) {
       try {
         if (typeof XLSX === 'undefined') { setStatus('Excel library not loaded — try refreshing.'); return; }
         var wb   = XLSX.read(new Uint8Array(e.target.result), { type: 'array' });
@@ -2102,7 +2172,6 @@ function loadDraftFile(input) {
             ? (row[2] !== undefined ? String(row[2]) : '')
             : (row[1] !== undefined ? String(row[1]) : '');
           if (!key || key === 'field_id' || key === 'Field') return;
-          // Comma-separated = checkbox group
           if (val.indexOf(',') !== -1) {
             data[key] = val.split(',').map(function(v) { return v.trim(); }).filter(Boolean);
           } else {
@@ -2119,25 +2188,26 @@ function loadDraftFile(input) {
       }
       input.value = '';
     };
-    reader.readAsArrayBuffer(file);
-  } else {
-    // JSON
-    var reader2 = new FileReader();
-    reader2.onload = function(e) {
-      try {
-        var data = JSON.parse(e.target.result);
-        applyFormData(data);
-        saveDraft();
-        setStatus('Draft loaded: ' + file.name);
-        setTimeout(function() { setStatus(''); }, 4000);
-      } catch(err) {
-        setStatus('Error loading draft — file may be invalid.');
-        setTimeout(function() { setStatus(''); }, 5000);
-      }
-      input.value = '';
-    };
-    reader2.readAsText(file);
+    readerX.readAsArrayBuffer(file);
+    return;
   }
+
+  // JSON
+  var reader2 = new FileReader();
+  reader2.onload = function(e) {
+    try {
+      var data = JSON.parse(e.target.result);
+      applyFormData(data);
+      saveDraft();
+      setStatus('Draft loaded: ' + file.name);
+      setTimeout(function() { setStatus(''); }, 4000);
+    } catch(err) {
+      setStatus('Error loading draft — file may be invalid.');
+      setTimeout(function() { setStatus(''); }, 5000);
+    }
+    input.value = '';
+  };
+  reader2.readAsText(file);
 }
 
 // Shared helper: apply a data object to the form
@@ -2156,90 +2226,298 @@ function applyFormData(data) {
       }
     } catch(e) {}
   });
+  if (window._refreshAllDateEmpty) window._refreshAllDateEmpty();
 }
 
-// ── SAVE AS EXCEL ──
-// Friendly label map so the spreadsheet reads like a real form, not raw IDs
-var FIELD_LABELS = {
-  name:'Customer Name', address:'Street Address', address2:'City / State / ZIP',
-  hoa:'Community / HOA', phone:'Phone', email:'Email', today:'Today\'s Date',
-  sqft:'Sq Footage', stories:'Stories', panel_amps:'Panel Amps', main_breaker:'Main Breaker',
-  meter_base:'Meter Base', sub_panel:'Sub Panel', meter_to_panel:'Meter to Panel (ft)',
-  gen_size:'Generator Size', gen_brand:'Generator Brand', gen_notes:'Generator Notes',
-  pad_type:'Pad Type', pad_notes:'Pad Notes',
-  gas_meter:'Gas Meter', gas_type:'Gas Type', gas_notes:'Gas Notes',
-  elec_run_ft:'Electrical Run (ft)', circuits_60a:'60A Circuits', circuits_100a:'100A Circuits',
-  transfer_type:'Transfer Type',
-  estimator:'Estimator', est_date:'Estimate Date', est_done_on:'Est. Done On',
-  install_days:'Install Days', ready_notes:'Ready / Notes',
-  difficulty:'Install Difficulty', new_build:'New Build'
-};
+// ════════════════════════════════════════════════════════════════════════
+// FILLABLE PDF  —  generate a real AcroForm PDF you can type into in Acrobat/
+// Preview, then bring back in via 📂 LOAD to finish. The complete form state
+// is also embedded as JSON inside the PDF, so re-import is a perfect round-trip
+// even if a PDF reader renames or flattens the visible fields.
+// ════════════════════════════════════════════════════════════════════════
 
-function saveAsExcel() {
-  if (typeof XLSX === 'undefined') {
-    setStatus('Excel library not loaded — try refreshing.');
-    setTimeout(function() { setStatus(''); }, 5000);
+// Section/order definition drives the generated PDF layout. Each entry:
+//   {type:'text'|'multiline'|'radio'|'checkbox', id, label, options?}
+// Radio/checkbox `options` are [{value, caption}] in display order.
+var PDF_FORM_SPEC = [
+  { section: 'Customer Info', fields: [
+    { type:'text', id:'name',     label:'Name' },
+    { type:'text', id:'address',  label:'Address' },
+    { type:'text', id:'address2', label:'City / State / ZIP' },
+    { type:'text', id:'hoa',      label:'Community / HOA' },
+    { type:'text', id:'phone',    label:'Phone #' },
+    { type:'text', id:'email',    label:'Best Email' },
+    { type:'text', id:'today',    label:"Today's Date" },
+  ]},
+  { section: 'Property Info', fields: [
+    { type:'text',  id:'referral',  label:'How Did You Hear About Us?' },
+    { type:'text',  id:'sqft',      label:'Sq. Footage' },
+    { type:'text',  id:'financing', label:'Financing' },
+    { type:'radio', id:'survey',    label:'Property Survey?', options:[{value:'Y',caption:'Y'},{value:'N',caption:'N'}] },
+    { type:'text',  id:'est_date',  label:'Estimate Date' },
+    { type:'text',  id:'est_time',  label:'Time' },
+    { type:'text',  id:'flood_zone',label:'Flood Zone / Footage' },
+    { type:'text',  id:'parcel',    label:'Parcel / Municipality' },
+    { type:'text',  id:'est_done_on',label:'Estimate Done On' },
+    { type:'text',  id:'estimator', label:'Estimator' },
+  ]},
+  { section: 'Generator', fields: [
+    { type:'text',     id:'gen_size', label:'Size' },
+    { type:'checkbox', id:'placement',label:'Placement', options:[{value:'Right',caption:'Right'},{value:'Left',caption:'Left'},{value:'Back',caption:'Back'}] },
+    { type:'radio',    id:'seal_window',label:'Seal Window', options:[{value:'Y',caption:'Y'},{value:'N',caption:'N'}] },
+    { type:'text',     id:'elec_run_ft',label:'Elec. Run (Feet)' },
+    { type:'checkbox', id:'run',     label:'Run', options:[{value:'undergrnd',caption:'Under Grnd'},{value:'abovegrnd',caption:'Above Grnd'},{value:'attic',caption:'Attic'}] },
+    { type:'checkbox', id:'wiring',  label:'Wiring', options:[{value:'aluminum',caption:'AL'},{value:'copper',caption:'CU'}] },
+    { type:'radio',    id:'bore_gen',label:'Bore', options:[{value:'Y',caption:'Y'},{value:'N',caption:'N'}] },
+    { type:'multiline',id:'gen_notes',label:'Generator Notes' },
+  ]},
+  { section: 'Transfer Switch', fields: [
+    { type:'text',     id:'num_panels', label:'# Elect. Panels' },
+    { type:'text',     id:'num_ts',     label:'# Transfer Switches' },
+    { type:'text',     id:'ts_type_desc',label:'Transfer Switch Type' },
+    { type:'radio',    id:'fpl',        label:'FPL/LCEC Shutdown', options:[{value:'Y',caption:'Y'},{value:'N',caption:'N'}] },
+    { type:'text',     id:'ts_placement',label:'Transfer Switch Placement' },
+    { type:'radio',    id:'grounding',  label:'Update Grounding', options:[{value:'Y',caption:'Y'},{value:'N',caption:'N'}] },
+    { type:'radio',    id:'ts_type',    label:'Type', options:[{value:'ASE',caption:'SE'},{value:'NonASE',caption:'Non-SE'}] },
+    { type:'radio',    id:'loadshed',   label:'Load Shed Needed', options:[{value:'Y',caption:'Y'},{value:'N',caption:'N'}] },
+    { type:'text',     id:'circuits_60a',label:'60A Circuits' },
+    { type:'text',     id:'circuits_100a',label:'100A Circuits' },
+    { type:'checkbox', id:'coverage',   label:'Coverage', options:[{value:'whole',caption:'Whole House'},{value:'partial',caption:'Partial Backup'},{value:'pool',caption:'Pool'},{value:'no_pool',caption:'No Pool'}] },
+    { type:'radio',    id:'circuit_swap',label:'Circuit Swap?', options:[{value:'Y',caption:'Y'},{value:'N',caption:'N'}] },
+  ]},
+  { section: 'Precast Pad', fields: [
+    { type:'checkbox', id:'pad',         label:'Pad', options:[{value:'precast',caption:'Precast'},{value:'poured',caption:'Poured'},{value:'elevated',caption:'Elevated'},{value:'legs',caption:'Legs In Concrete'},{value:'bolted',caption:'Bolted To Pad'},{value:'cantilever',caption:'Cantilever'},{value:'existing',caption:'Existing'}] },
+    { type:'text',     id:'stand_height',label:'Height' },
+    { type:'multiline',id:'pad_notes',   label:'Pad Notes' },
+  ]},
+  { section: 'Fuel Tank', fields: [
+    { type:'checkbox', id:'fuel_type',         label:'Fuel Type', options:[{value:'natural_gas',caption:'Natural Gas'},{value:'needs_tank',caption:'Needs Tank'}] },
+    { type:'text',     id:'new_tank_size',     label:'New Tank Size' },
+    { type:'text',     id:'existing_tank_size',label:'Existing Tank Size' },
+    { type:'checkbox', id:'gas_appliances',    label:'Existing Gas Appliances', options:[{value:'range',caption:'Range'},{value:'cooktop',caption:'Cooktop'},{value:'oven',caption:'Oven'},{value:'water_heater',caption:'Water Heater'},{value:'dryer',caption:'Dryer'},{value:'fireplace',caption:'Fireplace'},{value:'grill',caption:'Grill'},{value:'pool_heater',caption:'Pool Heater'}] },
+    { type:'multiline',id:'gas_notes',         label:'Gas Notes' },
+    { type:'text',     id:'fuel_underground',  label:'Underground (ft)' },
+    { type:'text',     id:'fuel_aboveground',  label:'Above Ground (ft)' },
+    { type:'text',     id:'fuel_attic',        label:'Attic (ft)' },
+    { type:'radio',    id:'bore_fuel',         label:'Bore', options:[{value:'Y',caption:'Y'},{value:'N',caption:'N'}] },
+  ]},
+  { section: 'Install Details', fields: [
+    { type:'radio',    id:'difficulty', label:'Install Difficulty', options:[{value:'Easy',caption:'Easy'},{value:'Med',caption:'Med'},{value:'Hard',caption:'Hard'}] },
+    { type:'text',     id:'install_days',label:'Days?' },
+    { type:'radio',    id:'new_build',  label:'New Build?', options:[{value:'Y',caption:'Y'},{value:'N',caption:'N'}] },
+    { type:'multiline',id:'ready_notes',label:'Ready / Notes' },
+  ]},
+];
+
+// Collect the current form state into a flat object (text -> string,
+// radio -> string, checkbox -> array of checked values).
+function pdfCollectFormData() {
+  var data = {};
+  document.querySelectorAll('input, textarea').forEach(function(el) {
+    var key = el.id || el.name; if (!key) return;
+    if (el.type === 'file' || el.type === 'range') return;
+    if (el.type === 'checkbox') {
+      if (!Array.isArray(data[key])) data[key] = [];
+      if (el.checked) data[key].push(el.value);
+    } else if (el.type === 'radio') {
+      if (el.checked) data[key] = el.value;
+    } else if (data[key] === undefined) {
+      data[key] = el.value;
+    }
+  });
+  return data;
+}
+
+// Strip characters the PDF standard font (WinAnsi) can't encode, so generation
+// never throws on emoji/unusual glyphs. The TRUE values (including those chars)
+// are preserved in the embedded JSON snapshot used for re-import.
+function pdfSafeText(v) {
+  if (v == null) return '';
+  var s = String(v);
+  var out = '';
+  for (var i = 0; i < s.length; i++) {
+    var code = s.charCodeAt(i);
+    // Keep tab/newline and the WinAnsi-representable range; drop the rest.
+    if (code === 9 || code === 10 || code === 13 || (code >= 32 && code <= 255)) {
+      out += s[i];
+    } else {
+      out += '';  // unencodable glyph removed from the visible field
+    }
+  }
+  return out;
+}
+
+// ── GENERATE FILLABLE PDF ───────────────────────────────────────────────
+// Reusable: trigger a direct file download from a Blob.
+function _downloadBlob(blob, filename) {
+  var url = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+}
+
+async function saveFillablePdf() {
+  if (typeof PDFLib === 'undefined') {
+    setStatus('PDF library not loaded — try refreshing.');
+    setTimeout(function(){ setStatus(''); }, 5000);
     return;
   }
+  if (typeof html2canvas === 'undefined') {
+    setStatus('Capture library not loaded — try refreshing.');
+    setTimeout(function(){ setStatus(''); }, 5000);
+    return;
+  }
+  setStatus('Building resumable PDF…');
+  try {
+    saveDraft();
+    var data = pdfCollectFormData();
 
-  saveDraft();
+    // ── 1) Render the styled page to a canvas (your exact print look). ──
+    var canvas = await capturePageToCanvas(false);
 
-  // Build rows: [Field ID (hidden key), Friendly Label, Value]
-  var rows = [['field_id', 'Field', 'Value']]; // header row
+    var PDFDocument = PDFLib.PDFDocument;
+    var pdfDoc = await PDFDocument.create();
 
-  // Text / number / date inputs
-  document.querySelectorAll('input[type="text"],input[type="email"],input[type="tel"],input[type="date"],input[type="number"],textarea').forEach(function(el) {
-    var key = el.id || el.name; if (!key || !el.value) return;
-    var label = FIELD_LABELS[key] || key;
-    rows.push([key, label, el.value]);
-  });
+    // ── 2) Embed the canvas as the full-page image. No form fields are added —
+    //        the data needed to resume editing rides in the embedded JSON below,
+    //        which is what LOAD reads. The visible PDF is purely the styled image.
+    var imgData = canvas.toDataURL('image/png');
+    var pngBytes = Uint8Array.from(atob(imgData.split(',')[1]), function(c){ return c.charCodeAt(0); });
+    var png = await pdfDoc.embedPng(pngBytes);
 
-  // Radio buttons — one row per group
-  var radioGroups = {};
-  document.querySelectorAll('input[type="radio"]').forEach(function(el) {
-    if (el.checked) radioGroups[el.name] = el.value;
-  });
-  Object.keys(radioGroups).forEach(function(name) {
-    var label = FIELD_LABELS[name] || name;
-    rows.push([name, label, radioGroups[name]]);
-  });
+    var PAGE_W = 612;                                   // US Letter width (pt)
+    var scale = PAGE_W / png.width;
+    var PAGE_H = png.height * scale;
+    var page = pdfDoc.addPage([PAGE_W, PAGE_H]);
+    page.drawImage(png, { x: 0, y: 0, width: PAGE_W, height: PAGE_H });
 
-  // Checkboxes — comma-separated checked values
-  var checkGroups = {};
-  document.querySelectorAll('input[type="checkbox"]').forEach(function(el) {
-    if (!el.name) return;
-    if (!checkGroups[el.name]) checkGroups[el.name] = [];
-    if (el.checked) checkGroups[el.name].push(el.value);
-  });
-  Object.keys(checkGroups).forEach(function(name) {
-    if (!checkGroups[name].length) return;
-    var label = FIELD_LABELS[name] || name;
-    rows.push([name, label, checkGroups[name].join(', ')]);
-  });
 
-  // Build worksheet and workbook
-  var ws = XLSX.utils.aoa_to_sheet(rows);
+    // ── 3) Embed full JSON for a lossless reload round-trip. ──
+    var jsonStr = JSON.stringify(data);
+    try { await pdfDoc.attach(new TextEncoder().encode(jsonStr), 'estimate-data.json', {
+      mimeType: 'application/json', description: 'Always On Generators — form data (do not delete)' }); } catch(e) {}
+    try { pdfDoc.setKeywords([ 'AOGDATA:' + btoa(unescape(encodeURIComponent(jsonStr))) ]); } catch(e) {}
+    pdfDoc.setTitle((data.name ? data.name + ' — ' : '') + 'Generator Installation Estimate');
 
-  // Column widths: ID (hidden-ish narrow), Label, Value
-  ws['!cols'] = [{ wch: 20 }, { wch: 28 }, { wch: 48 }];
+    var bytes = await pdfDoc.save();
 
-  var wb = XLSX.utils.book_new();
-  XLSX.utils.book_append_sheet(wb, ws, 'Estimate');
+    var fname = getEstimateFilename ? getEstimateFilename('pdf') : 'Estimate.pdf';
+    fname = fname.replace(/\.pdf$/i, '') + ' - RESUMABLE.pdf';
+    var blob = new Blob([bytes], { type: 'application/pdf' });
 
-  // Filename
-  var name    = ((document.getElementById('name')    || {}).value || '').trim();
-  var address = ((document.getElementById('address') || {}).value || '').trim();
-  var parts   = [];
-  if (name)    parts.push(name);
-  if (address) parts.push(address);
-  parts.push('Estimate');
-  var slug = parts.join(' - ').replace(/[\/\\:*?"<>|]/g, '').replace(/\s{2,}/g, ' ').trim();
-  var filename = slug + '.xlsx';
+    // On phones/tablets that support file sharing, pull up the native share
+    // sheet (Save to Files, Messages, Mail…) — same behavior as CAPTURE.
+    // Everywhere else, fall back to a direct download.
+    var didShare = false;
+    if (typeof canShareFiles === 'function' && canShareFiles()) {
+      try {
+        var pdfFile = new File([blob], fname, { type: 'application/pdf' });
+        if (navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+          didShare = true;
+          setStatus('Opening share sheet…');
+          try {
+            await navigator.share({ files: [pdfFile] });
+            setStatus('');
+          } catch (shErr) {
+            if (shErr && shErr.name === 'AbortError') {
+              setStatus(''); // user cancelled the share sheet
+            } else {
+              // Sharing failed for another reason → download instead.
+              _downloadBlob(blob, fname);
+              setStatus('Resumable PDF saved: ' + fname);
+              setTimeout(function(){ setStatus(''); }, 4000);
+            }
+          }
+        }
+      } catch (e) { didShare = false; }
+    }
 
-  XLSX.writeFile(wb, filename);
-  setStatus('Excel saved: ' + filename);
-  setTimeout(function() { setStatus(''); }, 4000);
+    if (!didShare) {
+      _downloadBlob(blob, fname);
+      setStatus('Resumable PDF saved: ' + fname);
+      setTimeout(function(){ setStatus(''); }, 4000);
+    }
+  } catch (err) {
+    setStatus('Could not build PDF: ' + (err && err.message ? err.message : err));
+    setTimeout(function(){ setStatus(''); }, 6000);
+  }
 }
+
+// checkbox field-name → {group,value} map, rebuilt each generate; also
+// reconstructed on load from the field naming convention.
+var _PDF_CB_MAP = {};
+
+// ── LOAD FROM FILLABLE PDF ──────────────────────────────────────────────
+async function loadFromFillablePdf(bytes, fname) {
+  if (typeof PDFLib === 'undefined') {
+    setStatus('PDF library not loaded — try refreshing.');
+    setTimeout(function(){ setStatus(''); }, 5000);
+    return;
+  }
+  setStatus('Reading PDF…');
+  try {
+    var pdfDoc = await PDFLib.PDFDocument.load(bytes, { ignoreEncryption: true });
+
+    // 1) Best path: AOGDATA keyword channel — a base64 JSON snapshot written at
+    //    save time. Lossless for every character (emoji, accents, etc.), which
+    //    the visible PDF text fields can't always represent.
+    var data = null;
+    try {
+      var kw = pdfDoc.getKeywords();
+      var kwStr = Array.isArray(kw) ? kw.join(' ') : (kw || '');
+      var m = kwStr.match(/AOGDATA:([A-Za-z0-9+/=]+)/);
+      if (m) data = JSON.parse(decodeURIComponent(escape(atob(m[1]))));
+    } catch(e) {}
+
+    // 2) Fallback: read the live AcroForm field values. Captures anything typed
+    //    or checked in Acrobat/Preview after the snapshot was written.
+    if (!data) data = pdfReadAcroFields(pdfDoc);
+
+    if (!data) {
+      setStatus('No estimate data found in that PDF.');
+      setTimeout(function(){ setStatus(''); }, 5000);
+      return;
+    }
+
+    applyFormData(data);
+    saveDraft();
+    setStatus('Loaded from PDF: ' + fname);
+    setTimeout(function(){ setStatus(''); }, 4000);
+  } catch (err) {
+    setStatus('Error reading PDF — file may be invalid.');
+    setTimeout(function(){ setStatus(''); }, 6000);
+  }
+}
+
+function pdfReadAcroFields(pdfDoc) {
+  try {
+    var form = pdfDoc.getForm();
+    var fields = form.getFields();
+    var data = {};
+    fields.forEach(function(field) {
+      var name = field.getName();         // e.g. f_name, f_survey, f_pad__bolted
+      var ctor = field.constructor.name;  // PDFTextField / PDFRadioGroup / PDFCheckBox
+      var base = name.replace(/^f_/, '');
+      if (ctor === 'PDFTextField') {
+        data[base] = field.getText() || '';
+      } else if (ctor === 'PDFRadioGroup') {
+        var sel = field.getSelected();
+        if (sel) data[base] = sel;
+      } else if (ctor === 'PDFCheckBox') {
+        // naming convention: f_<group>__<value>
+        var parts = base.split('__');
+        if (parts.length === 2 && field.isChecked()) {
+          if (!Array.isArray(data[parts[0]])) data[parts[0]] = [];
+          data[parts[0]].push(parts[1]);
+        }
+      }
+    });
+    return Object.keys(data).length ? data : null;
+  } catch (e) { return null; }
+}
+
+
 
 // ── SAVE AS HTML ──
 function saveAsHTML() {
@@ -3190,7 +3468,7 @@ function cropCanvasToContent(canvas) {
   }
 }
 
-function capturePageToCanvas(_fontsReady) {
+function capturePageToCanvas(_fontsReady, _rectSink) {
   return new Promise(function(resolve, reject) {
     // Wait for web fonts to finish loading before rendering. Without this, a
     // capture fired before 'Share Tech Mono' loads falls back to the heavier
@@ -3198,7 +3476,7 @@ function capturePageToCanvas(_fontsReady) {
     if (!_fontsReady && document.fonts && document.fonts.ready) {
       var fontPromises = [document.fonts.ready];
       try { fontPromises.push(document.fonts.load("12px 'Share Tech Mono'")); } catch (e) {}
-      var rerun = function () { capturePageToCanvas(true).then(resolve, reject); };
+      var rerun = function () { capturePageToCanvas(true, _rectSink).then(resolve, reject); };
       Promise.all(fontPromises).then(rerun, rerun);
       return;
     }
@@ -3545,6 +3823,37 @@ function capturePageToCanvas(_fontsReady) {
     Promise.all(_iconPromises).then(function() {
     requestAnimationFrame(function() { requestAnimationFrame(function() {
       var CAPTURE_H = Math.max(page.scrollHeight, PAPER_H);
+
+      // ── Collect fillable-field rects (for the editable-PDF overlay) ──
+      // Measured now, while #page is at capture width, relative to #page's
+      // top-left, then scaled by 2 to match html2canvas scale:2 pixels.
+      if (_rectSink) {
+        try {
+          var _pr = page.getBoundingClientRect();
+          var _S = 2; // html2canvas scale
+          _rectSink.rects = [];
+          _rectSink.canvasW0 = Math.round(CAPTURE_W * _S);
+          _rectSink.canvasH0 = Math.round(CAPTURE_H * _S);
+          page.querySelectorAll('input, textarea').forEach(function(el) {
+            if (el.type === 'file' || el.type === 'range' || el.type === 'hidden') return;
+            var key = el.id || el.name; if (!key) return;
+            var r = el.getBoundingClientRect();
+            if (r.width < 1 || r.height < 1) return; // hidden / collapsed
+            _rectSink.rects.push({
+              id: key,
+              type: el.type,
+              value: el.value,
+              checked: (el.type === 'checkbox' || el.type === 'radio') ? !!el.checked : null,
+              optValue: (el.type === 'checkbox' || el.type === 'radio') ? el.value : null,
+              x: (r.left - _pr.left) * _S,
+              y: (r.top  - _pr.top ) * _S,
+              w: r.width  * _S,
+              h: r.height * _S
+            });
+          });
+        } catch(e) { if (_rectSink) _rectSink.error = e && e.message; }
+      }
+
       try {
         html2canvas(page, {
           scale: 2, useCORS: true, allowTaint: true, backgroundColor: '#ffffff', logging: false, imageTimeout: 15000,
@@ -3559,6 +3868,12 @@ function capturePageToCanvas(_fontsReady) {
             _phStyle.textContent = 'input::placeholder,textarea::placeholder{color:transparent!important;opacity:0!important;}' +
               'input::-webkit-input-placeholder,textarea::-webkit-input-placeholder{color:transparent!important;opacity:0!important;}';
             clonedDoc.head.appendChild(_phStyle);
+            // Empty date inputs render "mm/dd/yyyy" (/// on old iOS). In the
+            // clone, demote empty ones to plain text inputs so nothing shows;
+            // filled ones keep their value.
+            clonedDoc.querySelectorAll('input[type="date"]').forEach(function(d){
+              if (!d.value) { try { d.setAttribute('type', 'text'); d.value = ''; } catch(e){} }
+            });
             // Strip dark-mode and seasonal classes + their style tags from clone
             var cb = clonedDoc.body;
             cb.classList.remove('dark-mode');
@@ -3646,7 +3961,30 @@ function capturePageToCanvas(_fontsReady) {
           }
         }).then(function(canvas) {
           restore();
-          resolve(addCaptureMargin(padCanvasToLetter(cropCanvasToContent(canvas))));
+          if (_rectSink) {
+            // Project measured rects through the same post-process chain so they
+            // line up with the final canvas pixels.
+            var c1 = cropCanvasToContent(canvas);   // bottom-crop only (top/x unchanged)
+            var w1 = c1.width, h1 = c1.height;
+            // padCanvasToLetter: centers content, may add width (x shift) or height (bottom)
+            var targetRatio = 11 / 8.5;
+            var padX = 0;
+            var nw = w1, nh = h1;
+            if (h1 / w1 > targetRatio) { nw = Math.round(h1 / targetRatio); padX = Math.round((nw - w1) / 2); }
+            else { nh = Math.round(w1 * targetRatio); }
+            var c2 = padCanvasToLetter(c1);
+            // addCaptureMargin: uniform margin m on all sides
+            var m = Math.round(c2.width * 0.15 / 8.5);
+            var c3 = addCaptureMargin(c2);
+            _rectSink.finalCanvas = c3;
+            _rectSink.offsetX = padX + m;
+            _rectSink.offsetY = m;
+            _rectSink.finalW = c3.width;
+            _rectSink.finalH = c3.height;
+            resolve(c3);
+          } else {
+            resolve(addCaptureMargin(padCanvasToLetter(cropCanvasToContent(canvas))));
+          }
         }).catch(function(err) {
           restore();
           reject(err);
@@ -3835,41 +4173,6 @@ function saveForAndroid() {
   }, 250);
 }
 
-// ── EMAIL ──
-function sendEmail() {
-  var data = getFormData();
-  var name    = data.name    || '';
-  var emailTo = data.email   || '';
-  var address = (data.address || '') + (data.address2 ? ', ' + data.address2 : '');
-  var subject = 'Generator Installation Estimate — ' + name;
-  var lines = [
-    'Dear ' + name + ',', '',
-    'Thank you for the opportunity to provide you with a generator installation estimate.', '',
-    '--- ESTIMATE DETAILS ---',
-    'Customer: '  + name,
-    'Address: '   + address,
-    'Phone: '     + (data.phone     || ''),
-    'Sq. Footage: '+ (data.sqft     || '') + ' SF',
-    'Estimate Date: ' + (data.est_date  || ''),
-    'Estimator: ' + (data.estimator || ''), '',
-    'Please reply to this email or call us if you have any questions.', '',
-    'Best regards,',
-    'Always On Generators'
-  ];
-  var uri = 'mailto:' + encodeURIComponent(emailTo) + '?subject=' + encodeURIComponent(subject) + '&body=' + encodeURIComponent(lines.join('\n'));
-  try {
-    window.location.href = uri;
-    setTimeout(function() {
-      if (document.hasFocus()) {
-        setStatus('No email client found — copy address manually.');
-        setTimeout(function() { setStatus(''); }, 5000);
-      }
-    }, 800);
-  } catch(e) {
-    setStatus('Could not open email client.');
-    setTimeout(function() { setStatus(''); }, 5000);
-  }
-}
 
 // ── CLEAR ──
 function confirmClear() {
@@ -3905,12 +4208,13 @@ function confirmClear() {
 }
 
 function doClearForm() {
-  document.querySelectorAll('input[type="text"],input[type="email"],input[type="tel"],input[type="date"],input[type="number"],textarea').forEach(function(el) { el.value=''; });
+  document.querySelectorAll('input[type="text"],input[type="email"],input[type="tel"],input[type="date"],input[type="number"],input[data-was-date="1"],textarea').forEach(function(el) { el.value=''; });
   document.querySelectorAll('input[type="checkbox"],input[type="radio"]').forEach(function(el) { el.checked=false; });
   var today = new Date().toISOString().split('T')[0];
   var todayInput = document.getElementById('today'); if (todayInput) todayInput.value = today;
   var estDone   = document.getElementById('est_done_on'); if (estDone) estDone.value = today;
   var gps = document.getElementById('gps-status'); if (gps) { gps.style.display='none'; gps.textContent=''; }
+  if (window._refreshAllDateEmpty) window._refreshAllDateEmpty();
   try { localStorage.removeItem(DRAFT_KEY); } catch(e) {}
 }
 
@@ -5225,10 +5529,55 @@ document.addEventListener('DOMContentLoaded', function() {
 
   restoreDraft();
 
+  // Empty date inputs render "mm/dd/yyyy" (the /// on old iOS) and some iOS
+  // versions ignore CSS attempts to hide it. The only reliable fix: while a
+  // date field is empty, present it as a blank text input (shows nothing);
+  // the moment the user focuses it, switch it back to a real date picker.
+  (function () {
+    function demoteIfEmpty(el) {
+      if (!el) return;
+      if (!el.value && el.type === 'date') {
+        el.dataset.wasDate = '1';
+        el.type = 'text';
+        el.classList.remove('date-empty');
+      }
+    }
+    function promoteToDate(el) {
+      if (el.dataset.wasDate === '1' && el.type === 'text') {
+        el.type = 'date';
+        // re-open the native picker now that it's a date field
+        try { el.focus(); if (el.showPicker) el.showPicker(); } catch(e) {}
+      }
+    }
+    function syncOne(el) {
+      // called after value changes (typing/picking/loading)
+      if (el.value) {
+        if (el.dataset.wasDate === '1' && el.type === 'text') el.type = 'date';
+        el.classList.remove('date-empty');
+      } else {
+        demoteIfEmpty(el);
+      }
+    }
+    var dates = Array.prototype.slice.call(document.querySelectorAll('input[type="date"]'));
+    // also catch ones already demoted to text earlier
+    document.querySelectorAll('input[data-was-date="1"]').forEach(function(e){ if(dates.indexOf(e)<0) dates.push(e); });
+    dates.forEach(function (el) {
+      demoteIfEmpty(el);
+      el.addEventListener('focus', function () { promoteToDate(el); });
+      el.addEventListener('input',  function () { syncOne(el); });
+      el.addEventListener('change', function () { syncOne(el); });
+      el.addEventListener('blur',   function () { demoteIfEmpty(el); });
+    });
+    window._refreshAllDateEmpty = function () {
+      document.querySelectorAll('input[type="date"],input[data-was-date="1"]').forEach(syncOne);
+    };
+  })();
+
   var todayInput  = document.getElementById('today');
   var estDoneOn   = document.getElementById('est_done_on');
   if (todayInput  && !todayInput.value)  todayInput.value  = todayStr;
   if (estDoneOn   && !estDoneOn.value)   estDoneOn.value   = todayStr;
+  if (window._refreshAllDateEmpty) window._refreshAllDateEmpty();
 
   if (!navigator.onLine) { document.body.classList.add('offline'); }
   injectSeasonalStyles();
@@ -5273,7 +5622,9 @@ function adjustTopPadding() {
 }
 window.addEventListener('resize', adjustTopPadding);
 window.addEventListener('load', adjustTopPadding);
+window.addEventListener('orientationchange', function(){ setTimeout(adjustTopPadding, 150); });
 setTimeout(adjustTopPadding, 100);
+setTimeout(adjustTopPadding, 600);
 
 
 /* ════════════════════════════════════════════════════════════════════════
@@ -5736,6 +6087,62 @@ setTimeout(adjustTopPadding, 100);
   });
   apply(0);
 })();
+</script>
+<script>
+/* ===================================================================
+   PORTED SIMPLE PRINT LOGIC (testing)
+   Replaces the openPrintPreview engine on the PDF button:
+   set filename → force light → 300ms settle → window.print() →
+   restore only after returning to the page (so adjusting scale in the
+   preview never makes anything snap back while it's still open).
+   =================================================================== */
+function aogSimplePrint() {
+  var b = document.body, h = document.documentElement;
+  try {
+    if (typeof getEstimateFilename === 'function') {
+      document.title = getEstimateFilename('pdf').replace(/\.pdf$/, '');
+    }
+  } catch (e) {}
+
+  var wasDark = b.classList.contains('dark-mode');
+  if (wasDark) { b.classList.add('aog-was-dark'); b.classList.remove('dark-mode'); }
+  h.classList.remove('dark-mode-pending');
+  h.style.colorScheme = 'light';
+  b.style.colorScheme = 'light';
+  b.classList.add('preparing-print');
+
+  if (document.activeElement && document.activeElement.blur) document.activeElement.blur();
+
+  var cleared = false;
+  function clear() {
+    if (cleared) return;
+    cleared = true;
+    b.classList.remove('preparing-print');
+    if (b.classList.contains('aog-was-dark')) {
+      b.classList.remove('aog-was-dark');
+      b.classList.add('dark-mode');
+    }
+    h.style.colorScheme = '';
+    b.style.colorScheme = '';
+    window.removeEventListener('focus', onFocus);
+    document.removeEventListener('visibilitychange', onVis);
+  }
+  function onFocus() { setTimeout(clear, 400); }
+  function onVis() { if (document.visibilityState === 'visible') setTimeout(clear, 400); }
+  window.addEventListener('focus', onFocus);
+  document.addEventListener('visibilitychange', onVis);
+  setTimeout(clear, 60000); // safety net
+
+  requestAnimationFrame(function () {
+    requestAnimationFrame(function () {
+      setTimeout(function () { window.print(); }, 300);
+    });
+  });
+}
+/* Route any other callers of the old engine through the simple path too. */
+window.aogSimplePrint   = aogSimplePrint;
+window.printForm        = aogSimplePrint;
+window.openPrintPreview = aogSimplePrint;
 </script>
 </body>
 </html>
