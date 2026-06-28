@@ -1217,7 +1217,7 @@ body.dark-mode::-webkit-scrollbar-thumb:hover { background: linear-gradient(180d
 body.mobile-safari { -webkit-print-color-adjust: exact; }
 
 @media print {
-  @page { size: 8.5in 11in; margin: 0.12in 0.15in !important; }
+  @page { size: 8.7in 11in; margin: 0.15in 0.15in 0.06in 0.15in !important; }
   html {
     height: auto !important; margin: 0 !important; padding: 0 !important;
     overflow: visible !important;
@@ -1384,30 +1384,6 @@ body.mobile-safari { -webkit-print-color-adjust: exact; }
      just "Installation Estimate" against the two-line company name block. */
   .header-logo { align-self: stretch !important; }
   .doc-title { align-self: center !important; }
-}
-
-/* ===================================================================
-   MOBILE PRINT LOGIC (ported) — landscape + 835px layout, mobile only.
-   Desktop print (above) stays portrait and unchanged.
-   =================================================================== */
-@media print and (max-device-width: 1024px) {
-  /* Mobile only: print in landscape. */
-  @page { size: 11in 8.5in; margin: 0.15in 0.2in; }
-
-  /* Lay the printable canvas out at a fixed 835px (~8.7in) and let the print
-     engine scale it to fit the sheet (consistent layout, no reflow/blow-up). */
-  html, body {
-    width: 835px !important;
-    min-width: 835px !important;
-    max-width: 835px !important;
-    margin: 0 !important;
-  }
-  .page {
-    width: 835px !important;
-    min-width: 835px !important;
-    max-width: 835px !important;
-    margin: 0 !important;
-  }
 }
 
 
