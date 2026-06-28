@@ -1386,6 +1386,30 @@ body.mobile-safari { -webkit-print-color-adjust: exact; }
   .doc-title { align-self: center !important; }
 }
 
+/* ===================================================================
+   MOBILE PRINT LOOK — reproduces the old engine's default (scale ×1)
+   stamps in CSS now that the simple window.print() path is used.
+   Engine stamped phones/iPad at 1050px wide, html font-size 20px, and
+   gave .page a 1.5pt border. Desktop print (above) stays 990px.
+   =================================================================== */
+@media print and (max-device-width: 1024px) {
+  html, body {
+    width: 1050px !important;
+    max-width: 1050px !important;
+    min-width: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+  .page {
+    width: 100% !important;
+    max-width: 100% !important;
+    margin: 0 auto !important;
+    padding: 4px 3px 2px 3px !important;
+    border: 1.5pt solid #D35E13 !important;
+    box-shadow: none !important;
+  }
+}
+
 
 /* ===== ACTION BAR (matches breaker.html) ===== */
 .action-bar {
