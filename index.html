@@ -257,11 +257,14 @@ body.dark-mode .gen-info-row input[type="text"] { background: rgba(10,14,39,0.6)
 .notes-section { margin-top: 14px; position: relative; z-index: 1; }
 .notes-label { font-size: 11px; font-weight: bold; color: var(--text); margin-bottom: 4px; }
 textarea.notes-field {
-  width: 100%; resize: vertical; border: 1px solid rgba(211,94,19,0.25);
+  width: 100%; resize: none; border: 1px solid rgba(211,94,19,0.25);
   padding: 6px 8px; font-family: Arial, sans-serif; font-size: 11px;
   color: var(--text); background: var(--panel); min-height: 70px; outline: none;
   transition: border-color 0.2s; box-sizing: border-box;
+  overflow: hidden; height: 70px; scrollbar-width: none;
 }
+textarea.notes-field::-webkit-scrollbar { display: none; }
+textarea.notes-field { -ms-overflow-style: none; }
 textarea.notes-field:focus { border-color: var(--cyan); box-shadow: 0 0 8px rgba(211,94,19,0.1); }
 body.dark-mode textarea.notes-field { background: rgba(10,14,39,0.6); border-color: rgba(0,255,200,0.15); color: #E0F7FF; }
 body.dark-mode textarea.notes-field:focus { border-color: #00FFC8; }
@@ -327,7 +330,8 @@ input::placeholder, textarea::placeholder { color: var(--text-dim) !important; o
   .form-page::before, body.dark-mode .form-page::before { border: 2px solid #D35E13 !important; border-radius: 4px !important; }
 
   /* Every descendant: transparent bg (inherits white), dark text, no glow */
-  .form-page *, body.dark-mode .form-page * {
+  /* Exclude textarea so it can override with white and not be clipped */
+  .form-page *:not(textarea), body.dark-mode .form-page *:not(textarea) {
     background-color: transparent !important;
     color: #1F2937 !important;
     box-shadow: none !important;
@@ -340,8 +344,8 @@ input::placeholder, textarea::placeholder { color: var(--text-dim) !important; o
   table.checklist-table tbody tr:nth-child(even) td { background-color: rgba(211,94,19,0.03) !important; }
   table.checklist-table tbody td { border-color: rgba(211,94,19,0.2) !important; color: #1F2937 !important; }
 
-  /* Inputs / textareas: force white fill (overrides browser autofill dark tinting) */
-  input[type="text"], input[type="date"], textarea {
+  /* Inputs: force white fill */
+  input[type="text"], input[type="date"] {
     background-color: #ffffff !important;
     color: #1F2937 !important;
     -webkit-text-fill-color: #1F2937 !important;
@@ -350,6 +354,26 @@ input::placeholder, textarea::placeholder { color: var(--text-dim) !important; o
     -webkit-box-shadow: inset 0 0 0 1000px #ffffff !important;
     box-shadow: inset 0 0 0 1000px #ffffff !important;
   }
+
+  /* Notes textarea: fully expand — no clipping, no scrollbar */
+  textarea.notes-field {
+    background-color: #ffffff !important;
+    color: #1F2937 !important;
+    -webkit-text-fill-color: #1F2937 !important;
+    overflow: hidden !important;
+    min-height: 0 !important;
+    max-height: none !important;
+    resize: none !important;
+    white-space: pre-wrap !important;
+    word-wrap: break-word !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+    display: block !important;
+    border: 1px solid rgba(211,94,19,0.25) !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+  }
+  textarea.notes-field::-webkit-scrollbar { display: none !important; }
 
   /* Checkboxes */
   input[type="checkbox"] { background-color: #ffffff !important; border-color: #D35E13 !important; box-shadow: none !important; }
@@ -363,6 +387,10 @@ input::placeholder, textarea::placeholder { color: var(--text-dim) !important; o
   .logo-on, body.dark-mode .logo-on { color: #D35E13 !important; }
   .logo-generators, body.dark-mode .logo-generators { color: #1F2937 !important; }
   .page1-header, body.dark-mode .page1-header { border-bottom-color: #D35E13 !important; }
+
+  /* Replace fixed-inset ::before border with outline so it always wraps full content */
+  .form-page::before, body.dark-mode .form-page::before { display: none !important; }
+  .form-page, body.dark-mode .form-page { outline: 2px solid #D35E13 !important; outline-offset: -5px !important; }
 }
 </style>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" defer></script>
@@ -654,12 +682,59 @@ var AUTOSAVE_KEY = 'aog-autosave';
 function _autosaveNow() {
   try { localStorage.setItem(AUTOSAVE_KEY, JSON.stringify(_collectFieldData())); } catch (e) {}
 }
+// ===== TEXTAREA AUTO-GROW =====
+function autoGrowTextarea(ta) {
+  ta.style.height = 'auto';
+  ta.style.height = Math.max(70, ta.scrollHeight) + 'px';
+}
+(function initAutoGrow() {
+  function start() {
+    document.querySelectorAll('textarea.notes-field').forEach(function(ta) {
+      ta.addEventListener('input', function() { autoGrowTextarea(ta); });
+      autoGrowTextarea(ta); // size correctly on load/restore
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
+  else start();
+})();
+
+// ===== PRINT HEIGHT EXPANSION =====
+(function initPrintHeights() {
+  var textareas = [];
+  var savedHeights = [];
+  
+  function updateTextareas() {
+    textareas = Array.from(document.querySelectorAll('textarea.notes-field'));
+  }
+  
+  updateTextareas();
+  
+  window.addEventListener('beforeprint', function() {
+    updateTextareas();
+    textareas.forEach(function(ta, idx) {
+      savedHeights[idx] = ta.style.height;
+      var newHeight = Math.max(70, ta.scrollHeight) + 'px';
+      ta.style.height = newHeight;
+    });
+  });
+  
+  window.addEventListener('afterprint', function() {
+    textareas.forEach(function(ta, idx) {
+      ta.style.height = savedHeights[idx] || '';
+    });
+  });
+})();
+
 (function initAutosave() {
   function start() {
     // Silently restore the last draft, if any.
     try {
       var raw = localStorage.getItem(AUTOSAVE_KEY);
-      if (raw) _applyFieldData(JSON.parse(raw));
+      if (raw) {
+        _applyFieldData(JSON.parse(raw));
+        // Re-size textareas after restoring saved content
+        document.querySelectorAll('textarea.notes-field').forEach(function(ta) { autoGrowTextarea(ta); });
+      }
     } catch (e) {}
     // Save on every change/keystroke (debounced).
     var t;
@@ -898,10 +973,19 @@ function capturePageToCanvas() {
             // onto multiple lines and the box grows instead of clipping its border.
             var note = clonedDoc.createElement('div');
             note.textContent = L.value;
-            note.style.cssText = 'width:100%;min-height:70px;box-sizing:border-box;' +
+            // Create temporary element to calculate height
+            var tempDiv = clonedDoc.createElement('div');
+            tempDiv.textContent = L.value;
+            tempDiv.style.cssText = 'position:absolute;visibility:hidden;width:' + L.offsetWidth + 'px;box-sizing:border-box;' +
+              'padding:6px 8px;font-family:Arial, sans-serif;font-size:11px;line-height:1.5;' +
+              'white-space:pre-wrap;word-wrap:break-word;overflow-wrap:break-word;word-break:break-word;';
+            clonedDoc.body.appendChild(tempDiv);
+            var calculatedHeight = Math.max(70, tempDiv.offsetHeight);
+            clonedDoc.body.removeChild(tempDiv);
+            note.style.cssText = 'width:100%;height:' + calculatedHeight + 'px;box-sizing:border-box;' +
               'border:1px solid rgba(211,94,19,0.25);background:#ffffff;color:#1F2937;' +
               'padding:6px 8px;font-family:Arial, sans-serif;font-size:11px;line-height:1.5;' +
-              'white-space:pre-wrap;word-wrap:break-word;overflow-wrap:break-word;word-break:break-word;overflow:visible;';
+              'white-space:pre-wrap;word-wrap:break-word;overflow-wrap:break-word;word-break:break-word;overflow:hidden;';
             if (C.parentNode) C.parentNode.replaceChild(note, C);
           } else if (L.type === 'checkbox') {
             var on = L.checked;
