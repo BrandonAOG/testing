@@ -146,17 +146,12 @@ body.dark-mode .theme-icon.theme-icon-moon { opacity: 1; transform: rotate(0deg)
   padding: 24px; box-sizing: border-box; transition: all 0.3s ease;
   font-family: Arial, sans-serif; display: flex; flex-direction: column;
   position: relative;
-}
-.form-page::before {
-  content: ''; position: absolute;
-  top: 5px; right: 5px; bottom: 5px; left: 5px;
   border: 2px solid #D35E13; border-radius: 4px;
-  pointer-events: none; z-index: 0;
 }
 @media (max-width: 768px) { .form-page { padding: 16px; } }
 @media (max-width: 480px) { .form-page { padding: 12px; } }
-@media screen { body.dark-mode .form-page { background: linear-gradient(135deg, rgba(15,21,53,0.95) 0%, rgba(10,14,39,0.98) 100%); box-shadow: 0 0 1px rgba(0,255,200,0.3), 0 0 20px rgba(0,255,200,0.15); }
-body.dark-mode .form-page::before { border-color: #00FFC8; }}
+@media screen { body.dark-mode .form-page { background: linear-gradient(135deg, rgba(15,21,53,0.95) 0%, rgba(10,14,39,0.98) 100%); box-shadow: 0 0 1px rgba(0,255,200,0.3), 0 0 20px rgba(0,255,200,0.15); border-color: #00FFC8; }
+}
 
 /* ===== HEADER ===== */
 .page1-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 14px; padding-bottom: 10px; border-bottom: 2px solid #D35E13; position: relative; z-index: 1; }
@@ -870,9 +865,9 @@ function _captureCSS() {
     // kill any decorative gradient pseudo-lines (createPattern 0-size guard)
     '*::before, *::after { background-image:none !important; }',
     // Replace the position:absolute ::before border (fixed insets, won't grow with content)
-    // with an outline on the element itself so it always wraps the full page height.
+    // with a box-shadow that always wraps the full page height and grows with content
     '.form-page::before, body.dark-mode .form-page::before { display:none !important; border:none !important; }',
-    '.form-page, body.dark-mode .form-page { outline:2px solid #D35E13 !important; outline-offset:-5px !important; }',
+    '.form-page, body.dark-mode .form-page { box-shadow: inset 0 0 0 2px #D35E13 !important; }',
     // restore intentional tints
     'table.checklist-table thead tr th { background:#D35E13 !important; color:#ffffff !important; }',
     'table.checklist-table tbody td.row-label { background:rgba(211,94,19,0.08) !important; }',
@@ -1003,11 +998,45 @@ function capturePageToCanvas() {
     }
   }).then(function (canvas) {
     restoreNotes();
-    return canvas;
+    return _wrapInPaper(canvas);
   }, function (err) {
     restoreNotes();
     throw err;
   });
+}
+
+// ── PAPER WRAPPER — places the captured form on an 8.5×11 canvas ────────────
+// 192 DPI (2× screen) → 1632 × 2112 px. 0.15″ margins → 29 px per side.
+// The form is scaled to fill the width and pinned to the top margin.
+// This also makes the PDF export land on a perfect US Letter page.
+function _wrapInPaper(formCanvas) {
+  var DPI    = 192;
+  var MRG_IN = 0.15;
+  var pw = Math.round(8.5 * DPI);      // 1632 px  — letter width
+  var ph = Math.round(11  * DPI);      // 2112 px  — letter height
+  var mg = Math.round(MRG_IN * DPI);   //   29 px  — margin each side
+
+  var cw = pw - mg * 2;   // 1574 px  — usable width
+  var ch = ph - mg * 2;   // 2054 px  — usable height
+
+  // Scale form to fit width; if it's also taller than the content area,
+  // scale to fit height instead (keeps everything visible).
+  var scale = Math.min(cw / formCanvas.width, ch / formCanvas.height);
+  var dw = Math.round(formCanvas.width  * scale);
+  var dh = Math.round(formCanvas.height * scale);
+
+  // Centre horizontally, pin to top margin.
+  var ox = mg + Math.round((cw - dw) / 2);
+  var oy = mg;
+
+  var paper = document.createElement('canvas');
+  paper.width  = pw;
+  paper.height = ph;
+  var ctx = paper.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, pw, ph);
+  ctx.drawImage(formCanvas, ox, oy, dw, dh);
+  return paper;
 }
 
 // ── CAPTURE (image) ─────────────────────────────────────────────────────────
@@ -1092,9 +1121,8 @@ async function saveEditablePdf() {
     var imgData = canvas.toDataURL('image/png');
     var pngBytes = Uint8Array.from(atob(imgData.split(',')[1]), function (c) { return c.charCodeAt(0); });
     var png = await pdfDoc.embedPng(pngBytes);
-    var PAGE_W = 612;                     // US Letter width (pt)
-    var scale = PAGE_W / png.width;
-    var PAGE_H = png.height * scale;
+    var PAGE_W = 612;                     // US Letter width  (pt)
+    var PAGE_H = 792;                     // US Letter height (pt)
     var page = pdfDoc.addPage([PAGE_W, PAGE_H]);
     page.drawImage(png, { x: 0, y: 0, width: PAGE_W, height: PAGE_H });
     pdfDoc.setTitle('Always On Generators — Pre-Install Checklist');
