@@ -177,6 +177,17 @@ hr.sp{border:none;border-top:1px dashed var(--line);margin:14px 0}
   <div id="usualBanner" class="banner" style="display:none"></div>
   <div class="card" id="habitLine" style="padding:12px 16px"></div>
 
+  <div class="card" id="eatWindow" style="display:none;padding:12px 16px"></div>
+
+  <div id="freqWrap" style="display:none;margin-bottom:10px">
+    <div class="eyebrow" style="margin-bottom:6px">Frequent foods — tap to log</div>
+    <div id="freqChips" class="row" style="flex-wrap:wrap;gap:7px"></div>
+  </div>
+
+  <div class="spread" style="margin-bottom:8px">
+    <b style="font-size:14px">Meals</b>
+    <button class="btn small ghost" onclick="copyYesterday()">⧉ Copy yesterday</button>
+  </div>
   <div id="mealList"></div>
 
   <div class="card">
@@ -291,7 +302,16 @@ hr.sp{border:none;border-top:1px dashed var(--line);margin:14px 0}
       <div style="flex:1"><label class="f">Age</label><input class="f" id="pAge" type="number" inputmode="numeric" placeholder="30"></div>
     </div>
     <div class="row" style="gap:12px">
-      <div style="flex:1"><label class="f">Height (cm)</label><input class="f" id="pHeight" type="number" inputmode="decimal" placeholder="170"></div>
+      <div style="flex:1"><label class="f">Height</label>
+        <div class="row" style="gap:6px">
+          <input class="f num" id="pHft" type="number" inputmode="numeric" placeholder="5" style="display:none" aria-label="feet">
+          <input class="f num" id="pHin" type="number" inputmode="decimal" placeholder="9" style="display:none" aria-label="inches">
+          <input class="f num" id="pHeight" type="number" inputmode="decimal" placeholder="170" aria-label="centimeters">
+          <select class="f" id="pHUnit" style="flex:0 0 84px;padding:11px 8px" onchange="hUnitChanged()">
+            <option value="ftin">ft + in</option><option value="in">inches</option><option value="cm" selected>cm</option>
+          </select>
+        </div>
+      </div>
       <div style="flex:1"><label class="f">Weight (<span class="unitLbl">lb</span>)</label><input class="f" id="pWeight" type="number" inputmode="decimal" placeholder="180"></div>
     </div>
     <label class="f">Activity level</label>
@@ -333,10 +353,23 @@ hr.sp{border:none;border-top:1px dashed var(--line);margin:14px 0}
       <div style="flex:1"><label class="f">Sugar limit (g)</label><input class="f" id="pSugar" type="number" value="50"></div>
       <div style="flex:1"><label class="f">Sodium limit (mg)</label><input class="f" id="pSodium" type="number" value="2300"></div>
     </div>
+    <label class="f">Weekend calorie boost (kcal) — weekly cycling</label>
+    <input class="f num" id="pCycle" type="number" placeholder="0 = off · e.g. 300">
+    <p class="subtle" style="margin-top:6px">Adds this to Sat & Sun budgets and trims weekdays so your weekly average stays the same.</p>
+    </div>
     <button class="btn full" style="margin-top:16px" onclick="saveProfile()">Save & recalculate</button>
     <button class="btn full ghost" style="margin-top:10px" id="notifBtn" onclick="toggleNotif()">🔕 Enable fasting & water reminders</button>
     <p class="subtle" style="margin-top:8px">Reminders fire while the app is open or saved to your home screen: fast finishing soon, fast complete, and hydration check-ins at 3pm & 7pm.</p>
     <div id="planSummary" class="banner" style="display:none;margin-top:14px"></div>
+  </div>
+
+  <div class="card">
+    <b>Theme</b>
+    <p class="subtle" style="margin:6px 0 10px">Pick a preset or slide through every color. Works in light & dark mode.</p>
+    <div class="row" style="flex-wrap:wrap;gap:8px;margin-bottom:12px" id="themeSwatches"></div>
+    <label class="f">Any color (hue)</label>
+    <input type="range" id="themeHue" min="0" max="359" value="152" style="width:100%;accent-color:var(--green)" oninput="setTheme(+this.value)">
+    <button class="btn small ghost" style="margin-top:10px" onclick="setTheme(null)">Reset to default green</button>
   </div>
 </section>
 
@@ -488,7 +521,7 @@ hr.sp{border:none;border-top:1px dashed var(--line);margin:14px 0}
 const DB_KEY = "fittrack_v1";
 let S = load();
 function load(){
-  const base={ profile:null, days:{}, weights:[], customFoods:[], recents:[], barcodeCache:{},
+  const base={ profile:null, days:{}, weights:[], customFoods:[], recents:[], barcodeCache:{}, freq:{}, qtyMem:{}, themeHue:null,
     fast:{active:false,start:null,goalH:16,history:[]},
     adapt:null, measures:[], photos:[], notifOn:false, notifSent:{} };
   try{ const raw = localStorage.getItem(DB_KEY); if(raw){ const o=JSON.parse(raw); return Object.assign(base,o); } }catch(e){}
@@ -536,6 +569,9 @@ function plan(){
   if(target<minCal) target=minCal;
   const [pp,pc,pf]=p.macro.split(",").map(Number);
   if(!p.calOverride && S.adapt && S.adapt.offset) target=Math.round(target+S.adapt.offset);
+  const boost=+p.weekendBoost||0;
+  if(boost){ const wd=(typeof viewDate!=="undefined"?viewDate:new Date()).getDay();
+    target=Math.round(target + ((wd===0||wd===6) ? boost : -boost*2/5)); }
   if(target<minCal) target=minCal;
   return { tdee:Math.round(tdee), target,
     p:Math.round(target*pp/100/4), c:Math.round(target*pc/100/4), f:Math.round(target*pf/100/9),
@@ -550,12 +586,33 @@ function etaDate(){
 }
 function latestWeight(){ return S.weights.length ? S.weights[S.weights.length-1].w : (S.profile?S.profile.weight:0); }
 
+function heightCm(){
+  const u=$("pHUnit").value;
+  if(u==="cm") return +$("pHeight").value||170;
+  if(u==="in") return Math.round(((+$("pHin").value||67)*2.54)*10)/10;
+  return Math.round((((+$("pHft").value||5)*12+(+$("pHin").value||0))*2.54)*10)/10;
+}
+function hUnitChanged(doSave){
+  const u=$("pHUnit").value, cm=S.profile?S.profile.height:null;
+  $("pHft").style.display=u==="ftin"?"block":"none";
+  $("pHin").style.display=u!=="cm"?"block":"none";
+  $("pHeight").style.display=u==="cm"?"block":"none";
+  $("pHin").placeholder=u==="ftin"?"9":"69";
+  if(cm){ // show the saved height in the newly chosen unit
+    if(u==="cm") $("pHeight").value=cm;
+    else { const tot=cm/2.54;
+      if(u==="in") $("pHin").value=Math.round(tot*10)/10;
+      else { $("pHft").value=Math.floor(tot/12); $("pHin").value=Math.round(tot%12); } }
+  }
+  if(doSave!==false&&S.profile) saveProfile(true);
+}
 function saveProfile(quiet){
-  const p={ sex:$("pSex").value, age:+$("pAge").value||30, height:+$("pHeight").value||170,
+  const p={ sex:$("pSex").value, age:+$("pAge").value||30, height:heightCm(), hUnit:$("pHUnit").value,
     weight:+$("pWeight").value||70, units:$("pUnits").value, activity:+$("pActivity").value,
     goalW:+$("pGoalW").value||+$("pWeight").value||70, rateKg:+$("pRate").value,
     macro:$("pMacro").value, waterGoal:+$("pWater").value||8, calOverride:+$("pCalOverride").value||0,
-    fiberG:+$("pFiber").value||28, sugarG:+$("pSugar").value||50, sodiumG:+$("pSodium").value||2300 };
+    fiberG:+$("pFiber").value||28, sugarG:+$("pSugar").value||50, sodiumG:+$("pSodium").value||2300,
+    weekendBoost:+$("pCycle").value||0 };
   S.profile=p;
   if(!S.weights.length) S.weights.push({d:todayKey(new Date()), w:p.weight});
   save(); renderPlanSummary(); renderAll(); if(quiet!==true) toast("Plan updated ✓");
@@ -570,10 +627,12 @@ function renderPlanSummary(){
 }
 function fillProfileForm(){
   const p=S.profile; if(!p) return;
-  $("pSex").value=p.sex;$("pAge").value=p.age;$("pHeight").value=p.height;$("pWeight").value=p.weight;
+  $("pSex").value=p.sex;$("pAge").value=p.age;
+  $("pHUnit").value=p.hUnit||"cm"; hUnitChanged(false); $("pWeight").value=p.weight;
   $("pUnits").value=p.units;$("pActivity").value=p.activity;$("pGoalW").value=p.goalW;$("pRate").value=p.rateKg;
   $("pMacro").value=p.macro;$("pWater").value=p.waterGoal;$("pCalOverride").value=p.calOverride||"";
   $("pFiber").value=p.fiberG||28;$("pSugar").value=p.sugarG||50;$("pSodium").value=p.sodiumG||2300;
+  $("pCycle").value=p.weekendBoost||"";
   document.querySelectorAll(".unitLbl").forEach(x=>x.textContent=p.units);
   renderPlanSummary();
 }
@@ -630,6 +689,7 @@ function renderToday(){
     html+=`<button class="addto" onclick="openAdd('${name}')">+ Add to ${name.toLowerCase()}</button></div>`;
   }
   $("mealList").innerHTML=html;
+  renderFreqChips(); renderEatWindow();
 
   // water
   const wg=S.profile?S.profile.waterGoal:8;
@@ -690,13 +750,16 @@ function renderRecents(){
 }
 function pickFood(json){ pendingFood=JSON.parse(json); $("servName").textContent=pendingFood.name;
   $("servPer").textContent=`Per ${pendingFood.serv}: ${r0(pendingFood.cal)} kcal · ${r0(pendingFood.p)}p ${r0(pendingFood.c)}c ${r0(pendingFood.f)}f`;
-  $("servQty").value=1; $("servMeal").value=addMeal; servPreview(); $("mServe").classList.add("open"); }
+  $("servQty").value=(S.qtyMem&&S.qtyMem[pendingFood.name])||1; $("servMeal").value=addMeal; servPreview(); $("mServe").classList.add("open"); }
 function servPreview(){ const q=+$("servQty").value||1, f=pendingFood;
   $("servTotals").innerHTML=`Adding <b>${r0(f.cal*q)} kcal</b> · ${r0(f.p*q)}g protein · ${r0(f.c*q)}g carbs · ${r0(f.f*q)}g fat`; }
 function confirmServe(){
   const q=+$("servQty").value||1, f=pendingFood, meal=$("servMeal").value;
   day().meals[meal].push({name:f.name,serv:f.serv,qty:q,cal:f.cal*q,p:f.p*q,c:f.c*q,f:f.f*q,fi:(f.fi||0)*q,su:(f.su||0)*q,so:(f.so||0)*q});
   S.recents=[f].concat(S.recents.filter(x=>x.name!==f.name)).slice(0,15);
+  if(!S.freq) S.freq={}; if(!S.qtyMem) S.qtyMem={};
+  S.freq[f.name]=S.freq[f.name]?{f,n:S.freq[f.name].n+1}:{f,n:1};
+  S.qtyMem[f.name]=q;
   save(); closeModal("mServe"); closeModal("mAdd"); renderToday(); toast(`Added ${f.name} ✓`);
 }
 function saveCustom(persist){
@@ -704,9 +767,38 @@ function saveCustom(persist){
   if(persist) S.customFoods.unshift(f);
   day().meals[addMeal].push({name:f.name,serv:f.serv,qty:1,cal:f.cal,p:f.p,c:f.c,f:f.f,fi:f.fi,su:f.su,so:f.so});
   S.recents=[f].concat(S.recents.filter(x=>x.name!==f.name)).slice(0,15);
+  if(!S.freq) S.freq={}; S.freq[f.name]=S.freq[f.name]?{f,n:S.freq[f.name].n+1}:{f,n:1};
   save(); closeModal("mAdd"); renderToday(); toast("Added ✓");
   ["cName","cCal","cP","cC","cF","cFi","cSu","cSo","cServ"].forEach(i=>$(i).value="");
 }
+
+/* ============================= COPY YESTERDAY / FREQUENT / EATING WINDOW ============================= */
+function copyYesterday(){
+  const prev=new Date(viewDate); prev.setDate(prev.getDate()-1);
+  const src=S.days[todayKey(prev)];
+  if(!src||!Object.values(src.meals).flat().length){ toast("Nothing logged on "+prev.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"})); return; }
+  if(!confirm("Copy all of yesterday's meals into this day?")) return;
+  const d=day(); let n=0;
+  for(const [m,items] of Object.entries(src.meals)){ items.forEach(i=>{ d.meals[m].push(JSON.parse(JSON.stringify(i))); n++; }); }
+  save(); renderToday(); toast(`Copied ${n} item${n===1?"":"s"} ✓ — remove anything you're not repeating`);
+}
+function renderFreqChips(){
+  const top=Object.values(S.freq||{}).filter(x=>x.n>=2).sort((a,b)=>b.n-a.n).slice(0,5);
+  $("freqWrap").style.display=top.length?"block":"none";
+  $("freqChips").innerHTML=top.map(x=>`<button class="chip" onclick='addMeal=guessMeal();pickFood(${JSON.stringify(JSON.stringify(x.f))})'>${x.f.name} · ${r0(x.f.cal)} kcal</button>`).join("");
+}
+function guessMeal(){ const h=new Date().getHours(); return h<11?"Breakfast":h<15?"Lunch":h<20?"Dinner":"Snacks"; }
+function renderEatWindow(){
+  const el=$("eatWindow"); el.style.display="none";
+  if(S.fast.active||!S.fast.history.length) return;
+  const last=S.fast.history[0], winH=24-S.fast.goalH;
+  const closes=last.end+winH*36e5, left=closes-Date.now();
+  if(left<=0||left>winH*36e5) return;
+  const h=Math.floor(left/36e5), m=Math.floor(left%36e5/6e4);
+  el.style.display="block";
+  el.innerHTML=`<div class="spread"><span>🍽️ Eating window</span><b class="num">closes in ${h}h ${m}m</b></div><p class="subtle" style="margin-top:4px">Based on your ${S.fast.goalH}:${winH} plan — start your next fast around ${new Date(closes).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})}.</p>`;
+}
+setInterval(()=>{ if($("scr-today").classList.contains("active")) renderEatWindow(); },60000);
 
 /* ============================= BARCODE ============================= */
 let scanStream=null, scanTimer=null;
@@ -904,6 +996,11 @@ function drawWeightChart(){
   let s=`<line x1="${pad}" y1="${H-pad}" x2="${W-pad}" y2="${H-pad}" stroke="var(--line)"/>`;
   if(gw) s+=`<line x1="${pad}" y1="${y(gw)}" x2="${W-pad}" y2="${y(gw)}" stroke="#f2790f" stroke-dasharray="4 4"/><text x="${W-pad}" y="${y(gw)-5}" text-anchor="end" fill="#f2790f" font-size="10" font-weight="700">goal ${gw}</text>`;
   s+=`<polyline fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linejoin="round" points="${pts.map((p,i)=>x(i)+","+y(p.w)).join(" ")}"/>`;
+  if(pts.length>=3){
+    const trend=pts.map((_,i)=>{ const w=pts.slice(Math.max(0,i-6),i+1); return w.reduce((a,p)=>a+p.w,0)/w.length; });
+    s+=`<polyline fill="none" stroke="var(--blue)" stroke-width="2" stroke-dasharray="1 5" stroke-linecap="round" points="${trend.map((v,i)=>x(i)+","+y(v)).join(" ")}"/>`;
+    s+=`<text x="${W-pad}" y="14" text-anchor="end" fill="var(--blue)" font-size="10" font-weight="700">···· 7-day trend</text>`;
+  }
   pts.forEach((p,i)=>{s+=`<circle cx="${x(i)}" cy="${y(p.w)}" r="3.5" fill="var(--green)"/>`;});
   s+=`<text x="${pad}" y="14" fill="var(--ink-soft)" font-size="10">${mx.toFixed(0)}</text><text x="${pad}" y="${H-8}" fill="var(--ink-soft)" font-size="10">${mn.toFixed(0)}</text>`;
   svg.innerHTML=s;
@@ -1224,6 +1321,45 @@ setInterval(()=>{
 },60000);
 
 
+/* ============================= THEMES ============================= */
+const THEME_PRESETS=[["Forest",152],["Ocean",210],["Grape",275],["Berry",330],["Crimson",2],["Sunset",25],["Gold",45],["Teal",180],["Slate",220]];
+function setTheme(hue){ S.themeHue=hue; save(); applyTheme(); renderThemeUI(); }
+function applyTheme(){
+  let st=document.getElementById("themeStyle");
+  if(S.themeHue==null){ if(st) st.remove(); return; }
+  const h=S.themeHue;
+  const css=`
+:root{
+  --bg:hsl(${h},24%,95%); --card:hsl(${h},30%,99%); --line:hsl(${h},18%,87%); --line-soft:hsl(${h},18%,93%);
+  --ink:hsl(${h},35%,11%); --ink-soft:hsl(${h},12%,42%);
+  --green:hsl(${h},55%,32%); --green-deep:hsl(${h},48%,13%);
+  --banner-bg:hsl(${(h+210)%360},70%,93%); --banner-line:hsl(${(h+210)%360},55%,80%);
+}
+.hero .eyebrow,.macro .t em,.bigring .mid .l{color:hsl(${h},30%,68%)}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:hsl(${h},22%,7%); --card:hsl(${h},16%,12%); --line:hsl(${h},14%,20%); --line-soft:hsl(${h},14%,15%);
+    --ink:hsl(${h},18%,92%); --ink-soft:hsl(${h},9%,62%);
+    --green:hsl(${h},50%,58%); --green-deep:hsl(${h},40%,8%);
+    --banner-bg:hsl(${(h+210)%360},35%,15%); --banner-line:hsl(${(h+210)%360},30%,28%);
+  }
+  .hero{background:hsl(${h},42%,13%) !important;border:1px solid hsl(${h},35%,24%) !important}
+  .btn{background:hsl(${h},50%,32%)}
+  .btn.ghost{background:transparent;color:var(--green);border-color:var(--green)}
+  .chip.on{background:hsl(${h},50%,32%);border-color:hsl(${h},50%,32%)}
+  .toast{background:hsl(${h},50%,32%)}
+  nav button.on{color:var(--green)}
+}`;
+  if(!st){ st=document.createElement("style"); st.id="themeStyle"; document.head.appendChild(st); }
+  st.textContent=css;
+}
+function renderThemeUI(){
+  const sw=$("themeSwatches"); if(!sw) return;
+  sw.innerHTML=THEME_PRESETS.map(([n,h])=>`<button class="chip ${S.themeHue===h?"on":""}" style="border-color:hsl(${h},55%,40%);${S.themeHue===h?`background:hsl(${h},55%,32%);color:#fff;`:`color:hsl(${h},55%,32%);`}" onclick="setTheme(${h})">● ${n}</button>`).join("")
+    +`<button class="chip ${S.themeHue==null?"on":""}" onclick="setTheme(null)">Default</button>`;
+  if(S.themeHue!=null) $("themeHue").value=S.themeHue;
+}
+
 function go(scr){
   const map={today:"scr-today",fast:"scr-fast",progress:"scr-progress",settings:"scr-settings"};
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
@@ -1232,14 +1368,14 @@ function go(scr){
   if(scr==="today") renderToday();
   if(scr==="fast"){ renderFastPresets(); tickFast(); renderFastHistory(); }
   if(scr==="progress") renderProgress();
-  if(scr==="settings") fillProfileForm();
+  if(scr==="settings"){ fillProfileForm(); renderThemeUI(); }
   window.scrollTo(0,0);
 }
 function renderAll(){ renderToday(); renderFastPresets(); tickFast(); renderFastHistory(); renderProgress(); }
 /* ============================= AUTOSAVE ============================= */
 // 1. Profile & goal fields save themselves (no need to press the button)
 let autoT=null;
-["pSex","pAge","pHeight","pWeight","pUnits","pActivity","pGoalW","pRate","pMacro","pWater","pCalOverride","pFiber","pSugar","pSodium"].forEach(id=>{
+["pSex","pAge","pHeight","pHft","pHin","pWeight","pUnits","pActivity","pGoalW","pRate","pMacro","pWater","pCalOverride","pFiber","pSugar","pSodium","pCycle"].forEach(id=>{
   $(id).addEventListener("input",()=>{ clearTimeout(autoT); autoT=setTimeout(()=>{ saveProfile(true); },700); });
 });
 // 2. Flush to disk whenever the app is backgrounded or closed
@@ -1256,7 +1392,7 @@ setInterval(()=>{
   }
 },30000);
 document.querySelectorAll(".modal").forEach(m=>m.addEventListener("click",e=>{ if(e.target===m) closeModal(m.id); }));
-computeAdapt(); renderNotifBtn();
+computeAdapt(); renderNotifBtn(); applyTheme(); renderThemeUI();
 renderAll();
 if(!S.profile){ go("settings"); toast("Set up your profile to get your daily budget"); }
 </script>
