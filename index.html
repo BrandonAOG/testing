@@ -140,7 +140,7 @@ hr.sp{border:none;border-top:1px dashed var(--line);margin:14px 0}
 <section class="screen active" id="scr-today">
   <div class="topbar">
     <div><div class="eyebrow">FitTrack</div><h1 id="greet">Today</h1></div>
-    <button class="chip" onclick="go('settings')">⚙︎ Profile</button>
+    <div class="row"><span class="chip" id="streakChip">🔥 0</span><button class="chip" onclick="go('settings')">⚙︎ Profile</button></div>
   </div>
   <div class="datebar card" style="padding:6px 8px">
     <button onclick="shiftDay(-1)" aria-label="Previous day">‹</button>
@@ -173,6 +173,9 @@ hr.sp{border:none;border-top:1px dashed var(--line);margin:14px 0}
   </div>
 
   <div id="goalBanner" class="banner" style="display:none"></div>
+  <div id="adaptBanner" class="banner" style="display:none"></div>
+  <div id="usualBanner" class="banner" style="display:none"></div>
+  <div class="card" id="habitLine" style="padding:12px 16px"></div>
 
   <div id="mealList"></div>
 
@@ -184,6 +187,15 @@ hr.sp{border:none;border-top:1px dashed var(--line);margin:14px 0}
   <div class="card">
     <div class="spread" style="margin-bottom:8px"><b>Exercise</b><button class="btn small ghost" onclick="openExercise()">+ Add</button></div>
     <div id="exList" class="subtle">No exercise logged yet.</div>
+  </div>
+
+  <div class="card">
+    <div class="spread" style="margin-bottom:8px"><b>Steps</b><span class="subtle" id="stepsCredit"></span></div>
+    <input class="f num" id="stepsIn" type="number" inputmode="numeric" placeholder="e.g. 8500 — from your phone or watch" onchange="setSteps(this.value)">
+  </div>
+
+  <div class="card" style="padding:12px 16px">
+    <div class="spread subtle"><span>Fiber <b class="num" id="microFi">0g</b></span><span>Sugar <b class="num" id="microSu">0g</b></span><span>Sodium <b class="num" id="microSo">0mg</b></span></div>
   </div>
 </section>
 
@@ -225,6 +237,28 @@ hr.sp{border:none;border-top:1px dashed var(--line);margin:14px 0}
   <div class="card">
     <div class="spread"><b>Weight</b><button class="btn small ghost" onclick="openWeight()">+ Log weight</button></div>
     <svg class="chart" id="wChart" viewBox="0 0 340 180" preserveAspectRatio="none"></svg>
+  </div>
+  <div class="card">
+    <div class="spread"><b>Weekly report card</b><button class="btn small" onclick="openReport()">Open</button></div>
+    <p class="subtle" style="margin-top:6px">Averages, protein hit-rate, best & worst day, one concrete tip — downloadable as an image.</p>
+  </div>
+  <div class="card">
+    <div class="spread" style="margin-bottom:8px"><b>Body measurements</b></div>
+    <div class="row" style="gap:8px">
+      <select class="f" id="msPart" style="flex:1"><option>Waist</option><option>Hips</option><option>Chest</option><option>Arm</option><option>Thigh</option></select>
+      <input class="f" id="msVal" type="number" step="0.1" placeholder="cm or in" style="flex:1">
+      <button class="btn small" onclick="saveMeasure()">Save</button>
+    </div>
+    <div id="msList" style="margin-top:10px"></div>
+  </div>
+  <div class="card">
+    <div class="spread" style="margin-bottom:8px"><b>Progress photos</b>
+      <button class="btn small ghost" onclick="document.getElementById('progPhotoIn').click()">+ Photo</button>
+      <input type="file" id="progPhotoIn" accept="image/*" capture="environment" hidden onchange="progPhotoChosen(this)">
+    </div>
+    <p class="subtle" style="margin-bottom:8px">Private, stored only on this device. First vs latest shown side by side.</p>
+    <div id="photoCmp"></div>
+    <div id="photoGrid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px"></div>
   </div>
   <div class="card">
     <b>Last 7 days — calories</b>
@@ -289,6 +323,8 @@ hr.sp{border:none;border-top:1px dashed var(--line);margin:14px 0}
       <div style="flex:1"><label class="f">Calorie override (optional)</label><input class="f" id="pCalOverride" type="number" placeholder="auto"></div>
     </div>
     <button class="btn full" style="margin-top:16px" onclick="saveProfile()">Save & recalculate</button>
+    <button class="btn full ghost" style="margin-top:10px" id="notifBtn" onclick="toggleNotif()">🔕 Enable fasting & water reminders</button>
+    <p class="subtle" style="margin-top:8px">Reminders fire while the app is open or saved to your home screen: fast finishing soon, fast complete, and hydration check-ins at 3pm & 7pm.</p>
     <div id="planSummary" class="banner" style="display:none;margin-top:14px"></div>
   </div>
 </section>
@@ -301,6 +337,7 @@ hr.sp{border:none;border-top:1px dashed var(--line);margin:14px 0}
     <button class="chip on" data-t="search" onclick="addTab('search')">Search</button>
     <button class="chip" data-t="scan" onclick="addTab('scan')">Barcode</button>
     <button class="chip" data-t="photo" onclick="addTab('photo')">Photo</button>
+    <button class="chip" data-t="recipe" onclick="addTab('recipe')">Recipe</button>
     <button class="chip" data-t="custom" onclick="addTab('custom')">Custom</button>
   </div>
 
@@ -348,6 +385,17 @@ hr.sp{border:none;border-top:1px dashed var(--line);margin:14px 0}
     </div>
   </div>
 
+  <div id="tab-recipe" style="display:none">
+    <label class="f">Recipe name</label><input class="f" id="rName" placeholder="Mom's chili">
+    <label class="f">Makes how many servings?</label><input class="f" id="rServings" type="number" value="4" onchange="renderRecipe()">
+    <label class="f">Add ingredients</label>
+    <input class="f" id="rSearch" placeholder="Search foods…" oninput="recipeSearch()">
+    <div id="rResults"></div>
+    <div id="rList" style="margin-top:8px"></div>
+    <div class="banner" id="rTotals" style="margin-top:10px;display:block"></div>
+    <button class="btn full" style="margin-top:12px" onclick="saveRecipe()">Save recipe to my foods</button>
+  </div>
+
   <div id="tab-custom">
     <div style="display:none" id="tab-custom-inner"></div>
   </div>
@@ -358,6 +406,11 @@ hr.sp{border:none;border-top:1px dashed var(--line);margin:14px 0}
       <div style="flex:1"><label class="f">P (g)</label><input class="f" id="cP" type="number"></div>
       <div style="flex:1"><label class="f">C (g)</label><input class="f" id="cC" type="number"></div>
       <div style="flex:1"><label class="f">F (g)</label><input class="f" id="cF" type="number"></div>
+    </div>
+    <div class="row" style="gap:8px">
+      <div style="flex:1"><label class="f">Fiber (g)</label><input class="f" id="cFi" type="number" placeholder="opt."></div>
+      <div style="flex:1"><label class="f">Sugar (g)</label><input class="f" id="cSu" type="number" placeholder="opt."></div>
+      <div style="flex:1"><label class="f">Sodium (mg)</label><input class="f" id="cSo" type="number" placeholder="opt."></div>
     </div>
     <label class="f">Serving label</label><input class="f" id="cServ" placeholder="1 slice">
     <div class="row" style="margin-top:14px;gap:10px">
@@ -401,6 +454,13 @@ hr.sp{border:none;border-top:1px dashed var(--line);margin:14px 0}
   <button class="btn full" style="margin-top:14px" onclick="saveWeight()">Save</button>
 </div></div>
 
+<div class="modal" id="mReport"><div class="sheet">
+  <div class="grab"></div>
+  <div class="spread"><h2>Weekly report</h2><button class="chip" onclick="closeModal('mReport')">Close</button></div>
+  <div id="reportBody" style="margin-top:10px"></div>
+  <button class="btn full" style="margin-top:14px" onclick="reportImage()">Download as image</button>
+</div></div>
+
 <div class="toast" id="toast"></div>
 
 <nav>
@@ -417,8 +477,11 @@ hr.sp{border:none;border-top:1px dashed var(--line);margin:14px 0}
 const DB_KEY = "fittrack_v1";
 let S = load();
 function load(){
-  try{ const raw = localStorage.getItem(DB_KEY); if(raw) return JSON.parse(raw); }catch(e){}
-  return { profile:null, days:{}, weights:[], customFoods:[], recents:[], barcodeCache:{}, fast:{active:false,start:null,goalH:16,history:[]} };
+  const base={ profile:null, days:{}, weights:[], customFoods:[], recents:[], barcodeCache:{},
+    fast:{active:false,start:null,goalH:16,history:[]},
+    adapt:null, measures:[], photos:[], notifOn:false, notifSent:{} };
+  try{ const raw = localStorage.getItem(DB_KEY); if(raw){ const o=JSON.parse(raw); return Object.assign(base,o); } }catch(e){}
+  return base;
 }
 function save(){ try{ localStorage.setItem(DB_KEY, JSON.stringify(S)); }catch(e){ toast("Storage full — export a backup"); } }
 
@@ -461,6 +524,8 @@ function plan(){
   const minCal = p.sex==="m"?1500:1200;
   if(target<minCal) target=minCal;
   const [pp,pc,pf]=p.macro.split(",").map(Number);
+  if(!p.calOverride && S.adapt && S.adapt.offset) target=Math.round(target+S.adapt.offset);
+  if(target<minCal) target=minCal;
   return { tdee:Math.round(tdee), target,
     p:Math.round(target*pp/100/4), c:Math.round(target*pc/100/4), f:Math.round(target*pf/100/9),
     losing, maintain:p.goalW===p.weight };
@@ -474,19 +539,20 @@ function etaDate(){
 }
 function latestWeight(){ return S.weights.length ? S.weights[S.weights.length-1].w : (S.profile?S.profile.weight:0); }
 
-function saveProfile(){
+function saveProfile(quiet){
   const p={ sex:$("pSex").value, age:+$("pAge").value||30, height:+$("pHeight").value||170,
     weight:+$("pWeight").value||70, units:$("pUnits").value, activity:+$("pActivity").value,
     goalW:+$("pGoalW").value||+$("pWeight").value||70, rateKg:+$("pRate").value,
     macro:$("pMacro").value, waterGoal:+$("pWater").value||8, calOverride:+$("pCalOverride").value||0 };
   S.profile=p;
   if(!S.weights.length) S.weights.push({d:todayKey(new Date()), w:p.weight});
-  save(); renderPlanSummary(); renderAll(); toast("Plan updated ✓");
+  save(); renderPlanSummary(); renderAll(); if(quiet!==true) toast("Plan updated ✓");
 }
 function renderPlanSummary(){
   const pl=plan(); if(!pl){$("planSummary").style.display="none";return;}
   const e=etaDate();
   let txt=`Maintenance ≈ <b>${pl.tdee} kcal</b>. Your daily budget: <b>${pl.target} kcal</b> — ${pl.p}g protein · ${pl.c}g carbs · ${pl.f}g fat.`;
+  if(S.adapt&&S.adapt.offset) txt+=` (includes ${S.adapt.offset>0?"+":""}${S.adapt.offset} kcal adaptive adjustment)`;
   if(e) txt+=` At this pace you could reach <b>${S.profile.goalW} ${unit()}</b> around <b>${e.date.toLocaleDateString(undefined,{month:"long",day:"numeric",year:"numeric"})}</b> (~${Math.ceil(e.weeks)} weeks).`;
   $("planSummary").innerHTML=txt; $("planSummary").style.display="block";
 }
@@ -502,9 +568,12 @@ function fillProfileForm(){
 /* ============================= TODAY ============================= */
 function shiftDay(n){ viewDate.setDate(viewDate.getDate()+n); renderToday(); }
 function dayTotals(d){
-  let t={cal:0,p:0,c:0,f:0,burn:0};
-  Object.values(d.meals).flat().forEach(i=>{t.cal+=i.cal;t.p+=i.p;t.c+=i.c;t.f+=i.f;});
+  let t={cal:0,p:0,c:0,f:0,burn:0,fi:0,su:0,so:0};
+  Object.values(d.meals).flat().forEach(i=>{t.cal+=i.cal;t.p+=i.p;t.c+=i.c;t.f+=i.f;t.fi+=i.fi||0;t.su+=i.su||0;t.so+=i.so||0;});
   d.exercise.forEach(e=>t.burn+=e.cal);
+  const wkg=S.profile?kgFromRaw(latestWeight(),S.profile.units):75;
+  t.stepCal=(d.steps||0)*0.0005*wkg;
+  t.burn+=t.stepCal;
   return t;
 }
 function renderToday(){
@@ -553,6 +622,12 @@ function renderToday(){
   $("waterLbl").textContent=`${d.water} / ${wg} glasses`;
   $("glasses").innerHTML=Array.from({length:wg},(_,i)=>`<button class="glass ${i<d.water?"on":""}" onclick="setWater(${i+1})" aria-label="Glass ${i+1}"></button>`).join("");
 
+  // micros
+  $("microFi").textContent=r0(t.fi)+"g"; $("microSu").textContent=r0(t.su)+"g"; $("microSo").textContent=r0(t.so)+"mg";
+  // adaptive coaching banner
+  const am=adaptMsg();
+  $("adaptBanner").style.display=(am&&isToday)?"block":"none"; $("adaptBanner").innerHTML=am;
+  renderHabits(); renderUsual(); renderSteps();
   // exercise
   $("exList").innerHTML = d.exercise.length
     ? d.exercise.map((e,i)=>`<div class="spread" style="padding:6px 0"><span>${esc(e.name)} · ${e.min} min</span><span class="row"><b class="num" style="color:var(--green)">-${r0(e.cal)} kcal</b><button class="del" style="color:var(--red);margin-left:8px" onclick="delEx(${i})">×</button></span></div>`).join("")
@@ -569,8 +644,9 @@ function openAdd(meal){ addMeal=meal; $("addTitle").textContent="Add to "+meal; 
 function closeModal(id){ $(id).classList.remove("open"); if(id==="mAdd") stopScan(); }
 function addTab(t){
   document.querySelectorAll("#mAdd .tabs .chip").forEach(c=>c.classList.toggle("on",c.dataset.t===t));
-  ["search","scan","photo"].forEach(x=>$("tab-"+x).style.display=x===t?"block":"none");
+  ["search","scan","photo","recipe"].forEach(x=>$("tab-"+x).style.display=x===t?"block":"none");
   $("tab-custom2").style.display=t==="custom"?"block":"none";
+  if(t==="recipe") renderRecipe();
   if(t!=="scan") stopScan();
 }
 function allFoods(){ return S.customFoods.concat(FOODS); }
@@ -593,17 +669,17 @@ function servPreview(){ const q=+$("servQty").value||1, f=pendingFood;
   $("servTotals").innerHTML=`Adding <b>${r0(f.cal*q)} kcal</b> · ${r0(f.p*q)}g protein · ${r0(f.c*q)}g carbs · ${r0(f.f*q)}g fat`; }
 function confirmServe(){
   const q=+$("servQty").value||1, f=pendingFood, meal=$("servMeal").value;
-  day().meals[meal].push({name:f.name,serv:f.serv,qty:q,cal:f.cal*q,p:f.p*q,c:f.c*q,f:f.f*q});
+  day().meals[meal].push({name:f.name,serv:f.serv,qty:q,cal:f.cal*q,p:f.p*q,c:f.c*q,f:f.f*q,fi:(f.fi||0)*q,su:(f.su||0)*q,so:(f.so||0)*q});
   S.recents=[f].concat(S.recents.filter(x=>x.name!==f.name)).slice(0,15);
   save(); closeModal("mServe"); closeModal("mAdd"); renderToday(); toast(`Added ${f.name} ✓`);
 }
 function saveCustom(persist){
-  const f={id:"c"+Date.now(),name:$("cName").value.trim()||"Custom food",cal:+$("cCal").value||0,p:+$("cP").value||0,c:+$("cC").value||0,f:+$("cF").value||0,serv:$("cServ").value.trim()||"1 serving"};
+  const f={id:"c"+Date.now(),name:$("cName").value.trim()||"Custom food",cal:+$("cCal").value||0,p:+$("cP").value||0,c:+$("cC").value||0,f:+$("cF").value||0,fi:+$("cFi").value||0,su:+$("cSu").value||0,so:+$("cSo").value||0,serv:$("cServ").value.trim()||"1 serving"};
   if(persist) S.customFoods.unshift(f);
-  day().meals[addMeal].push({name:f.name,serv:f.serv,qty:1,cal:f.cal,p:f.p,c:f.c,f:f.f});
+  day().meals[addMeal].push({name:f.name,serv:f.serv,qty:1,cal:f.cal,p:f.p,c:f.c,f:f.f,fi:f.fi,su:f.su,so:f.so});
   S.recents=[f].concat(S.recents.filter(x=>x.name!==f.name)).slice(0,15);
   save(); closeModal("mAdd"); renderToday(); toast("Added ✓");
-  ["cName","cCal","cP","cC","cF","cServ"].forEach(i=>$(i).value="");
+  ["cName","cCal","cP","cC","cF","cFi","cSu","cSo","cServ"].forEach(i=>$(i).value="");
 }
 
 /* ============================= BARCODE ============================= */
@@ -641,6 +717,9 @@ async function lookupBarcode(code){
         p:+(n.proteins_serving||n.proteins_100g||0),
         c:+(n.carbohydrates_serving||n.carbohydrates_100g||0),
         f:+(n.fat_serving||n.fat_100g||0),
+        fi:+(n.fiber_serving||n.fiber_100g||0),
+        su:+(n.sugars_serving||n.sugars_100g||0),
+        so:Math.round((+(n.sodium_serving||n.sodium_100g||0))*1000),
         serv:n["energy-kcal_serving"]?(j.product.serving_size||"1 serving"):"100 g"};
       S.barcodeCache[code]=f; save();
       st.textContent="Found ✓ (cached for offline use)";
@@ -727,6 +806,7 @@ function saveWeight(){
   const k=todayKey(new Date());
   S.weights=S.weights.filter(w=>w.d!==k); S.weights.push({d:k,w:v}); S.weights.sort((a,b)=>a.d<b.d?-1:1);
   if(S.profile) S.profile.weight=v;
+  computeAdapt();
   save(); closeModal("mW"); renderProgress(); renderToday(); toast("Weight logged ✓");
 }
 function renderProgress(){
@@ -738,7 +818,7 @@ function renderProgress(){
   if(e&&p){ $("etaBanner").style.display="block";
     $("etaBanner").innerHTML=`📅 Projected goal date: <b>${e.date.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"})}</b> — about ${Math.ceil(e.weeks)} weeks at ${p.rateKg} kg/week.`;
   } else $("etaBanner").style.display="none";
-  drawWeightChart(); drawCalChart();
+  drawWeightChart(); drawCalChart(); renderMeasures(); renderPhotos();
 }
 function drawWeightChart(){
   const svg=$("wChart"), W=340,H=180,pad=26;
@@ -781,7 +861,296 @@ function importData(inp){
   r.readAsText(f); inp.value="";
 }
 
-/* ============================= NAV / INIT ============================= */
+/* ============================= ADAPTIVE COACHING ============================= */
+function computeAdapt(){
+  const p=S.profile;
+  if(!p||S.weights.length<2){ S.adapt=null; return; }
+  const ws=S.weights.slice(-10);
+  const w0=ws[0], w1=ws[ws.length-1];
+  const span=(new Date(w1.d)-new Date(w0.d))/864e5;
+  if(span<10){ S.adapt=null; return; }        // need ≥10 days between weigh-ins
+  let sum=0, ex=0, n=0;
+  const cur=new Date(w0.d), end=new Date(w1.d);
+  while(cur<=end){
+    const dd=S.days[todayKey(cur)];
+    if(dd){ const t=dayTotals(dd); if(t.cal>=800){ sum+=t.cal; ex+=t.burn; n++; } }
+    cur.setDate(cur.getDate()+1);
+  }
+  if(n<Math.min(10,span*0.6)){ S.adapt=null; return; } // need most days logged
+  const avgIn=sum/n, avgEx=ex/n;
+  const dKg=kgFromRaw(w1.w,p.units)-kgFromRaw(w0.w,p.units);
+  const actualOut=avgIn - dKg*7700/span;      // energy you really burned per day
+  const predicted=bmr(p)*p.activity + avgEx;
+  let off=Math.round((actualOut-predicted)/10)*10;
+  off=Math.max(-500,Math.min(500,off));
+  if(Math.abs(off)<50) off=0;
+  S.adapt={offset:off,span:Math.round(span),days:n,at:Date.now()};
+  save();
+}
+function adaptMsg(){
+  if(!S.adapt) return "";
+  const o=S.adapt.offset;
+  if(!o) return `🧠 Adaptive check (${S.adapt.days} logged days): your metabolism matches the formula almost exactly. Budget unchanged.`;
+  return `🧠 Adaptive coaching: based on ${S.adapt.days} logged days and your real weight trend, you're burning about <b>${Math.abs(o)} kcal/day ${o>0?"more":"less"}</b> than the formula predicted — your budget has been adjusted automatically.`;
+}
+
+/* ============================= STREAKS & CONSISTENCY ============================= */
+const loggedOn=k=>{ const dd=S.days[k]; return !!(dd&&Object.values(dd.meals).flat().length); };
+function streakInfo(){
+  let streak=0, freezes=1, frozeOn=null;
+  const d=new Date();
+  if(loggedOn(todayKey(d))) streak++;
+  d.setDate(d.getDate()-1);
+  for(let i=0;i<730;i++){
+    const k=todayKey(d);
+    if(loggedOn(k)) streak++;
+    else if(freezes>0 && streak>0){ freezes--; frozeOn=k; } // one free missed day
+    else break;
+    d.setDate(d.getDate()-1);
+  }
+  return {streak,frozeOn};
+}
+function consistencyScore(){
+  const pl=plan(); let pts=0, max=0;
+  for(let i=0;i<7;i++){
+    const d=new Date(); d.setDate(d.getDate()-i);
+    const dd=S.days[todayKey(d)]; max+=3;
+    if(!dd) continue;
+    const t=dayTotals(dd);
+    if(Object.values(dd.meals).flat().length) pts++;                       // logged
+    if(dd.water>=(S.profile?S.profile.waterGoal:8)) pts++;                 // hydrated
+    if(pl&&t.cal>0&&t.cal<=pl.target+t.burn) pts++;                        // on budget
+  }
+  return Math.round(pts/max*100);
+}
+function renderHabits(){
+  const s=streakInfo(), sc=consistencyScore();
+  $("streakChip").textContent="🔥 "+s.streak;
+  $("habitLine").innerHTML=`<div class="spread"><span>🔥 <b>${s.streak}-day</b> logging streak${s.frozeOn?" <small style='color:var(--ink-soft)'>(1 freeze used)</small>":""}</span><span>Consistency <b class="num" style="color:${sc>=70?"var(--green)":sc>=40?"var(--tangerine)":"var(--red)"}">${sc}%</b></span></div>`;
+}
+
+/* ============================= SMART MEAL MEMORY ============================= */
+function currentMealSlot(){ const h=new Date().getHours(); return h<10?"Breakfast":h<15?"Lunch":h<21?"Dinner":"Snacks"; }
+function usualFor(meal){
+  const counts={};
+  for(let i=1;i<=14;i++){
+    const d=new Date(); d.setDate(d.getDate()-i);
+    const dd=S.days[todayKey(d)]; if(!dd) continue;
+    (dd.meals[meal]||[]).forEach(it=>{
+      const key=it.name+"|"+it.serv+"|"+it.qty;
+      if(!counts[key]) counts[key]={n:0,it:{name:it.name,serv:it.serv,qty:it.qty,cal:it.cal,p:it.p,c:it.c,f:it.f}};
+      counts[key].n++;
+    });
+  }
+  const freq=Object.values(counts).filter(c=>c.n>=3).map(c=>c.it);
+  return freq.length?freq:null;
+}
+function renderUsual(){
+  const el=$("usualBanner");
+  const isToday=todayKey(viewDate)===todayKey(new Date());
+  const meal=currentMealSlot(), u=isToday?usualFor(meal):null;
+  if(u && !day().meals[meal].length){
+    const kc=r0(u.reduce((a,i)=>a+i.cal,0));
+    el.style.display="block";
+    el.innerHTML=`<div class="spread"><span>☕ Log your usual <b>${meal.toLowerCase()}</b>? <b>(${kc} kcal)</b><br><small style="color:var(--ink-soft)">${u.map(i=>esc(i.name)).join(" · ")}</small></span><button class="btn small" onclick="logUsual()">Log it</button></div>`;
+  } else el.style.display="none";
+}
+function logUsual(){
+  const meal=currentMealSlot(), u=usualFor(meal); if(!u) return;
+  u.forEach(it=>day().meals[meal].push(Object.assign({},it)));
+  save(); renderToday(); toast("Usual "+meal.toLowerCase()+" logged ✓");
+}
+
+/* ============================= STEPS ============================= */
+function setSteps(v){ day().steps=Math.max(0,+v||0); save(); renderToday(); }
+function renderSteps(){
+  const d=day(), t=dayTotals(d);
+  $("stepsIn").value=d.steps||"";
+  $("stepsCredit").innerHTML=d.steps?`≈ <b class="num">${r0(t.stepCal)} kcal</b> credited to your budget`:`Enter today's steps from your phone or watch`;
+}
+
+/* ============================= WEEKLY REPORT ============================= */
+function weekData(){
+  const pl=plan(), rows=[];
+  for(let i=6;i>=0;i--){
+    const d=new Date(); d.setDate(d.getDate()-i);
+    const k=todayKey(d), dd=S.days[k];
+    rows.push({k, label:d.toLocaleDateString(undefined,{weekday:"short"}), t:dd?dayTotals(dd):null});
+  }
+  return {pl,rows};
+}
+function openReport(){
+  const {pl,rows}=weekData();
+  const logged=rows.filter(r=>r.t&&r.t.cal>0);
+  const avg=logged.length?r0(logged.reduce((a,r)=>a+r.t.cal,0)/logged.length):0;
+  const pHit=pl&&logged.length?r0(logged.filter(r=>r.t.p>=pl.p*0.9).length/logged.length*100):0;
+  let best=null,worst=null;
+  if(pl) logged.forEach(r=>{ const diff=r.t.cal-(pl.target+r.t.burn);
+    if(diff<=0&&(!best||diff>best.diff)) best={...r,diff};
+    if(diff>0&&(!worst||diff>worst.diff)) worst={...r,diff}; });
+  const ws=S.weights.filter(w=>w.d>=rows[0].k);
+  const wTrend=ws.length>=2?(ws[ws.length-1].w-ws[0].w):null;
+  const e=etaDate();
+  let tip="Log every day this week — the adaptive coach needs data to tune your budget.";
+  if(logged.length>=5){
+    if(pHit<60) tip="Protein is your weak spot — add a protein-forward breakfast (eggs, Greek yogurt, or a shake) to hit your target early.";
+    else if(worst&&worst.diff>400) tip=`${new Date(worst.k).toLocaleDateString(undefined,{weekday:"long"})}s are your danger day (+${r0(worst.diff)} kcal). Plan that day's dinner in advance.`;
+    else if(pl&&avg>pl.target) tip=`You averaged ${avg-pl.target} kcal over budget. Swap one snack per day and you're back on track.`;
+    else tip="You're executing the plan — keep the streak alive and let the trend do the work.";
+  }
+  $("reportBody").innerHTML=`
+    <div class="stat3">
+      <div class="card"><div class="v">${avg||"–"}</div><div class="l">Avg kcal</div></div>
+      <div class="card"><div class="v">${pHit}%</div><div class="l">Protein hit</div></div>
+      <div class="card"><div class="v">${logged.length}/7</div><div class="l">Days logged</div></div>
+    </div>
+    ${wTrend!==null?`<p style="margin-bottom:10px">⚖️ Weight this week: <b>${wTrend>0?"+":""}${wTrend.toFixed(1)} ${unit()}</b>${e?` — projected goal date <b>${e.date.toLocaleDateString(undefined,{month:"short",day:"numeric"})}</b>`:""}</p>`:`<p class="subtle" style="margin-bottom:10px">Log weight at least twice a week to see your trend here.</p>`}
+    ${best?`<p>🏆 Best day: <b>${new Date(best.k).toLocaleDateString(undefined,{weekday:"long"})}</b> (${r0(best.diff)} kcal under)</p>`:""}
+    ${worst?`<p>⚠️ Toughest day: <b>${new Date(worst.k).toLocaleDateString(undefined,{weekday:"long"})}</b> (+${r0(worst.diff)} kcal)</p>`:""}
+    <div class="banner" style="margin-top:12px">💡 ${tip}</div>
+    <p class="subtle" style="margin-top:8px">${adaptMsg().replace(/<[^>]+>/g,"")}</p>`;
+  $("mReport").classList.add("open");
+}
+function reportImage(){
+  const {pl,rows}=weekData();
+  const cv=document.createElement("canvas"); cv.width=620; cv.height=760;
+  const x=cv.getContext("2d");
+  const dark=matchMedia("(prefers-color-scheme:dark)").matches;
+  x.fillStyle=dark?"#0e1512":"#f4f6f3"; x.fillRect(0,0,620,760);
+  x.fillStyle=dark?"#122b1f":"#10241c"; roundRect(x,20,20,580,150,20); x.fill();
+  x.fillStyle="#9ec4ae"; x.font="700 13px sans-serif"; x.fillText("FITTRACK · WEEKLY REPORT",44,58);
+  x.fillStyle="#fff"; x.font="800 30px sans-serif";
+  const end=new Date(), start=new Date(); start.setDate(start.getDate()-6);
+  x.fillText(start.toLocaleDateString(undefined,{month:"short",day:"numeric"})+" – "+end.toLocaleDateString(undefined,{month:"short",day:"numeric"}),44,100);
+  const logged=rows.filter(r=>r.t&&r.t.cal>0);
+  const avg=logged.length?r0(logged.reduce((a,r)=>a+r.t.cal,0)/logged.length):0;
+  x.fillStyle="#f2790f"; x.font="700 16px sans-serif";
+  x.fillText(`Avg ${avg} kcal · ${logged.length}/7 days logged`,44,138);
+  // bars
+  const ink=dark?"#e8efe9":"#14231c";
+  const mx=Math.max(pl?pl.target*1.2:2400,...rows.map(r=>r.t?r.t.cal:0),1);
+  rows.forEach((r,i)=>{
+    const bx=50+i*80, v=r.t?r.t.cal:0, h=v/mx*300;
+    x.fillStyle=pl&&v>pl.target?"#e05d5d":"#1f6f4a";
+    roundRect(x,bx,540-h,52,Math.max(h,3),8); x.fill();
+    x.fillStyle=ink; x.font="600 14px sans-serif"; x.textAlign="center";
+    x.fillText(r.label,bx+26,570); x.font="600 12px sans-serif";
+    if(v) x.fillText(r0(v),bx+26,532-h);
+    x.textAlign="left";
+  });
+  if(pl){ const ty=540-pl.target/mx*300;
+    x.strokeStyle="#f2790f"; x.setLineDash([6,5]); x.beginPath(); x.moveTo(40,ty); x.lineTo(580,ty); x.stroke(); x.setLineDash([]);
+    x.fillStyle="#f2790f"; x.font="700 12px sans-serif"; x.fillText("budget "+pl.target,42,ty-8); }
+  const ws=S.weights.filter(w=>w.d>=rows[0].k);
+  x.fillStyle=ink; x.font="700 17px sans-serif";
+  x.fillText(ws.length>=2?`Weight: ${(ws[ws.length-1].w-ws[0].w>0?"+":"")+(ws[ws.length-1].w-ws[0].w).toFixed(1)} ${unit()} this week`:"Weight: log twice a week to see trend",44,630);
+  const st=streakInfo();
+  x.fillText(`🔥 ${st.streak}-day streak · Consistency ${consistencyScore()}%`,44,668);
+  x.fillStyle=dark?"#93a59a":"#5d6f65"; x.font="500 13px sans-serif";
+  x.fillText("Tracked offline with FitTrack",44,724);
+  const a=document.createElement("a"); a.href=cv.toDataURL("image/png");
+  a.download="fittrack-week-"+todayKey(new Date())+".png"; a.click(); toast("Report image downloaded ✓");
+}
+function roundRect(x,px,py,w,h,r){ x.beginPath(); x.moveTo(px+r,py); x.arcTo(px+w,py,px+w,py+h,r); x.arcTo(px+w,py+h,px,py+h,r); x.arcTo(px,py+h,px,py,r); x.arcTo(px,py,px+w,py,r); x.closePath(); }
+
+/* ============================= RECIPE BUILDER ============================= */
+let recipeItems=[];
+function recipeSearch(){
+  const q=$("rSearch").value.trim().toLowerCase();
+  $("rResults").innerHTML=q?allFoods().filter(f=>f.name.toLowerCase().includes(q)).slice(0,6).map(f=>
+    `<button class="foodresult" onclick='recipeAdd(${JSON.stringify(JSON.stringify(f)).replace(/'/g,"&#39;")})'><span class="g"><b>${esc(f.name)}</b><br><small>${esc(f.serv)}</small></span><span class="kc">${r0(f.cal)}</span></button>`).join(""):"";
+}
+function recipeAdd(json){ const f=JSON.parse(json); recipeItems.push({...f,qty:1}); $("rSearch").value=""; $("rResults").innerHTML=""; renderRecipe(); }
+function recipeQty(i,v){ recipeItems[i].qty=Math.max(0.25,+v||1); renderRecipe(); }
+function recipeDel(i){ recipeItems.splice(i,1); renderRecipe(); }
+function renderRecipe(){
+  $("rList").innerHTML=recipeItems.map((f,i)=>`<div class="item"><div class="g"><b>${esc(f.name)}</b><small>${esc(f.serv)} · ${r0(f.cal*f.qty)} kcal</small></div>
+    <input class="f num" style="width:64px;padding:6px" type="number" step="0.25" value="${f.qty}" onchange="recipeQty(${i},this.value)">
+    <button class="del" onclick="recipeDel(${i})">×</button></div>`).join("")||`<p class="subtle" style="padding:8px 0">Search above to add ingredients.</p>`;
+  const n=Math.max(1,+$("rServings").value||1);
+  const tot=recipeItems.reduce((a,f)=>({cal:a.cal+f.cal*f.qty,p:a.p+f.p*f.qty,c:a.c+f.c*f.qty,f:a.f+f.f*f.qty}),{cal:0,p:0,c:0,f:0});
+  $("rTotals").innerHTML=recipeItems.length?`Whole recipe: <b>${r0(tot.cal)} kcal</b> · Per serving (÷${n}): <b>${r0(tot.cal/n)} kcal</b> · ${r0(tot.p/n)}p ${r0(tot.c/n)}c ${r0(tot.f/n)}f`:"";
+}
+function saveRecipe(){
+  if(!recipeItems.length){ toast("Add at least one ingredient"); return; }
+  const n=Math.max(1,+$("rServings").value||1);
+  const tot=recipeItems.reduce((a,f)=>({cal:a.cal+f.cal*f.qty,p:a.p+f.p*f.qty,c:a.c+f.c*f.qty,f:a.f+f.f*f.qty}),{cal:0,p:0,c:0,f:0});
+  const rec={id:"r"+Date.now(),name:"🍲 "+($("rName").value.trim()||"My recipe"),cal:tot.cal/n,p:tot.p/n,c:tot.c/n,f:tot.f/n,serv:"1 of "+n+" servings"};
+  S.customFoods.unshift(rec); save();
+  recipeItems=[]; $("rName").value=""; renderRecipe();
+  toast("Recipe saved — find it in Search ✓"); addTab("search"); searchFood();
+}
+
+/* ============================= MEASUREMENTS & PROGRESS PHOTOS ============================= */
+function saveMeasure(){
+  const part=$("msPart").value, v=+$("msVal").value; if(!v) return;
+  S.measures.push({d:todayKey(new Date()),part,v}); save(); $("msVal").value=""; renderMeasures(); toast("Measurement saved ✓");
+}
+function renderMeasures(){
+  const parts=["Waist","Hips","Chest","Arm","Thigh"];
+  $("msList").innerHTML=parts.map(p=>{
+    const arr=S.measures.filter(m=>m.part===p);
+    if(!arr.length) return "";
+    const first=arr[0].v, last=arr[arr.length-1].v, d=last-first;
+    return `<div class="spread" style="padding:5px 0"><span>${p}</span><span><b class="num">${last}</b> <small style="color:${d<0?"var(--green)":d>0?"var(--tangerine)":"var(--ink-soft)"}">${d===0?"—":(d>0?"+":"")+d.toFixed(1)+" since start"}</small></span></div>`;
+  }).join("")||`<p class="subtle">The tape doesn't lie — log waist, hips, chest, arm or thigh.</p>`;
+}
+function progPhotoChosen(inp){
+  const file=inp.files[0]; if(!file) return;
+  const img=new Image();
+  img.onload=()=>{ const cv=document.createElement("canvas"); const s=Math.min(1,480/Math.max(img.width,img.height));
+    cv.width=img.width*s; cv.height=img.height*s;
+    cv.getContext("2d").drawImage(img,0,0,cv.width,cv.height);
+    S.photos.push({d:todayKey(new Date()),img:cv.toDataURL("image/jpeg",0.6)});
+    save(); renderPhotos(); toast("Progress photo saved ✓");
+    if(S.photos.length>=15) toast("Tip: photos use storage — export a backup");
+    URL.revokeObjectURL(img.src); };
+  img.src=URL.createObjectURL(file); inp.value="";
+}
+function delPhoto(i){ if(confirm("Delete this photo?")){ S.photos.splice(i,1); save(); renderPhotos(); } }
+function renderPhotos(){
+  const ph=S.photos;
+  let cmp="";
+  if(ph.length>=2){
+    const a=ph[0], b=ph[ph.length-1];
+    cmp=`<div class="row" style="gap:8px;margin-bottom:10px">
+      <figure style="flex:1;margin:0"><img src="${a.img}" style="width:100%;border-radius:12px" alt="Before"><figcaption class="subtle" style="text-align:center">${a.d}</figcaption></figure>
+      <figure style="flex:1;margin:0"><img src="${b.img}" style="width:100%;border-radius:12px" alt="Now"><figcaption class="subtle" style="text-align:center">${b.d}</figcaption></figure>
+    </div>`;
+  }
+  $("photoCmp").innerHTML=cmp;
+  $("photoGrid").innerHTML=ph.map((p,i)=>`<div style="position:relative"><img src="${p.img}" style="width:100%;border-radius:10px" alt="${p.d}"><button class="del" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,.55);color:#fff;border-radius:8px" onclick="delPhoto(${i})">×</button></div>`).join("");
+}
+
+/* ============================= NOTIFICATIONS ============================= */
+async function toggleNotif(){
+  if(!("Notification" in window)){ toast("This browser doesn't support notifications"); return; }
+  if(!S.notifOn){
+    const perm=await Notification.requestPermission();
+    if(perm!=="granted"){ toast("Permission denied in browser settings"); return; }
+    S.notifOn=true; notify("Notifications on ✓","FitTrack will nudge you about fasts and water.");
+  } else S.notifOn=false;
+  save(); renderNotifBtn();
+}
+function renderNotifBtn(){ $("notifBtn").textContent=S.notifOn?"🔔 Notifications on — tap to disable":"🔕 Enable fasting & water reminders"; }
+function notify(title,body){ if(S.notifOn&&Notification.permission==="granted"){ try{ new Notification(title,{body}); }catch(e){} } }
+function notifKey(k){ const d=todayKey(new Date()); if(S.notifSent[d+k]) return false; S.notifSent[d+k]=1;
+  Object.keys(S.notifSent).forEach(x=>{ if(!x.startsWith(d)) delete S.notifSent[x]; }); save(); return true; }
+setInterval(()=>{
+  if(!S.notifOn) return;
+  // fasting milestones
+  if(S.fast.active){
+    const el=Date.now()-S.fast.start, goal=S.fast.goalH*36e5;
+    if(el>=goal && notifKey("fastdone")) notify("Fast complete 🎉",`You hit your ${S.fast.goalH}h goal. Break it gently when you're ready.`);
+    else if(goal-el<=36e5 && goal-el>0 && notifKey("fast1h")) notify("1 hour to go 💪",`Your ${S.fast.goalH}h fast finishes soon.`);
+  }
+  // water pacing at 3pm and 7pm
+  const h=new Date().getHours(), d=S.days[todayKey(new Date())]||{water:0}, wg=S.profile?S.profile.waterGoal:8;
+  if(h>=15&&h<16&&d.water<wg*0.5&&notifKey("w15")) notify("Hydration check 💧",`You're at ${d.water}/${wg} glasses — halfway point of the day.`);
+  if(h>=19&&h<20&&d.water<wg*0.75&&notifKey("w19")) notify("Evening water 💧",`${wg-d.water} glasses left to hit today's goal.`);
+},60000);
+
+
 function go(scr){
   const map={today:"scr-today",fast:"scr-fast",progress:"scr-progress",settings:"scr-settings"};
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
@@ -794,7 +1163,27 @@ function go(scr){
   window.scrollTo(0,0);
 }
 function renderAll(){ renderToday(); renderFastPresets(); tickFast(); renderFastHistory(); renderProgress(); }
+/* ============================= AUTOSAVE ============================= */
+// 1. Profile & goal fields save themselves (no need to press the button)
+let autoT=null;
+["pSex","pAge","pHeight","pWeight","pUnits","pActivity","pGoalW","pRate","pMacro","pWater","pCalOverride"].forEach(id=>{
+  $(id).addEventListener("input",()=>{ clearTimeout(autoT); autoT=setTimeout(()=>{ saveProfile(true); },700); });
+});
+// 2. Flush to disk whenever the app is backgrounded or closed
+document.addEventListener("visibilitychange",()=>{ if(document.hidden) save(); });
+window.addEventListener("pagehide",save);
+window.addEventListener("beforeunload",save);
+// 3. Midnight rollover — a fresh day starts automatically, yesterday is kept forever
+let lastDay=todayKey(new Date());
+setInterval(()=>{
+  const now=todayKey(new Date());
+  if(now!==lastDay){
+    if(todayKey(viewDate)===lastDay) viewDate=new Date(); // jump the view to the new day
+    lastDay=now; save(); renderToday(); toast("New day started — yesterday is saved ✓");
+  }
+},30000);
 document.querySelectorAll(".modal").forEach(m=>m.addEventListener("click",e=>{ if(e.target===m) closeModal(m.id); }));
+computeAdapt(); renderNotifBtn();
 renderAll();
 if(!S.profile){ go("settings"); toast("Set up your profile to get your daily budget"); }
 </script>
