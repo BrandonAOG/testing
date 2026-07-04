@@ -6,6 +6,11 @@
 <meta name="theme-color" content="#10241c" media="(prefers-color-scheme: light)">
 <meta name="theme-color" content="#0e1512" media="(prefers-color-scheme: dark)">
 <title>FitTrack — Offline Nutrition & Fasting</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon.svg">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FitTrack">
 <style>
 :root{
   --bg:#f4f6f3; --card:#ffffff; --ink:#14231c; --ink-soft:#5d6f65; --line:#e2e8e0;
@@ -186,7 +191,14 @@ hr.sp{border:none;border-top:1px dashed var(--line);margin:14px 0}
 
   <div class="spread" style="margin-bottom:8px">
     <b style="font-size:14px">Meals</b>
-    <button class="btn small ghost" onclick="copyYesterday()">⧉ Copy yesterday</button>
+    <span class="row" style="gap:6px">
+      <button class="btn small ghost" onclick="saveTemplate()">💾 Template</button>
+      <button class="btn small ghost" onclick="copyYesterday()">⧉ Copy yesterday</button>
+    </span>
+  </div>
+  <div id="templWrap" style="display:none;margin-bottom:10px">
+    <div class="eyebrow" style="margin-bottom:6px">Day templates — tap to apply</div>
+    <div id="templChips" class="row" style="flex-wrap:wrap;gap:7px"></div>
   </div>
   <div id="mealList"></div>
 
@@ -255,6 +267,12 @@ hr.sp{border:none;border-top:1px dashed var(--line);margin:14px 0}
     <div class="spread"><b>Weight</b><button class="btn small ghost" onclick="openWeight()">+ Log weight</button></div>
     <svg class="chart" id="wChart" viewBox="0 0 340 180" preserveAspectRatio="none"></svg>
   </div>
+  <div class="card" id="bmiCard" style="display:none"></div>
+  <div class="card">
+    <b>Intake vs weight — last 4 weeks</b>
+    <p class="subtle" style="margin:4px 0 6px">Bars = weekly avg calories eaten · line = weekly avg weight. This shows whether your budget is actually moving the scale.</p>
+    <svg class="chart" id="ovChart" viewBox="0 0 340 170" preserveAspectRatio="none"></svg>
+  </div>
   <div class="card">
     <div class="spread"><b>Weekly report card</b><button class="btn small" onclick="openReport()">Open</button></div>
     <p class="subtle" style="margin-top:6px">Averages, protein hit-rate, best & worst day, one concrete tip — downloadable as an image.</p>
@@ -282,11 +300,16 @@ hr.sp{border:none;border-top:1px dashed var(--line);margin:14px 0}
     <svg class="chart" id="calChart" viewBox="0 0 340 160" preserveAspectRatio="none"></svg>
   </div>
   <div class="card">
+    <b>Milestones</b>
+    <div id="badgeGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px"></div>
+  </div>
+  <div class="card">
     <b>Data</b>
     <p class="subtle" style="margin:6px 0 10px">Everything is saved on this device. Back it up any time.</p>
-    <div class="row">
+    <div class="row" style="flex-wrap:wrap">
       <button class="btn small ghost" onclick="exportData()">Export backup</button>
       <button class="btn small ghost" onclick="document.getElementById('importFile').click()">Import</button>
+      <button class="btn small ghost" onclick="exportCSV()">Export CSV</button>
       <input type="file" id="importFile" accept=".json" hidden onchange="importData(this)">
     </div>
   </div>
@@ -521,7 +544,7 @@ hr.sp{border:none;border-top:1px dashed var(--line);margin:14px 0}
 const DB_KEY = "fittrack_v1";
 let S = load();
 function load(){
-  const base={ profile:null, days:{}, weights:[], customFoods:[], recents:[], barcodeCache:{}, freq:{}, qtyMem:{}, themeHue:null,
+  const base={ profile:null, days:{}, weights:[], customFoods:[], recents:[], barcodeCache:{}, freq:{}, qtyMem:{}, themeHue:null, templates:[], lastBackup:null,
     fast:{active:false,start:null,goalH:16,history:[]},
     adapt:null, measures:[], photos:[], notifOn:false, notifSent:{} };
   try{ const raw = localStorage.getItem(DB_KEY); if(raw){ const o=JSON.parse(raw); return Object.assign(base,o); } }catch(e){}
@@ -534,7 +557,12 @@ const $ = id => document.getElementById(id);
 const todayKey = d => d.toISOString().slice(0,10);
 let viewDate = new Date();
 function day(){ const k = todayKey(viewDate); if(!S.days[k]) S.days[k]={meals:{Breakfast:[],Lunch:[],Dinner:[],Snacks:[]},water:0,exercise:[]}; return S.days[k]; }
-function toast(msg){ const t=$("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),2200); }
+function toast(msg,actionLabel,fn){ const t=$("toast");
+  if(actionLabel){ window._toastAct=fn;
+    t.innerHTML=msg+` <button onclick="window._toastAct&&window._toastAct();document.getElementById('toast').classList.remove('show')" style="margin-left:10px;background:rgba(255,255,255,.22);color:#fff;border-radius:99px;padding:4px 12px;font-weight:800">${actionLabel}</button>`;
+    t.style.pointerEvents="auto";
+  } else { t.textContent=msg; t.style.pointerEvents="none"; }
+  t.classList.add("show"); clearTimeout(t._h); t._h=setTimeout(()=>t.classList.remove("show"),actionLabel?8000:2200); }
 const r0 = n => Math.round(n);
 function kgFrom(v){ return S.profile&&S.profile.units==="lb" ? v*0.45359237 : v; }
 function dispW(kg){ const u=S.profile?S.profile.units:"lb"; return u==="lb" ? (kg/0.45359237) : kg; }
@@ -679,7 +707,7 @@ function renderToday(){
   let html="";
   for(const [name,items] of Object.entries(d.meals)){
     const kc=r0(items.reduce((a,i)=>a+i.cal,0));
-    html+=`<div class="meal"><header><span class="n">${name}</span><span class="kc">${kc} kcal</span></header>`;
+    html+=`<div class="meal"><header><span class="n">${name}</span><span class="row" style="gap:8px"><button title="Copy this meal from yesterday" style="color:var(--ink-soft);font-size:14px" onclick="copyMeal('${name}')">⧉</button><span class="kc">${kc} kcal</span></span></header>`;
     if(items.length){ html+=`<div class="items">`+items.map((i,ix)=>`
       <div class="item">${i.photo?`<img src="${i.photo}" alt="">`:""}
         <div class="g"><b>${esc(i.name)}</b><small>${i.qty!==1?i.qty+" × ":""}${esc(i.serv||"serving")} · ${r0(i.p)}p ${r0(i.c)}c ${r0(i.f)}f</small></div>
@@ -689,7 +717,7 @@ function renderToday(){
     html+=`<button class="addto" onclick="openAdd('${name}')">+ Add to ${name.toLowerCase()}</button></div>`;
   }
   $("mealList").innerHTML=html;
-  renderFreqChips(); renderEatWindow();
+  renderFreqChips(); renderEatWindow(); renderTemplates();
 
   // water
   const wg=S.profile?S.profile.waterGoal:8;
@@ -720,7 +748,11 @@ function renderToday(){
     : "No exercise logged yet.";
 }
 function setWater(n){ const d=day(); d.water = (d.water===n)? n-1 : n; save(); renderToday(); }
-function delItem(meal,ix){ day().meals[meal].splice(ix,1); save(); renderToday(); }
+function delItem(meal,ix){
+  const removed=day().meals[meal].splice(ix,1)[0], k=todayKey(viewDate);
+  save(); renderToday();
+  toast(`Removed ${removed.name}`,"Undo",()=>{ if(!S.days[k]) return; S.days[k].meals[meal].splice(Math.min(ix,S.days[k].meals[meal].length),0,removed); save(); renderToday(); });
+}
 function delEx(i){ day().exercise.splice(i,1); save(); renderToday(); }
 function esc(s){ return String(s).replace(/[<>&"]/g,c=>({"<":"&lt;",">":"&gt;","&":"&amp;",'"':"&quot;"}[c])); }
 
@@ -799,6 +831,116 @@ function renderEatWindow(){
   el.innerHTML=`<div class="spread"><span>🍽️ Eating window</span><b class="num">closes in ${h}h ${m}m</b></div><p class="subtle" style="margin-top:4px">Based on your ${S.fast.goalH}:${winH} plan — start your next fast around ${new Date(closes).toLocaleTimeString([],{hour:"numeric",minute:"2-digit"})}.</p>`;
 }
 setInterval(()=>{ if($("scr-today").classList.contains("active")) renderEatWindow(); },60000);
+
+function copyMeal(meal){
+  const prev=new Date(viewDate); prev.setDate(prev.getDate()-1);
+  const src=S.days[todayKey(prev)];
+  if(!src||!src.meals[meal]||!src.meals[meal].length){ toast(`No ${meal} logged yesterday`); return; }
+  const d=day(); src.meals[meal].forEach(i=>d.meals[meal].push(JSON.parse(JSON.stringify(i))));
+  save(); renderToday(); toast(`Copied yesterday's ${meal} ✓`);
+}
+/* ============================= DAY TEMPLATES ============================= */
+function saveTemplate(){
+  const d=day(), n=Object.values(d.meals).flat().length;
+  if(!n){ toast("Log some meals first, then save the day as a template"); return; }
+  const name=prompt("Name this day template (e.g. Gym day, Lazy Sunday):"); if(!name) return;
+  if(!S.templates) S.templates=[];
+  S.templates=S.templates.filter(t=>t.name!==name).concat({name,meals:JSON.parse(JSON.stringify(d.meals))}).slice(-8);
+  save(); renderTemplates(); toast(`Template "${name}" saved ✓`);
+}
+function applyTemplate(i){
+  const t=S.templates[i]; if(!t) return;
+  if(!confirm(`Add everything from "${t.name}" to this day?`)) return;
+  const d=day(); let n=0;
+  for(const [m,items] of Object.entries(t.meals)){ if(d.meals[m]) items.forEach(it=>{ d.meals[m].push(JSON.parse(JSON.stringify(it))); n++; }); }
+  save(); renderToday(); toast(`Applied "${t.name}" — ${n} items ✓`);
+}
+function delTemplate(i){ if(confirm(`Delete template "${S.templates[i].name}"?`)){ S.templates.splice(i,1); save(); renderTemplates(); } }
+function renderTemplates(){
+  const t=S.templates||[];
+  $("templWrap").style.display=t.length?"block":"none";
+  $("templChips").innerHTML=t.map((x,i)=>{
+    const kc=r0(Object.values(x.meals).flat().reduce((a,f)=>a+f.cal,0));
+    return `<span class="chip" style="display:inline-flex;align-items:center;gap:6px"><button onclick="applyTemplate(${i})">${x.name} · ${kc} kcal</button><button style="color:var(--red);font-weight:800" onclick="delTemplate(${i})">×</button></span>`;
+  }).join("");
+}
+/* ============================= CSV EXPORT ============================= */
+function exportCSV(){
+  const keys=Object.keys(S.days).sort();
+  if(!keys.length){ toast("Nothing to export yet"); return; }
+  const wByDay={}; S.weights.forEach(w=>wByDay[w.d]=w.w);
+  let csv="date,calories,protein_g,carbs_g,fat_g,fiber_g,sugar_g,sodium_mg,water_glasses,exercise_kcal,weight,note\n";
+  keys.forEach(k=>{ const d=S.days[k], t=dayTotals(d);
+    csv+=[k,r0(t.cal),r0(t.p),r0(t.c),r0(t.f),r0(t.fi),r0(t.su),r0(t.so),d.water||0,r0(t.burn),wByDay[k]??"",'"'+String(d.note||"").replace(/"/g,'""')+'"'].join(",")+"\n"; });
+  const a=document.createElement("a");
+  a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
+  a.download="fittrack-"+todayKey(new Date())+".csv"; a.click(); toast("CSV downloaded ✓");
+}
+/* ============================= BADGES / BMI / OVERLAY ============================= */
+function badgeList(){
+  const allItems=Object.values(S.days).flatMap(d=>Object.values(d.meals).flat());
+  const st=streakInfo().streak, fasts=S.fast.history.filter(h=>h.hrs>=h.goal).length;
+  const wLost=S.weights.length>=2 ? S.weights[0].w-latestWeight() : 0;
+  const lostMark=unit()==="lb"?5:2, lostBig=unit()==="lb"?15:7;
+  return [
+    ["🥇","First log",allItems.length>=1],
+    ["💯","100 foods logged",allItems.length>=100],
+    ["🔥","7-day streak",st>=7],
+    ["🌋","30-day streak",st>=30],
+    ["⏱️","First completed fast",fasts>=1],
+    ["🧘","10 completed fasts",fasts>=10],
+    ["⚖️","10 weigh-ins",S.weights.length>=10],
+    ["📉",`${lostMark} ${unit()} lost`,wLost>=lostMark],
+    ["🏆",`${lostBig} ${unit()} lost`,wLost>=lostBig],
+    ["📸","First progress photo",(S.photos||[]).length>=1],
+    ["🍲","First recipe",(S.customFoods||[]).some(f=>String(f.id).startsWith("r"))],
+    ["💧","Perfect water day",Object.values(S.days).some(d=>(d.water||0)>=(S.profile?S.profile.waterGoal:8))]
+  ];
+}
+function renderBadges(){
+  $("badgeGrid").innerHTML=badgeList().map(([e,n,got])=>
+    `<div class="spread" style="border:1px solid var(--line);border-radius:12px;padding:9px 12px;${got?"":"opacity:.38;filter:grayscale(1)"}"><span>${e} ${n}</span><b>${got?"✓":"🔒"}</b></div>`).join("");
+}
+function renderBMI(){
+  const el=$("bmiCard"); const p=S.profile;
+  if(!p||!p.height||!S.weights.length){ el.style.display="none"; return; }
+  const kg=kgFrom(latestWeight()), m=p.height/100, bmi=kg/(m*m);
+  const cat=bmi<18.5?["Underweight","var(--blue)"]:bmi<25?["Healthy range","var(--green)"]:bmi<30?["Overweight","var(--tangerine)"]:["Obese","var(--red)"];
+  const lo=dispW(18.5*m*m), hi=dispW(24.9*m*m);
+  const pos=Math.min(100,Math.max(0,(bmi-14)/(36-14)*100));
+  el.style.display="block";
+  el.innerHTML=`<div class="spread"><b>BMI</b><span><b class="num" style="font-size:19px">${bmi.toFixed(1)}</b> <small style="color:${cat[1]};font-weight:700">${cat[0]}</small></span></div>
+    <div style="height:8px;border-radius:99px;background:linear-gradient(90deg,#7db2ff 0 20%,#3dbd7d 20% 50%,#f2a24a 50% 73%,#e05d5d 73%);position:relative;margin:10px 0 4px">
+      <span style="position:absolute;left:${pos}%;top:-3px;width:3px;height:14px;background:var(--ink);border-radius:2px"></span></div>
+    <p class="subtle">Healthy range for your height: <b class="num">${r0(lo)}–${r0(hi)} ${unit()}</b>. BMI is a rough population measure — muscle mass skews it.</p>`;
+}
+function drawOverlayChart(){
+  const svg=$("ovChart"), W=340,H=170,pad=28;
+  const weeks=[];
+  for(let w=3;w>=0;w--){
+    let cal=0,cn=0,wt=0,wn=0;
+    for(let i=0;i<7;i++){ const d=new Date(); d.setDate(d.getDate()-(w*7+i)); const k=todayKey(d);
+      const dd=S.days[k]; if(dd){ const t=dayTotals(dd); if(t.cal>0){cal+=t.cal;cn++;} }
+      const wRec=S.weights.find(x=>x.d===k); if(wRec){wt+=wRec.w;wn++;} }
+    weeks.push({cal:cn?cal/cn:0, wt:wn?wt/wn:null, l:w===0?"this wk":w+"w ago"});
+  }
+  if(!weeks.some(x=>x.cal>0)){ svg.innerHTML=`<text x="170" y="90" text-anchor="middle" fill="var(--ink-soft)" font-size="13">Log meals for a couple weeks to unlock this</text>`; return; }
+  const mxC=Math.max(...weeks.map(x=>x.cal),1)*1.15, bw=(W-2*pad)/4*0.5;
+  let s="";
+  weeks.forEach((x,i)=>{ const cx=pad+(W-2*pad)*(i+0.5)/4, h2=(H-2*pad)*x.cal/mxC;
+    s+=`<rect x="${cx-bw/2}" y="${H-pad-h2}" width="${bw}" height="${Math.max(h2,1)}" rx="4" fill="var(--green)" opacity=".55"/>`;
+    if(x.cal) s+=`<text x="${cx}" y="${H-pad-h2-4}" text-anchor="middle" fill="var(--ink-soft)" font-size="9">${r0(x.cal)}</text>`;
+    s+=`<text x="${cx}" y="${H-8}" text-anchor="middle" fill="var(--ink-soft)" font-size="10">${x.l}</text>`; });
+  const wPts=weeks.map((x,i)=>({i,v:x.wt})).filter(x=>x.v!=null);
+  if(wPts.length>=2){
+    const vs=wPts.map(x=>x.v), mn=Math.min(...vs)-0.5, mx=Math.max(...vs)+0.5;
+    const y=v=>pad+ (H-2*pad)*0.55*(1-(v-mn)/(mx-mn||1));
+    const x=i=>pad+(W-2*pad)*(i+0.5)/4;
+    s+=`<polyline fill="none" stroke="var(--blue)" stroke-width="2.5" stroke-linejoin="round" points="${wPts.map(p=>x(p.i)+","+y(p.v)).join(" ")}"/>`;
+    wPts.forEach(p=>{ s+=`<circle cx="${x(p.i)}" cy="${y(p.v)}" r="3.5" fill="var(--blue)"/><text x="${x(p.i)}" y="${y(p.v)-7}" text-anchor="middle" fill="var(--blue)" font-size="9" font-weight="700">${p.v.toFixed(1)}</text>`; });
+  } else s+=`<text x="${W-pad}" y="16" text-anchor="end" fill="var(--ink-soft)" font-size="10">log weight weekly for the line</text>`;
+  svg.innerHTML=s;
+}
 
 /* ============================= BARCODE ============================= */
 let scanStream=null, scanTimer=null;
@@ -983,7 +1125,7 @@ function renderProgress(){
   if(e&&p){ $("etaBanner").style.display="block";
     $("etaBanner").innerHTML=`📅 Projected goal date: <b>${e.date.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"})}</b> — about ${Math.ceil(e.weeks)} weeks at ${p.rateKg} kg/week.`;
   } else $("etaBanner").style.display="none";
-  drawWeightChart(); drawCalChart(); renderMeasures(); renderPhotos();
+  drawWeightChart(); drawCalChart(); renderMeasures(); renderPhotos(); renderBMI(); renderBadges(); drawOverlayChart();
 }
 function drawWeightChart(){
   const svg=$("wChart"), W=340,H=180,pad=26;
@@ -1022,7 +1164,7 @@ function drawCalChart(){
 function exportData(){
   const a=document.createElement("a");
   a.href="data:application/json;charset=utf-8,"+encodeURIComponent(JSON.stringify(S));
-  a.download="fittrack-backup-"+todayKey(new Date())+".json"; a.click(); toast("Backup downloaded ✓");
+  a.download="fittrack-backup-"+todayKey(new Date())+".json"; a.click(); S.lastBackup=Date.now(); save(); toast("Backup downloaded ✓");
 }
 function importData(inp){
   const f=inp.files[0]; if(!f) return;
@@ -1149,6 +1291,32 @@ function weekData(){
   }
   return {pl,rows};
 }
+function patternInsight(){
+  // average calories per weekday over the last 8 weeks + which meal drives the highest day
+  const wd=Array.from({length:7},()=>({cal:0,n:0,meals:{}}));
+  let logged=0;
+  for(let i=0;i<56;i++){ const d=new Date(); d.setDate(d.getDate()-i); const k=todayKey(d);
+    const dd=S.days[k]; if(!dd) continue; const t=dayTotals(dd); if(!t.cal) continue;
+    logged++; const b=wd[d.getDay()]; b.cal+=t.cal; b.n++;
+    for(const [m,items] of Object.entries(dd.meals)){ b.meals[m]=(b.meals[m]||0)+items.reduce((a,x)=>a+x.cal,0); } }
+  if(logged<14) return "";
+  const names=["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+  const avgs=wd.map((b,i)=>({i,avg:b.n?b.cal/b.n:0,b})).filter(x=>x.b.n>=2);
+  if(avgs.length<3) return "";
+  const hi=avgs.reduce((a,x)=>x.avg>a.avg?x:a), lo=avgs.reduce((a,x)=>x.avg<a.avg?x:a);
+  const topMeal=Object.entries(hi.b.meals).sort((a,b)=>b[1]-a[1])[0];
+  return `<p style="margin-top:6px">📊 Over the last 8 weeks, <b>${names[hi.i]}s</b> run highest (~${r0(hi.avg)} kcal, mostly from <b>${topMeal?topMeal[0]:"meals"}</b>) and <b>${names[lo.i]}s</b> lowest (~${r0(lo.avg)} kcal).</p>`;
+}
+function proteinByMeal(){
+  const sums={}, MEALS=["Breakfast","Lunch","Dinner","Snacks"]; let n=0;
+  for(let i=0;i<7;i++){ const d=new Date(); d.setDate(d.getDate()-i); const dd=S.days[todayKey(d)];
+    if(!dd||!dayTotals(dd).cal) continue; n++;
+    MEALS.forEach(m=>{ sums[m]=(sums[m]||0)+(dd.meals[m]||[]).reduce((a,x)=>a+(x.p||0),0); }); }
+  if(n<3) return "";
+  const rows=MEALS.map(m=>({m,v:(sums[m]||0)/n}));
+  const lo=rows.reduce((a,x)=>x.v<a.v?x:a);
+  return `<p style="margin-top:6px">🥩 Protein by meal (daily avg): ${rows.map(r=>`${r.m} <b class="num">${r0(r.v)}g</b>`).join(" · ")}.${lo.v<15?` <b>${lo.m}</b> is your gap — adding ~20g there is the easiest fix.`:""}</p>`;
+}
 function openReport(){
   const {pl,rows}=weekData();
   const logged=rows.filter(r=>r.t&&r.t.cal>0);
@@ -1177,6 +1345,8 @@ function openReport(){
     ${wTrend!==null?`<p style="margin-bottom:10px">⚖️ Weight this week: <b>${wTrend>0?"+":""}${wTrend.toFixed(1)} ${unit()}</b>${e?` — projected goal date <b>${e.date.toLocaleDateString(undefined,{month:"short",day:"numeric"})}</b>`:""}</p>`:`<p class="subtle" style="margin-bottom:10px">Log weight at least twice a week to see your trend here.</p>`}
     ${best?`<p>🏆 Best day: <b>${new Date(best.k).toLocaleDateString(undefined,{weekday:"long"})}</b> (${r0(best.diff)} kcal under)</p>`:""}
     ${worst?`<p>⚠️ Toughest day: <b>${new Date(worst.k).toLocaleDateString(undefined,{weekday:"long"})}</b> (+${r0(worst.diff)} kcal)</p>`:""}
+    ${patternInsight()}
+    ${proteinByMeal()}
     <div class="banner" style="margin-top:12px">💡 ${tip}</div>
     <p class="subtle" style="margin-top:8px">${adaptMsg().replace(/<[^>]+>/g,"")}</p>`;
   $("mReport").classList.add("open");
@@ -1393,6 +1563,14 @@ setInterval(()=>{
 },30000);
 document.querySelectorAll(".modal").forEach(m=>m.addEventListener("click",e=>{ if(e.target===m) closeModal(m.id); }));
 computeAdapt(); renderNotifBtn(); applyTheme(); renderThemeUI();
+// Monthly backup nudge — data lives in browser storage, which can be cleared
+if(Object.keys(S.days).length>=7 && (!S.lastBackup || Date.now()-S.lastBackup>30*864e5)){
+  setTimeout(()=>toast("It's been a while — download a backup","Backup now",exportData),1500);
+}
+// PWA: registers only when served over http(s); silently skipped for a plain local file
+if("serviceWorker" in navigator && location.protocol.startsWith("http")){
+  navigator.serviceWorker.register("sw.js").catch(()=>{});
+}
 renderAll();
 if(!S.profile){ go("settings"); toast("Set up your profile to get your daily budget"); }
 </script>
