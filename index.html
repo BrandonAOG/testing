@@ -845,13 +845,26 @@ function searchFood(){
 function offMap(p){
   const n=p.nutriments||{};
   const perServ=n["energy-kcal_serving"]!=null;
+  let cal=+(n["energy-kcal_serving"]??n["energy-kcal_100g"]??0);
+  if(!cal&&n["energy_100g"]) cal=Math.round(n["energy_100g"]/4.184); // kJ fallback
+  const P=+(n.proteins_serving??n.proteins_100g??0), C=+(n.carbohydrates_serving??n.carbohydrates_100g??0), F=+(n.fat_serving??n.fat_100g??0);
+  if(!cal&&(P||C||F)) cal=Math.round(P*4+C*4+F*9); // derive from macros
   return { id:"off"+(p.code||Math.random()),
-    name:(p.product_name||"Unnamed")+(p.brands?" — "+p.brands.split(",")[0]:""),
-    cal:+(n["energy-kcal_serving"]??n["energy-kcal_100g"]??0),
-    p:+(n.proteins_serving??n.proteins_100g??0), c:+(n.carbohydrates_serving??n.carbohydrates_100g??0),
-    f:+(n.fat_serving??n.fat_100g??0), fi:+(n.fiber_serving??n.fiber_100g??0),
+    name:(p.product_name||p.product_name_en||"Unnamed")+(p.brands?" — "+String(p.brands).split(",")[0]:""),
+    cal, p:P, c:C, f:F, fi:+(n.fiber_serving??n.fiber_100g??0),
     su:+(n.sugars_serving??n.sugars_100g??0), so:Math.round((+(n.sodium_serving??n.sodium_100g??0))*1000),
     serv:perServ?(p.serving_size||"1 serving"):"100 g" };
+}
+async function offSearch(q){
+  // Primary: the new, fast Open Food Facts search API
+  try{
+    const r=await fetch("https://search.openfoodfacts.org/search?q="+encodeURIComponent(q)+"&page_size=8&fields=product_name,brands,nutriments,code,serving_size");
+    if(r.ok){ const j=await r.json(); const hits=(j.hits||j.products||[]);
+      if(hits.length) return hits.map(offMap); }
+  }catch(e){}
+  // Fallback: legacy search endpoint
+  const r2=await fetch("https://world.openfoodfacts.org/cgi/search.pl?search_terms="+encodeURIComponent(q)+"&search_simple=1&action=process&json=1&page_size=8&fields=product_name,brands,nutriments,code,serving_size");
+  const j2=await r2.json(); return (j2.products||[]).map(offMap);
 }
 function usdaMap(p){
   const g=id=>{ const x=(p.foodNutrients||[]).find(n=>n.nutrientId===id); return x?+x.value:0; };
@@ -869,8 +882,7 @@ async function onlineSearch(q){
   }
   // Fire every source at the same time
   const jobs=[
-    fetch("https://world.openfoodfacts.org/cgi/search.pl?search_terms="+encodeURIComponent(q)+"&search_simple=1&action=process&json=1&page_size=8&fields=product_name,brands,nutriments,code,serving_size")
-      .then(r=>r.json()).then(j=>({src:"Open Food Facts",items:(j.products||[]).map(offMap)}))
+    offSearch(q).then(items=>({src:"Open Food Facts",items}))
   ];
   if(S.usdaKey) jobs.push(
     fetch("https://api.nal.usda.gov/fdc/v1/foods/search?api_key="+encodeURIComponent(S.usdaKey)+"&query="+encodeURIComponent(q)+"&pageSize=6&dataType=Branded,Foundation,SR%20Legacy")
@@ -880,7 +892,7 @@ async function onlineSearch(q){
   let html="", all=[];
   settled.forEach(s=>{
     if(s.status!=="fulfilled") return;
-    const items=s.value.items.filter(f=>f.cal>0).slice(0,8);
+    const items=s.value.items.filter(f=>f.name&&!f.name.startsWith("Unnamed")).slice(0,8);
     if(items.length){ html+=`<div class="eyebrow" style="margin:8px 0 2px">${s.value.src}</div>`+items.map(f=>foodRow(f)).join(""); all=all.concat(items); }
   });
   if(all.length){ S.onlineCache[q]=all.slice(0,12);
@@ -1142,6 +1154,8 @@ async function scanPhotoChosen(inp){
 }
 async function lookupBarcode(code){
   if(!code) return; const st=$("scanStatus");
+  code=String(code).trim();
+  const mb=$("manualBarcode"); if(mb) mb.value=code; // show the detected number so you can see/edit/retry it
   if(S.barcodeCache[code]){ st.textContent="Found in offline cache ✓"; return pickFood(JSON.stringify(S.barcodeCache[code])); }
   if(!navigator.onLine){ st.textContent="You're offline and this product isn't cached yet. Add it via the Custom tab (nutrition label is on the package) — it'll be saved for next time."; return; }
   st.textContent="Looking up "+code+"…";
