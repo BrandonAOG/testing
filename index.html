@@ -194,8 +194,14 @@ hr.sp{border:none;border-top:1px dashed var(--line);margin:14px 0}
     <input class="f num" id="stepsIn" type="number" inputmode="numeric" placeholder="e.g. 8500 — from your phone or watch" onchange="setSteps(this.value)">
   </div>
 
-  <div class="card" style="padding:12px 16px">
-    <div class="spread subtle"><span>Fiber <b class="num" id="microFi">0g</b></span><span>Sugar <b class="num" id="microSu">0g</b></span><span>Sodium <b class="num" id="microSo">0mg</b></span></div>
+  <div class="card">
+    <b style="font-size:14px">Nutrients today</b>
+    <div id="microBars" style="margin-top:8px;display:flex;flex-direction:column;gap:10px"></div>
+  </div>
+
+  <div class="card">
+    <div class="spread" style="margin-bottom:8px"><b>Notes</b><span class="subtle">saved automatically</span></div>
+    <input class="f" id="dayNote" placeholder="How did today go? Cravings, sleep, mood…" oninput="day().note=this.value; save();">
   </div>
 </section>
 
@@ -321,6 +327,11 @@ hr.sp{border:none;border-top:1px dashed var(--line);margin:14px 0}
     <div class="row" style="gap:12px">
       <div style="flex:1"><label class="f">Water goal (glasses)</label><input class="f" id="pWater" type="number" value="8"></div>
       <div style="flex:1"><label class="f">Calorie override (optional)</label><input class="f" id="pCalOverride" type="number" placeholder="auto"></div>
+    </div>
+    <div class="row">
+      <div style="flex:1"><label class="f">Fiber goal (g)</label><input class="f" id="pFiber" type="number" value="28"></div>
+      <div style="flex:1"><label class="f">Sugar limit (g)</label><input class="f" id="pSugar" type="number" value="50"></div>
+      <div style="flex:1"><label class="f">Sodium limit (mg)</label><input class="f" id="pSodium" type="number" value="2300"></div>
     </div>
     <button class="btn full" style="margin-top:16px" onclick="saveProfile()">Save & recalculate</button>
     <button class="btn full ghost" style="margin-top:10px" id="notifBtn" onclick="toggleNotif()">🔕 Enable fasting & water reminders</button>
@@ -543,7 +554,8 @@ function saveProfile(quiet){
   const p={ sex:$("pSex").value, age:+$("pAge").value||30, height:+$("pHeight").value||170,
     weight:+$("pWeight").value||70, units:$("pUnits").value, activity:+$("pActivity").value,
     goalW:+$("pGoalW").value||+$("pWeight").value||70, rateKg:+$("pRate").value,
-    macro:$("pMacro").value, waterGoal:+$("pWater").value||8, calOverride:+$("pCalOverride").value||0 };
+    macro:$("pMacro").value, waterGoal:+$("pWater").value||8, calOverride:+$("pCalOverride").value||0,
+    fiberG:+$("pFiber").value||28, sugarG:+$("pSugar").value||50, sodiumG:+$("pSodium").value||2300 };
   S.profile=p;
   if(!S.weights.length) S.weights.push({d:todayKey(new Date()), w:p.weight});
   save(); renderPlanSummary(); renderAll(); if(quiet!==true) toast("Plan updated ✓");
@@ -561,6 +573,7 @@ function fillProfileForm(){
   $("pSex").value=p.sex;$("pAge").value=p.age;$("pHeight").value=p.height;$("pWeight").value=p.weight;
   $("pUnits").value=p.units;$("pActivity").value=p.activity;$("pGoalW").value=p.goalW;$("pRate").value=p.rateKg;
   $("pMacro").value=p.macro;$("pWater").value=p.waterGoal;$("pCalOverride").value=p.calOverride||"";
+  $("pFiber").value=p.fiberG||28;$("pSugar").value=p.sugarG||50;$("pSodium").value=p.sodiumG||2300;
   document.querySelectorAll(".unitLbl").forEach(x=>x.textContent=p.units);
   renderPlanSummary();
 }
@@ -582,6 +595,7 @@ function renderToday(){
   $("dateLabel").textContent = isToday? "Today · "+viewDate.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"}) : viewDate.toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"});
   const h=new Date().getHours();
   $("greet").textContent = h<12?"Good morning":h<18?"Good afternoon":"Good evening";
+  $("dayNote").value = d.note||"";
   const budget = pl?pl.target:2000;
   const net = budget + Math.round(t.burn) - Math.round(t.cal);
   $("calLeft").textContent = Math.abs(r0(net));
@@ -623,7 +637,19 @@ function renderToday(){
   $("glasses").innerHTML=Array.from({length:wg},(_,i)=>`<button class="glass ${i<d.water?"on":""}" onclick="setWater(${i+1})" aria-label="Glass ${i+1}"></button>`).join("");
 
   // micros
-  $("microFi").textContent=r0(t.fi)+"g"; $("microSu").textContent=r0(t.su)+"g"; $("microSo").textContent=r0(t.so)+"mg";
+  const mp=S.profile||{};
+  const micro=[
+    {n:"Fiber", v:t.fi, g:mp.fiberG||28, u:"g", type:"goal"},
+    {n:"Sugar", v:t.su, g:mp.sugarG||50, u:"g", type:"limit"},
+    {n:"Sodium", v:t.so, g:mp.sodiumG||2300, u:"mg", type:"limit"}
+  ];
+  $("microBars").innerHTML=micro.map(m=>{
+    const pctM=Math.min(100,m.v/Math.max(1,m.g)*100), over=m.v>m.g;
+    const col=m.type==="limit"?(over?"var(--red)":"var(--tangerine)"):(m.v>=m.g?"var(--green)":"#7db2ff");
+    const tag=m.type==="limit"?(over?" · over limit":""):(m.v>=m.g?" · goal met ✓":"");
+    return `<div class="macro"><div class="t" style="color:var(--ink)"><span>${m.n}</span><em style="color:var(--ink-soft)" class="num">${r0(m.v)} / ${m.g}${m.u}${tag}</em></div>
+      <div class="bar" style="background:var(--line-soft)"><i style="width:${pctM}%;background:${col}"></i></div></div>`;
+  }).join("");
   // adaptive coaching banner
   const am=adaptMsg();
   $("adaptBanner").style.display=(am&&isToday)?"block":"none"; $("adaptBanner").innerHTML=am;
@@ -684,24 +710,71 @@ function saveCustom(persist){
 
 /* ============================= BARCODE ============================= */
 let scanStream=null, scanTimer=null;
+let zxingReader=null;
+function loadZXing(){
+  return new Promise((res,rej)=>{
+    if(window.ZXing) return res();
+    const s=document.createElement("script");
+    s.src="https://cdnjs.cloudflare.com/ajax/libs/zxing-library/0.21.3/index.min.js";
+    s.onload=()=>res(); s.onerror=()=>rej(new Error("offline"));
+    document.head.appendChild(s);
+  });
+}
+async function nativeDetectorWorks(){
+  if(!("BarcodeDetector" in window)) return false;
+  try{
+    const supported=await BarcodeDetector.getSupportedFormats();
+    return ["ean_13","upc_a"].some(f=>supported.includes(f));
+  }catch(e){ return false; }
+}
 async function startScan(){
   const st=$("scanStatus");
+  stopScan();
   try{
-    scanStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:"environment"}});
-    const v=$("scanvid"); v.srcObject=scanStream; await v.play();
-    if("BarcodeDetector" in window){
+    // Ask for a sharp back-camera feed — low-res feeds are the #1 reason barcodes never register
+    scanStream=await navigator.mediaDevices.getUserMedia({video:{
+      facingMode:{ideal:"environment"},
+      width:{ideal:1920}, height:{ideal:1080},
+      advanced:[{focusMode:"continuous"}]
+    }});
+    const v=$("scanvid"); v.srcObject=scanStream; v.setAttribute("playsinline","");
+    await v.play();
+    if(await nativeDetectorWorks()){
       const det=new BarcodeDetector({formats:["ean_13","ean_8","upc_a","upc_e","code_128"]});
-      st.textContent="Scanning… hold the barcode steady in frame.";
+      st.textContent="Scanning… fill most of the frame with the barcode and hold steady.";
       scanTimer=setInterval(async()=>{
         try{ const codes=await det.detect(v);
-          if(codes.length){ stopScan(); lookupBarcode(codes[0].rawValue); } }catch(e){}
-      },400);
+          if(codes.length){ const c=codes[0].rawValue; stopScan(); lookupBarcode(c); } }catch(e){}
+      },300);
     } else {
-      st.textContent="This browser can't auto-detect barcodes (try Chrome on Android). You can still type the number below — it's printed under every barcode.";
+      // Fallback decoder (works on iPhone Safari, desktop browsers, etc.)
+      st.textContent="Loading barcode decoder…";
+      try{
+        await loadZXing();
+        const hints=new Map();
+        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.CODE_128]);
+        hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
+        const reader=new ZXing.MultiFormatReader(); reader.setHints(hints);
+        const cv=document.createElement("canvas"), ctx=cv.getContext("2d",{willReadFrequently:true});
+        st.textContent="Scanning… fill most of the frame with the barcode and hold steady.";
+        scanTimer=setInterval(()=>{
+          try{
+            if(!v.videoWidth) return;
+            cv.width=v.videoWidth; cv.height=v.videoHeight;
+            ctx.drawImage(v,0,0);
+            const lum=new ZXing.HTMLCanvasElementLuminanceSource(cv);
+            const bin=new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(lum));
+            const r=reader.decode(bin);
+            if(r&&r.getText()){ const c=r.getText(); stopScan(); lookupBarcode(c); }
+          }catch(e){/* no barcode in this frame — keep trying */}
+        },350);
+      }catch(e){
+        st.textContent="Couldn't load the decoder (needs internet the first time). You can still type the number printed under the barcode below.";
+      }
     }
-  }catch(e){ st.textContent="Camera unavailable ("+e.message+"). Type the barcode number below instead."; }
+  }catch(e){ st.textContent="Camera unavailable ("+e.message+"). Note: the camera only works over https or when the file is opened directly. Type the barcode number below instead."; }
 }
-function stopScan(){ if(scanTimer){clearInterval(scanTimer);scanTimer=null;} if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null;} const v=$("scanvid"); if(v) v.srcObject=null; }
+function stopScan(){ if(scanTimer){clearInterval(scanTimer);scanTimer=null;} if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null;} const v=$("scanvid"); if(v) v.srcObject=null; if(zxingReader){try{zxingReader.reset()}catch(e){} zxingReader=null;} }
 async function lookupBarcode(code){
   if(!code) return; const st=$("scanStatus");
   if(S.barcodeCache[code]){ st.textContent="Found in offline cache ✓"; return pickFood(JSON.stringify(S.barcodeCache[code])); }
@@ -1166,7 +1239,7 @@ function renderAll(){ renderToday(); renderFastPresets(); tickFast(); renderFast
 /* ============================= AUTOSAVE ============================= */
 // 1. Profile & goal fields save themselves (no need to press the button)
 let autoT=null;
-["pSex","pAge","pHeight","pWeight","pUnits","pActivity","pGoalW","pRate","pMacro","pWater","pCalOverride"].forEach(id=>{
+["pSex","pAge","pHeight","pWeight","pUnits","pActivity","pGoalW","pRate","pMacro","pWater","pCalOverride","pFiber","pSugar","pSodium"].forEach(id=>{
   $(id).addEventListener("input",()=>{ clearTimeout(autoT); autoT=setTimeout(()=>{ saveProfile(true); },700); });
 });
 // 2. Flush to disk whenever the app is backgrounded or closed
