@@ -323,7 +323,7 @@ hr.sp{border:none;border-top:1px dashed var(--line);margin:14px 0}
     <b>About you</b>
     <div class="row" style="gap:12px">
       <div style="flex:1"><label class="f">Sex</label><select class="f" id="pSex"><option value="f">Female</option><option value="m">Male</option></select></div>
-      <div style="flex:1"><label class="f">Age</label><input class="f" id="pAge" type="number" inputmode="numeric" placeholder="30"></div>
+      <div style="flex:1"><label class="f">Birthday</label><input class="f" id="pDob" type="date"><input type="hidden" id="pAge"></div>
     </div>
     <div class="row" style="gap:12px">
       <div style="flex:1"><label class="f">Height</label>
@@ -433,6 +433,8 @@ hr.sp{border:none;border-top:1px dashed var(--line);margin:14px 0}
     <div class="row" style="margin-top:10px">
       <button class="btn small" onclick="startScan()">Start camera</button>
       <button class="btn small ghost" onclick="stopScan()">Stop</button>
+      <button class="btn small ghost" onclick="document.getElementById('scanPhotoIn').click()">📷 Scan from photo</button>
+      <input type="file" id="scanPhotoIn" accept="image/*" capture="environment" hidden onchange="scanPhotoChosen(this)">
     </div>
     <hr class="sp">
     <label class="f">Or type the barcode number</label>
@@ -616,7 +618,7 @@ function dietChanged(){
   }
   if(S.profile) { saveProfile(true); toast(d.name==="Custom"?"Using your custom targets":d.name+" targets applied ✓"); }
 }
-function bmr(p){ const w=kgFromRaw(p.weight,p.units), h=p.height, a=p.age;
+function bmr(p){ const w=kgFromRaw(p.weight,p.units), h=p.height, a=ageNow(p);
   return p.sex==="m" ? 10*w+6.25*h-5*a+5 : 10*w+6.25*h-5*a-161; }
 function kgFromRaw(v,u){ return u==="lb"? v*0.45359237 : v; }
 function plan(){
@@ -669,8 +671,15 @@ function hUnitChanged(doSave){
   }
   if(doSave!==false&&S.profile) saveProfile(true);
 }
+function ageNow(p){
+  if(p&&p.dob){ const b=new Date(p.dob+"T00:00"), n=new Date();
+    let a=n.getFullYear()-b.getFullYear();
+    if(n.getMonth()<b.getMonth()||(n.getMonth()===b.getMonth()&&n.getDate()<b.getDate())) a--;
+    return Math.max(10,a); }
+  return (p&&p.age)||30;
+}
 function saveProfile(quiet){
-  const p={ sex:$("pSex").value, age:+$("pAge").value||30, height:heightCm(), hUnit:$("pHUnit").value,
+  const p={ sex:$("pSex").value, dob:$("pDob").value||null, age:+$("pAge").value||30, height:heightCm(), hUnit:$("pHUnit").value,
     weight:+$("pWeight").value||70, units:$("pUnits").value, activity:+$("pActivity").value,
     goalW:+$("pGoalW").value||+$("pWeight").value||70, rateKg:+$("pRate").value,
     macro:$("pMacro").value, diet:$("pDiet").value, waterGoal:+$("pWater").value||8, calOverride:+$("pCalOverride").value||0,
@@ -690,7 +699,7 @@ function renderPlanSummary(){
 }
 function fillProfileForm(){
   const p=S.profile; if(!p) return;
-  $("pSex").value=p.sex;$("pAge").value=p.age;
+  $("pSex").value=p.sex;$("pDob").value=p.dob||"";$("pAge").value=p.age||30;
   $("pHUnit").value=p.hUnit||"cm"; hUnitChanged(false); $("pWeight").value=p.weight;
   $("pUnits").value=p.units;$("pActivity").value=p.activity;$("pGoalW").value=p.goalW;$("pRate").value=p.rateKg;
   $("pMacro").value=p.macro;$("pWater").value=p.waterGoal;$("pCalOverride").value=p.calOverride||"";
@@ -719,6 +728,8 @@ function renderToday(){
   $("dateLabel").textContent = isToday? "Today · "+viewDate.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"}) : viewDate.toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"});
   const h=new Date().getHours();
   $("greet").textContent = h<12?"Good morning":h<18?"Good afternoon":"Good evening";
+  if(S.profile&&S.profile.dob){ const b=new Date(S.profile.dob+"T00:00"), n=new Date();
+    if(b.getMonth()===n.getMonth()&&b.getDate()===n.getDate()&&isToday) $("greet").textContent="Happy birthday! 🎂"; }
   $("dayNote").value = d.note||"";
   const budget = pl?pl.target:2000;
   const net = budget + Math.round(t.burn) - Math.round(t.cal);
@@ -992,15 +1003,25 @@ function drawOverlayChart(){
 
 /* ============================= BARCODE ============================= */
 let scanStream=null, scanTimer=null;
-let zxingReader=null;
-function loadZXing(){
+let zxingReader=null, zxingCtl=null;
+function loadScriptFrom(urls){
   return new Promise((res,rej)=>{
-    if(window.ZXing) return res();
-    const s=document.createElement("script");
-    s.src="https://cdnjs.cloudflare.com/ajax/libs/zxing-library/0.21.3/index.min.js";
-    s.onload=()=>res(); s.onerror=()=>rej(new Error("offline"));
-    document.head.appendChild(s);
+    const tryNext=i=>{
+      if(i>=urls.length) return rej(new Error("all CDNs failed"));
+      const s=document.createElement("script");
+      s.src=urls[i]; s.onload=()=>res(); s.onerror=()=>{ s.remove(); tryNext(i+1); };
+      document.head.appendChild(s);
+    };
+    tryNext(0);
   });
+}
+function loadZXing(){
+  if(window.ZXingBrowser) return Promise.resolve();
+  return loadScriptFrom([
+    "https://cdn.jsdelivr.net/npm/@zxing/browser@0.1.5/umd/zxing-browser.min.js",
+    "https://unpkg.com/@zxing/browser@0.1.5/umd/zxing-browser.min.js",
+    "https://cdn.jsdelivr.net/npm/@zxing/browser@latest/umd/zxing-browser.min.js"
+  ]);
 }
 async function nativeDetectorWorks(){
   if(!("BarcodeDetector" in window)) return false;
@@ -1029,34 +1050,41 @@ async function startScan(){
           if(codes.length){ const c=codes[0].rawValue; stopScan(); lookupBarcode(c); } }catch(e){}
       },300);
     } else {
-      // Fallback decoder (works on iPhone Safari, desktop browsers, etc.)
+      // Fallback decoder for iPhone Safari & desktop browsers
       st.textContent="Loading barcode decoder…";
       try{
         await loadZXing();
-        const hints=new Map();
-        hints.set(ZXing.DecodeHintType.POSSIBLE_FORMATS,[ZXing.BarcodeFormat.EAN_13,ZXing.BarcodeFormat.EAN_8,ZXing.BarcodeFormat.UPC_A,ZXing.BarcodeFormat.UPC_E,ZXing.BarcodeFormat.CODE_128]);
-        hints.set(ZXing.DecodeHintType.TRY_HARDER,true);
-        const reader=new ZXing.MultiFormatReader(); reader.setHints(hints);
-        const cv=document.createElement("canvas"), ctx=cv.getContext("2d",{willReadFrequently:true});
-        st.textContent="Scanning… fill most of the frame with the barcode and hold steady.";
-        scanTimer=setInterval(()=>{
-          try{
-            if(!v.videoWidth) return;
-            cv.width=v.videoWidth; cv.height=v.videoHeight;
-            ctx.drawImage(v,0,0);
-            const lum=new ZXing.HTMLCanvasElementLuminanceSource(cv);
-            const bin=new ZXing.BinaryBitmap(new ZXing.HybridBinarizer(lum));
-            const r=reader.decode(bin);
-            if(r&&r.getText()){ const c=r.getText(); stopScan(); lookupBarcode(c); }
-          }catch(e){/* no barcode in this frame — keep trying */}
-        },350);
+        zxingReader=new ZXingBrowser.BrowserMultiFormatReader();
+        st.textContent="Scanning… fill most of the frame with the barcode, 4–8 inches away, good light.";
+        zxingCtl=await zxingReader.decodeFromVideoElement(v,(result,err,controls)=>{
+          if(result){ try{controls.stop();}catch(e){} const c=result.getText(); stopScan(); lookupBarcode(c); }
+        });
       }catch(e){
-        st.textContent="Couldn't load the decoder (needs internet the first time). You can still type the number printed under the barcode below.";
+        st.textContent="Couldn't start the live decoder ("+e.message+"). Use “Scan from photo” below — snap a picture of the barcode instead.";
       }
     }
   }catch(e){ st.textContent="Camera unavailable ("+e.message+"). Note: the camera only works over https or when the file is opened directly. Type the barcode number below instead."; }
 }
-function stopScan(){ if(scanTimer){clearInterval(scanTimer);scanTimer=null;} if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null;} const v=$("scanvid"); if(v) v.srcObject=null; if(zxingReader){try{zxingReader.reset()}catch(e){} zxingReader=null;} }
+function stopScan(){ if(scanTimer){clearInterval(scanTimer);scanTimer=null;} if(zxingCtl){try{zxingCtl.stop();}catch(e){} zxingCtl=null;} zxingReader=null; if(scanStream){scanStream.getTracks().forEach(t=>t.stop());scanStream=null;} const v=$("scanvid"); if(v) v.srcObject=null; }
+async function scanPhotoChosen(inp){
+  const file=inp.files[0]; if(!file) return; inp.value="";
+  const st=$("scanStatus"); st.textContent="Reading photo…";
+  try{
+    await loadZXing();
+    const url=URL.createObjectURL(file);
+    const img=new Image();
+    img.onload=async()=>{
+      try{
+        const reader=new ZXingBrowser.BrowserMultiFormatReader();
+        const r=await reader.decodeFromImageElement(img);
+        URL.revokeObjectURL(url);
+        if(r&&r.getText()){ lookupBarcode(r.getText()); }
+        else st.textContent="No barcode found in that photo — get closer and make sure it's sharp.";
+      }catch(e){ URL.revokeObjectURL(url); st.textContent="Couldn't read a barcode in that photo. Try again closer, flat-on, in good light — or type the number below."; }
+    };
+    img.src=url;
+  }catch(e){ st.textContent="Decoder needs internet the first time. Type the barcode number below instead."; }
+}
 async function lookupBarcode(code){
   if(!code) return; const st=$("scanStatus");
   if(S.barcodeCache[code]){ st.textContent="Found in offline cache ✓"; return pickFood(JSON.stringify(S.barcodeCache[code])); }
@@ -1593,7 +1621,7 @@ function renderAll(){ renderToday(); renderFastPresets(); tickFast(); renderFast
 /* ============================= AUTOSAVE ============================= */
 // 1. Profile & goal fields save themselves (no need to press the button)
 let autoT=null;
-["pSex","pAge","pHeight","pHft","pHin","pWeight","pUnits","pActivity","pGoalW","pRate","pMacro","pDiet","pWater","pCalOverride","pFiber","pSugar","pSodium","pCycle"].forEach(id=>{
+["pSex","pDob","pHeight","pHft","pHin","pWeight","pUnits","pActivity","pGoalW","pRate","pMacro","pDiet","pWater","pCalOverride","pFiber","pSugar","pSodium","pCycle"].forEach(id=>{
   $(id).addEventListener("input",()=>{ clearTimeout(autoT); autoT=setTimeout(()=>{ saveProfile(true); },700); });
 });
 // 2. Flush to disk whenever the app is backgrounded or closed
