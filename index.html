@@ -429,6 +429,29 @@ hr.sp{border:none;border-top:1px dashed var(--line);margin:14px 0}
   </div>
 
   <div class="card">
+    <b>Watch & devices</b>
+    <p class="subtle" style="margin:6px 0 10px">Two ways to connect a watch — no accounts, no subscriptions.</p>
+
+    <b style="font-size:13.5px">📡 Live heart-rate workouts (Bluetooth)</b>
+    <p class="subtle" style="margin:4px 0 8px">Works with chest straps and watches that broadcast heart rate (Garmin, Polar, Wahoo, many others — check your watch's "Broadcast HR" setting). Live BPM drives a real calorie burn estimate, then logs it as exercise. Needs Chrome or Edge; on iPhone use the free Bluefy browser.</p>
+    <button class="btn small" onclick="connectHR()">Connect heart-rate device</button>
+
+    <hr style="border:none;border-top:1px solid var(--line);margin:14px 0">
+
+    <b style="font-size:13.5px">⌚ Apple Watch / iPhone Health (via Shortcuts)</b>
+    <p class="subtle" style="margin:4px 0 8px">Apple doesn't let websites read Health data directly, but the built-in <b>Shortcuts</b> app can send it here. One-time setup (~2 min):</p>
+    <ol class="subtle" style="padding-left:18px;line-height:1.55;margin:0 0 8px">
+      <li>Open <b>Shortcuts</b> → + → name it "Send Health to FitTrack"</li>
+      <li>Add action <b>Find Health Samples</b> → type <b>Steps</b>, Today, Sum</li>
+      <li>Add <b>Find Health Samples</b> again → <b>Sleep</b> (optional: another for <b>Weight</b>, latest)</li>
+      <li>Add action <b>Open URLs</b> and build:<br><code id="shortcutUrl" style="font-size:11px;word-break:break-all"></code><br>replacing each value with the matching Health variable</li>
+      <li>Run it any time — or add an <b>Automation</b> (e.g. daily 9 pm) so it syncs itself</li>
+    </ol>
+    <button class="btn small ghost" onclick="copyShortcutUrl()">Copy URL template</button>
+    <p class="subtle" style="margin-top:8px">When the link opens, today's steps, sleep, and weight drop straight into your log.</p>
+  </div>
+
+  <div class="card">
     <b>Theme</b>
     <p class="subtle" style="margin:6px 0 10px">Pick a preset or slide through every color. Works in light & dark mode.</p>
     <div class="row" style="flex-wrap:wrap;gap:8px;margin-bottom:12px" id="themeSwatches"></div>
@@ -542,6 +565,24 @@ hr.sp{border:none;border-top:1px dashed var(--line);margin:14px 0}
   <select class="f" id="servMeal"><option>Breakfast</option><option>Lunch</option><option>Dinner</option><option>Snacks</option></select>
   <div class="banner" style="margin-top:14px" id="servTotals"></div>
   <button class="btn full" onclick="confirmServe()">Add to diary</button>
+</div></div>
+
+<!-- ============ HEART-RATE WORKOUT SHEET ============ -->
+<div class="modal" id="mHR"><div class="sheet">
+  <div class="grab"></div>
+  <div class="spread"><h2>Live workout</h2><button class="chip" onclick="endHR(false)">Close</button></div>
+  <p class="subtle" id="hrDevice" style="margin-top:2px"></p>
+  <div style="text-align:center;margin:18px 0">
+    <div style="font-size:56px;font-weight:800" class="num"><span id="hrBpm">–</span><small style="font-size:16px;color:var(--ink-soft)"> bpm</small></div>
+    <div class="spread" style="max-width:260px;margin:14px auto 0">
+      <span>⏱ <b class="num" id="hrTime">0:00</b></span>
+      <span>🔥 <b class="num" id="hrKcal">0</b> kcal</span>
+      <span>Ø <b class="num" id="hrAvg">–</b></span>
+    </div>
+  </div>
+  <label class="f">Workout name</label>
+  <input class="f" id="hrName" value="Watch workout">
+  <button class="btn full" onclick="endHR(true)">■ Stop & log workout</button>
 </div></div>
 
 <!-- ============ EXERCISE SHEET ============ -->
@@ -1854,6 +1895,73 @@ function renderThemeUI(){
   if(S.themeHue!=null) $("themeHue").value=S.themeHue;
 }
 
+/* ============================= WATCH & DEVICES ============================= */
+let hrDev=null, hrChar=null, hrSamples=[], hrStart=0, hrTick=null, hrKcalTotal=0, hrLastT=0;
+async function connectHR(){
+  if(!navigator.bluetooth){ alert("This browser doesn't support Bluetooth devices. Use Chrome or Edge on a computer/Android — on iPhone, the free 'Bluefy' browser works."); return; }
+  try{
+    hrDev=await navigator.bluetooth.requestDevice({filters:[{services:["heart_rate"]}]});
+    const server=await hrDev.gatt.connect();
+    const svc=await server.getPrimaryService("heart_rate");
+    hrChar=await svc.getCharacteristic("heart_rate_measurement");
+    await hrChar.startNotifications();
+    hrChar.addEventListener("characteristicvaluechanged",onHR);
+    hrSamples=[]; hrKcalTotal=0; hrStart=Date.now(); hrLastT=hrStart;
+    $("hrDevice").textContent="Connected: "+(hrDev.name||"heart-rate device");
+    $("mHR").classList.add("open");
+    hrTick=setInterval(()=>{ const s=Math.floor((Date.now()-hrStart)/1000);
+      $("hrTime").textContent=Math.floor(s/60)+":"+String(s%60).padStart(2,"0"); },1000);
+    hrDev.addEventListener("gattserverdisconnected",()=>{ $("hrDevice").textContent="Device disconnected — workout paused. Reconnect to continue."; });
+  }catch(e){ if(e.name!=="NotFoundError") alert("Couldn't connect: "+e.message+"\n\nMake sure the watch/strap is in heart-rate broadcast mode and near this device."); }
+}
+function onHR(ev){
+  const dv=ev.target.value, flags=dv.getUint8(0);
+  const bpm=(flags&1)?dv.getUint16(1,true):dv.getUint8(1);
+  if(!bpm||bpm<30||bpm>240) return;
+  hrSamples.push(bpm);
+  // Keytel et al. calorie estimate, integrated over real elapsed time between samples
+  const p=S.profile||{}, kg=p.weight?kgFromRaw(p.weight,p.units):80, age=ageNow(p);
+  const perMin=p.sex==="f"
+    ? (-20.4022+0.4472*bpm-0.1263*kg+0.074*age)/4.184
+    : (-55.0969+0.6309*bpm+0.1988*kg+0.2017*age)/4.184;
+  const now=Date.now(), dtMin=Math.min(10,(now-hrLastT)/60000); hrLastT=now;
+  if(perMin>0) hrKcalTotal+=perMin*dtMin;
+  $("hrBpm").textContent=bpm;
+  $("hrKcal").textContent=r0(hrKcalTotal);
+  $("hrAvg").textContent=r0(hrSamples.reduce((a,b)=>a+b,0)/hrSamples.length);
+}
+function endHR(log){
+  if(hrTick){clearInterval(hrTick);hrTick=null;}
+  try{ if(hrChar) hrChar.removeEventListener("characteristicvaluechanged",onHR); if(hrDev&&hrDev.gatt.connected) hrDev.gatt.disconnect(); }catch(e){}
+  const min=Math.max(1,Math.round((Date.now()-hrStart)/60000));
+  if(log&&hrSamples.length){
+    day().exercise.push({name:($("hrName").value||"Watch workout")+" (avg "+r0(hrSamples.reduce((a,b)=>a+b,0)/hrSamples.length)+" bpm)",min,cal:Math.round(hrKcalTotal)});
+    save(); renderToday(); toast(`Workout logged — ${r0(hrKcalTotal)} kcal over ${min} min ✓`);
+  }
+  hrDev=null; hrChar=null; closeModal("mHR");
+}
+function shortcutUrlTemplate(){
+  const base=location.origin.startsWith("http")?location.origin+location.pathname:"https://YOUR-SITE-URL/";
+  return base+"?steps=STEPS&sleep=SLEEPHOURS&weight=WEIGHT";
+}
+function copyShortcutUrl(){
+  navigator.clipboard.writeText(shortcutUrlTemplate()).then(()=>toast("URL template copied ✓")).catch(()=>prompt("Copy this URL:",shortcutUrlTemplate()));
+}
+function ingestHealthParams(){
+  const q=new URLSearchParams(location.search);
+  if(![...q.keys()].some(k=>["steps","sleep","weight","water"].includes(k))) return;
+  const d=day(); const got=[];
+  if(q.get("steps")&&+q.get("steps")>0){ d.steps=Math.round(+q.get("steps")); got.push(d.steps.toLocaleString()+" steps"); }
+  if(q.get("sleep")&&+q.get("sleep")>0){ d.sleep=Math.min(24,+q.get("sleep")); got.push(d.sleep+" h sleep"); }
+  if(q.get("water")&&+q.get("water")>0){ d.water=Math.round(+q.get("water")); got.push(d.water+" water"); }
+  if(q.get("weight")&&+q.get("weight")>0){
+    const w=+(+q.get("weight")).toFixed(1), k=todayKey(new Date());
+    S.weights=S.weights.filter(x=>x.d!==k); S.weights.unshift({d:k,w}); S.weights.sort((a,b)=>b.d.localeCompare(a.d));
+    got.push(w+" "+unit());
+  }
+  if(got.length){ save(); history.replaceState(null,"",location.pathname); toast("⌚ Synced from Health: "+got.join(" · ")); }
+}
+
 function go(scr){
   const map={today:"scr-today",fast:"scr-fast",progress:"scr-progress",settings:"scr-settings"};
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
@@ -1862,7 +1970,7 @@ function go(scr){
   if(scr==="today") renderToday();
   if(scr==="fast"){ renderFastPresets(); tickFast(); renderFastHistory(); }
   if(scr==="progress") renderProgress();
-  if(scr==="settings"){ fillProfileForm(); renderThemeUI(); }
+  if(scr==="settings"){ fillProfileForm(); renderThemeUI(); if($("shortcutUrl"))$("shortcutUrl").textContent=shortcutUrlTemplate(); }
   window.scrollTo(0,0);
 }
 function renderAll(){ renderToday(); renderFastPresets(); tickFast(); renderFastHistory(); renderProgress(); }
@@ -1886,7 +1994,7 @@ setInterval(()=>{
   }
 },30000);
 document.querySelectorAll(".modal").forEach(m=>m.addEventListener("click",e=>{ if(e.target===m) closeModal(m.id); }));
-computeAdapt(); renderNotifBtn(); applyTheme(); renderThemeUI();
+computeAdapt(); renderNotifBtn(); applyTheme(); renderThemeUI(); ingestHealthParams();
 // Monthly backup nudge — data lives in browser storage, which can be cleared
 if(Object.keys(S.days).length>=7 && (!S.lastBackup || Date.now()-S.lastBackup>30*864e5)){
   setTimeout(()=>toast("It's been a while — download a backup","Backup now",exportData),1500);
