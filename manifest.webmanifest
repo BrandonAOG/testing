@@ -1,7 +1,7 @@
 {
   "name": "FitTrack — Nutrition & Fasting",
   "short_name": "FitTrack",
-  "start_url": "./fittrack.html",
+  "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "background_color": "#10241c",
