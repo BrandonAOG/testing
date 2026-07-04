@@ -307,9 +307,9 @@ hr.sp{border:none;border-top:1px dashed var(--line);margin:14px 0}
   <div class="card">
     <b>Data</b>
     <p class="subtle" style="margin:6px 0 10px">Everything is saved on this device. Back it up any time.</p>
-    <label class="f">USDA API key (optional — adds a second search source)</label>
-    <input class="f" id="usdaKey" placeholder="free key from api.data.gov" oninput="S.usdaKey=this.value.trim()||null; save();">
-    <p class="subtle" style="margin:4px 0 10px">Open Food Facts search works with no key. A free USDA key adds gold-standard generic foods (chicken breast, rice…). Get one instantly at api.data.gov/signup.</p>
+    <label class="f">USDA API key (built-in — leave blank unless replacing it)</label>
+    <input class="f" id="usdaKey" placeholder="using built-in key" oninput="S.usdaKey=this.value.trim()||null; save();">
+    <p class="subtle" style="margin:4px 0 10px">USDA search is already active with a built-in key. Paste your own here only if you ever need to swap it (free at api.data.gov/signup).</p>
     <div class="row" style="flex-wrap:wrap">
       <button class="btn small ghost" onclick="exportData()">Export backup</button>
       <button class="btn small ghost" onclick="document.getElementById('importFile').click()">Import</button>
@@ -872,6 +872,8 @@ function usdaMap(p){
     cal:g(1008), p:g(1003), c:g(1005), f:g(1004), fi:g(1079), su:g(2000), so:Math.round(g(1093)),
     serv:p.servingSize?(p.servingSize+" "+(p.servingSizeUnit||"g")):"100 g" };
 }
+const USDA_DEFAULT_KEY="632PU7HQkqFLPrkDhaWxDWpRs7g4rwwIlehYf0ZI"; // owner's key — field below can override it
+function usdaKey(){ return S.usdaKey||USDA_DEFAULT_KEY; }
 async function onlineSearch(q){
   const token=++searchToken, box=()=>$("onlineResults");
   if(!S.onlineCache) S.onlineCache={};
@@ -884,8 +886,8 @@ async function onlineSearch(q){
   const jobs=[
     offSearch(q).then(items=>({src:"Open Food Facts",items}))
   ];
-  if(S.usdaKey) jobs.push(
-    fetch("https://api.nal.usda.gov/fdc/v1/foods/search?api_key="+encodeURIComponent(S.usdaKey)+"&query="+encodeURIComponent(q)+"&pageSize=6&dataType=Branded,Foundation,SR%20Legacy")
+  if(usdaKey()) jobs.push(
+    fetch("https://api.nal.usda.gov/fdc/v1/foods/search?api_key="+encodeURIComponent(usdaKey())+"&query="+encodeURIComponent(q)+"&pageSize=6&dataType=Branded,Foundation,SR%20Legacy")
       .then(r=>r.json()).then(j=>({src:"USDA",items:(j.foods||[]).map(usdaMap)})));
   const settled=await Promise.allSettled(jobs);
   if(token!==searchToken||!box()) return; // a newer search superseded this one
