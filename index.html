@@ -175,6 +175,7 @@ hr.sp{border:none;border-top:1px dashed var(--line);margin:14px 0}
       <span>Burned <b class="num" id="sumBurn">0</b></span>
       <span>Budget <b class="num" id="sumBudget">0</b></span>
     </div>
+    <div id="dietBadge" style="display:none;margin-top:10px;text-align:center;font-size:11px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#9ec4ae"></div>
   </div>
 
   <div id="goalBanner" class="banner" style="display:none"></div>
@@ -360,6 +361,18 @@ hr.sp{border:none;border-top:1px dashed var(--line);margin:14px 0}
         </select>
       </div>
     </div>
+    <label class="f">Diet plan</label>
+    <select class="f" id="pDiet" onchange="dietChanged()">
+      <option value="none">Custom — I'll set my own targets</option>
+      <option value="balanced">Balanced</option>
+      <option value="keto">Keto</option>
+      <option value="lowcarb">Low Carb</option>
+      <option value="highprotein">High Protein</option>
+      <option value="med">Mediterranean</option>
+      <option value="lowfat">Low Fat</option>
+      <option value="dash">DASH (low sodium)</option>
+    </select>
+    <p class="subtle" id="dietDesc" style="margin-top:6px"></p>
     <label class="f">Macro split</label>
     <select class="f" id="pMacro">
       <option value="30,40,30">Balanced — 30P / 40C / 30F</option>
@@ -584,6 +597,25 @@ const FOODS = [
 const MET = {"Walking (moderate)":3.5,"Walking (brisk)":4.5,"Running (10 min/mi)":9.8,"Running (8 min/mi)":11.8,"Cycling (leisure)":5.5,"Cycling (vigorous)":10,"Swimming":7,"Weight lifting":4.5,"HIIT / circuit":8,"Yoga":3,"Elliptical":5.5,"Rowing":7,"Hiking":6,"Basketball":6.5,"Soccer":8,"Tennis":7.3,"Dancing":5,"Jump rope":11,"Stair climbing":8,"Pilates":3.5,"House cleaning":3.3,"Gardening":3.8};
 
 /* ============================= PROFILE / PLAN ============================= */
+/* ============================= DIET PLANS ============================= */
+const DIETS={
+  none:{name:"Custom",macro:null,desc:"Uses whatever macro split and limits you set below."},
+  balanced:{name:"Balanced",macro:"30,40,30",fiberG:28,sugarG:50,sodiumG:2300,desc:"Steady mix of all macros — sustainable default for most goals."},
+  keto:{name:"Keto",macro:"25,5,70",caps:{c:25},limits:["c"],fiberG:20,sugarG:20,sodiumG:2300,desc:"Very low carb: hard cap of 25g carbs/day. Carb bar turns red if you go over."},
+  lowcarb:{name:"Low Carb",macro:"35,20,45",caps:{c:100},limits:["c"],fiberG:25,sugarG:30,sodiumG:2300,desc:"Moderate restriction: carbs capped at 100g/day."},
+  highprotein:{name:"High Protein",macro:"40,35,25",fiberG:28,sugarG:45,sodiumG:2300,desc:"Protein-forward for muscle retention while cutting. Aim to hit the protein bar daily."},
+  med:{name:"Mediterranean",macro:"20,45,35",limits:[],fiberG:30,sugarG:40,sodiumG:2000,desc:"Plant-forward with healthy fats. Higher fiber goal, lower sodium."},
+  lowfat:{name:"Low Fat",macro:"25,55,20",limits:["f"],fiberG:30,sugarG:45,sodiumG:2300,desc:"Fat is capped — the fat bar turns red if you exceed the day's gram target."},
+  dash:{name:"DASH",macro:"25,50,25",fiberG:30,sugarG:40,sodiumG:1500,desc:"Blood-pressure-friendly: sodium limit tightened to 1500mg."}
+};
+function dietChanged(){
+  const d=DIETS[$("pDiet").value]; $("dietDesc").textContent=d.desc;
+  if(d.macro){ $("pMacro").value=d.macro;
+    if(![...$("pMacro").options].some(o=>o.value===d.macro)){ const o=document.createElement("option"); o.value=d.macro; o.textContent=d.name+" — "+d.macro.split(",").map((x,i)=>x+["P","C","F"][i]).join(" / "); $("pMacro").appendChild(o); $("pMacro").value=d.macro; }
+    $("pFiber").value=d.fiberG; $("pSugar").value=d.sugarG; $("pSodium").value=d.sodiumG;
+  }
+  if(S.profile) { saveProfile(true); toast(d.name==="Custom"?"Using your custom targets":d.name+" targets applied ✓"); }
+}
 function bmr(p){ const w=kgFromRaw(p.weight,p.units), h=p.height, a=p.age;
   return p.sex==="m" ? 10*w+6.25*h-5*a+5 : 10*w+6.25*h-5*a-161; }
 function kgFromRaw(v,u){ return u==="lb"? v*0.45359237 : v; }
@@ -601,8 +633,11 @@ function plan(){
   if(boost){ const wd=(typeof viewDate!=="undefined"?viewDate:new Date()).getDay();
     target=Math.round(target + ((wd===0||wd===6) ? boost : -boost*2/5)); }
   if(target<minCal) target=minCal;
-  return { tdee:Math.round(tdee), target,
-    p:Math.round(target*pp/100/4), c:Math.round(target*pc/100/4), f:Math.round(target*pf/100/9),
+  const diet=DIETS[p.diet||"none"]||DIETS.none;
+  let mg={ p:Math.round(target*pp/100/4), c:Math.round(target*pc/100/4), f:Math.round(target*pf/100/9) };
+  if(diet.caps) for(const k in diet.caps) mg[k]=Math.min(mg[k],diet.caps[k]);
+  return { tdee:Math.round(tdee), target, ...mg,
+    limits:diet.limits||[], dietName:diet.name!=="Custom"?diet.name:null,
     losing, maintain:p.goalW===p.weight };
 }
 function etaDate(){
@@ -638,7 +673,7 @@ function saveProfile(quiet){
   const p={ sex:$("pSex").value, age:+$("pAge").value||30, height:heightCm(), hUnit:$("pHUnit").value,
     weight:+$("pWeight").value||70, units:$("pUnits").value, activity:+$("pActivity").value,
     goalW:+$("pGoalW").value||+$("pWeight").value||70, rateKg:+$("pRate").value,
-    macro:$("pMacro").value, waterGoal:+$("pWater").value||8, calOverride:+$("pCalOverride").value||0,
+    macro:$("pMacro").value, diet:$("pDiet").value, waterGoal:+$("pWater").value||8, calOverride:+$("pCalOverride").value||0,
     fiberG:+$("pFiber").value||28, sugarG:+$("pSugar").value||50, sodiumG:+$("pSodium").value||2300,
     weekendBoost:+$("pCycle").value||0 };
   S.profile=p;
@@ -659,6 +694,8 @@ function fillProfileForm(){
   $("pHUnit").value=p.hUnit||"cm"; hUnitChanged(false); $("pWeight").value=p.weight;
   $("pUnits").value=p.units;$("pActivity").value=p.activity;$("pGoalW").value=p.goalW;$("pRate").value=p.rateKg;
   $("pMacro").value=p.macro;$("pWater").value=p.waterGoal;$("pCalOverride").value=p.calOverride||"";
+  $("pDiet").value=p.diet||"none"; $("dietDesc").textContent=(DIETS[p.diet||"none"]||DIETS.none).desc;
+  if(p.macro&&![...$("pMacro").options].some(o=>o.value===p.macro)){ const o=document.createElement("option"); o.value=p.macro; o.textContent="Diet preset — "+p.macro.split(",").map((x,i)=>x+["P","C","F"][i]).join(" / "); $("pMacro").appendChild(o); $("pMacro").value=p.macro; }
   $("pFiber").value=p.fiberG||28;$("pSugar").value=p.sugarG||50;$("pSodium").value=p.sodiumG||2300;
   $("pCycle").value=p.weekendBoost||"";
   document.querySelectorAll(".unitLbl").forEach(x=>x.textContent=p.units);
@@ -691,10 +728,21 @@ function renderToday(){
   const pct=Math.min(1, t.cal/Math.max(1,budget+t.burn));
   $("calRing").style.strokeDashoffset = 326.7*(1-pct);
   $("sumEat").textContent=r0(t.cal); $("sumBurn").textContent=r0(t.burn); $("sumBudget").textContent=budget;
-  const mg = pl||{p:120,c:200,f:65};
-  $("mP").textContent=`${r0(t.p)}/${mg.p}g`; $("bP").style.width=Math.min(100,t.p/mg.p*100)+"%";
-  $("mC").textContent=`${r0(t.c)}/${mg.c}g`; $("bC").style.width=Math.min(100,t.c/mg.c*100)+"%";
-  $("mF").textContent=`${r0(t.f)}/${mg.f}g`; $("bF").style.width=Math.min(100,t.f/mg.f*100)+"%";
+  const mg = pl||{p:120,c:200,f:65,limits:[]};
+  const lim=(pl&&pl.limits)||[];
+  const macroBar=(key,tv,goal,elV,elB,baseCol)=>{
+    const over=tv>goal, isLim=lim.includes(key);
+    $(elV).innerHTML=`${r0(tv)}/${goal}g${isLim&&over?" <b style='color:#ff8f8f'>over</b>":""}`;
+    $(elB).style.width=Math.min(100,tv/goal*100)+"%";
+    $(elB).style.background=isLim&&over?"#e05d5d":baseCol;
+  };
+  macroBar("p",t.p,mg.p,"mP","bP","#f2790f");
+  macroBar("c",t.c,mg.c,"mC","bC","#7db2ff");
+  macroBar("f",t.f,mg.f,"mF","bF","#9ec4ae");
+  const overs=lim.filter(k=>t[k]>mg[k]).map(k=>({p:"protein",c:"carbs",f:"fat"}[k]));
+  if(pl&&pl.dietName){ $("dietBadge").style.display="block";
+    $("dietBadge").innerHTML=overs.length?`${pl.dietName} plan · <span style="color:#ff8f8f">⚠ over ${overs.join(" & ")} limit</span>`:`${pl.dietName} plan ✓`;
+  } else $("dietBadge").style.display="none";
 
   // goal banner
   const e=etaDate();
@@ -1545,7 +1593,7 @@ function renderAll(){ renderToday(); renderFastPresets(); tickFast(); renderFast
 /* ============================= AUTOSAVE ============================= */
 // 1. Profile & goal fields save themselves (no need to press the button)
 let autoT=null;
-["pSex","pAge","pHeight","pHft","pHin","pWeight","pUnits","pActivity","pGoalW","pRate","pMacro","pWater","pCalOverride","pFiber","pSugar","pSodium","pCycle"].forEach(id=>{
+["pSex","pAge","pHeight","pHft","pHin","pWeight","pUnits","pActivity","pGoalW","pRate","pMacro","pDiet","pWater","pCalOverride","pFiber","pSugar","pSodium","pCycle"].forEach(id=>{
   $(id).addEventListener("input",()=>{ clearTimeout(autoT); autoT=setTimeout(()=>{ saveProfile(true); },700); });
 });
 // 2. Flush to disk whenever the app is backgrounded or closed
