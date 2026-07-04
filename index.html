@@ -307,6 +307,9 @@ hr.sp{border:none;border-top:1px dashed var(--line);margin:14px 0}
   <div class="card">
     <b>Data</b>
     <p class="subtle" style="margin:6px 0 10px">Everything is saved on this device. Back it up any time.</p>
+    <label class="f">USDA API key (optional — adds a second search source)</label>
+    <input class="f" id="usdaKey" placeholder="free key from api.data.gov" oninput="S.usdaKey=this.value.trim()||null; save();">
+    <p class="subtle" style="margin:4px 0 10px">Open Food Facts search works with no key. A free USDA key adds gold-standard generic foods (chicken breast, rice…). Get one instantly at api.data.gov/signup.</p>
     <div class="row" style="flex-wrap:wrap">
       <button class="btn small ghost" onclick="exportData()">Export backup</button>
       <button class="btn small ghost" onclick="document.getElementById('importFile').click()">Import</button>
@@ -827,11 +830,63 @@ function addTab(t){
   if(t!=="scan") stopScan();
 }
 function allFoods(){ return S.customFoods.concat(FOODS); }
+let searchT=null, searchToken=0;
 function searchFood(){
   const q=$("foodSearch").value.trim().toLowerCase();
   const res=q? allFoods().filter(f=>f.name.toLowerCase().includes(q)).slice(0,25) : allFoods().slice(0,12);
-  $("searchResults").innerHTML=res.map(f=>foodRow(f)).join("")||`<p class="subtle" style="padding:12px 0">No match. Try the Custom tab to create it.</p>`;
+  const local=res.map(f=>foodRow(f)).join("");
+  $("searchResults").innerHTML=(q&&res.length?`<div class="eyebrow" style="margin:8px 0 2px">My foods & basics</div>`:"")+
+    (local||(q?"":`<p class="subtle" style="padding:12px 0">Type to search.</p>`))+
+    `<div id="onlineResults">${q&&q.length>=3?`<p class="subtle" style="padding:10px 0">Searching online databases…</p>`:""}</div>`;
   $("recentWrap").style.display=q?"none":"block";
+  clearTimeout(searchT);
+  if(q.length>=3) searchT=setTimeout(()=>onlineSearch(q),450);
+}
+function offMap(p){
+  const n=p.nutriments||{};
+  const perServ=n["energy-kcal_serving"]!=null;
+  return { id:"off"+(p.code||Math.random()),
+    name:(p.product_name||"Unnamed")+(p.brands?" — "+p.brands.split(",")[0]:""),
+    cal:+(n["energy-kcal_serving"]??n["energy-kcal_100g"]??0),
+    p:+(n.proteins_serving??n.proteins_100g??0), c:+(n.carbohydrates_serving??n.carbohydrates_100g??0),
+    f:+(n.fat_serving??n.fat_100g??0), fi:+(n.fiber_serving??n.fiber_100g??0),
+    su:+(n.sugars_serving??n.sugars_100g??0), so:Math.round((+(n.sodium_serving??n.sodium_100g??0))*1000),
+    serv:perServ?(p.serving_size||"1 serving"):"100 g" };
+}
+function usdaMap(p){
+  const g=id=>{ const x=(p.foodNutrients||[]).find(n=>n.nutrientId===id); return x?+x.value:0; };
+  return { id:"usda"+p.fdcId, name:p.description+(p.brandName?" — "+p.brandName:""),
+    cal:g(1008), p:g(1003), c:g(1005), f:g(1004), fi:g(1079), su:g(2000), so:Math.round(g(1093)),
+    serv:p.servingSize?(p.servingSize+" "+(p.servingSizeUnit||"g")):"100 g" };
+}
+async function onlineSearch(q){
+  const token=++searchToken, box=()=>$("onlineResults");
+  if(!S.onlineCache) S.onlineCache={};
+  if(!navigator.onLine){
+    const hit=S.onlineCache[q];
+    if(box()) box().innerHTML=hit?`<div class="eyebrow" style="margin:8px 0 2px">Online (cached)</div>`+hit.map(f=>foodRow(f)).join(""):`<p class="subtle" style="padding:8px 0">Offline — online results unavailable for this search.</p>`;
+    return;
+  }
+  // Fire every source at the same time
+  const jobs=[
+    fetch("https://world.openfoodfacts.org/cgi/search.pl?search_terms="+encodeURIComponent(q)+"&search_simple=1&action=process&json=1&page_size=8&fields=product_name,brands,nutriments,code,serving_size")
+      .then(r=>r.json()).then(j=>({src:"Open Food Facts",items:(j.products||[]).map(offMap)}))
+  ];
+  if(S.usdaKey) jobs.push(
+    fetch("https://api.nal.usda.gov/fdc/v1/foods/search?api_key="+encodeURIComponent(S.usdaKey)+"&query="+encodeURIComponent(q)+"&pageSize=6&dataType=Branded,Foundation,SR%20Legacy")
+      .then(r=>r.json()).then(j=>({src:"USDA",items:(j.foods||[]).map(usdaMap)})));
+  const settled=await Promise.allSettled(jobs);
+  if(token!==searchToken||!box()) return; // a newer search superseded this one
+  let html="", all=[];
+  settled.forEach(s=>{
+    if(s.status!=="fulfilled") return;
+    const items=s.value.items.filter(f=>f.cal>0).slice(0,8);
+    if(items.length){ html+=`<div class="eyebrow" style="margin:8px 0 2px">${s.value.src}</div>`+items.map(f=>foodRow(f)).join(""); all=all.concat(items); }
+  });
+  if(all.length){ S.onlineCache[q]=all.slice(0,12);
+    const keys=Object.keys(S.onlineCache); if(keys.length>40) delete S.onlineCache[keys[0]];
+    save(); }
+  box().innerHTML=html||`<p class="subtle" style="padding:8px 0">No online matches${settled.some(s=>s.status==="rejected")?" (a source failed — check connection)":""}. Try the Custom tab.</p>`;
 }
 function foodRow(f){ return `<button class="foodresult" onclick='pickFood(${JSON.stringify(JSON.stringify(f)).replace(/'/g,"&#39;")})'>
   <span class="g"><b>${esc(f.name)}</b><br><small>${esc(f.serv)} · ${r0(f.p)}p ${r0(f.c)}c ${r0(f.f)}f</small></span>
@@ -1201,7 +1256,7 @@ function renderProgress(){
   if(e&&p){ $("etaBanner").style.display="block";
     $("etaBanner").innerHTML=`📅 Projected goal date: <b>${e.date.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"})}</b> — about ${Math.ceil(e.weeks)} weeks at ${p.rateKg} kg/week.`;
   } else $("etaBanner").style.display="none";
-  drawWeightChart(); drawCalChart(); renderMeasures(); renderPhotos(); renderBMI(); renderBadges(); drawOverlayChart();
+  drawWeightChart(); drawCalChart(); renderMeasures(); renderPhotos(); renderBMI(); renderBadges(); drawOverlayChart(); if($("usdaKey"))$("usdaKey").value=S.usdaKey||"";
 }
 function drawWeightChart(){
   const svg=$("wChart"), W=340,H=180,pad=26;
