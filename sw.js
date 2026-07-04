@@ -1,12 +1,11 @@
-const CACHE = "fittrack-v2.1";
-const SHELL = ["./", "./fittrack.html", "./index.html", "./manifest.webmanifest", "./icon.svg"];
+const CACHE = "fittrack-v3";
+const SHELL = ["./", "./index.html", "./fittrack.html", "./manifest.webmanifest", "./icon.svg"];
 
 self.addEventListener("install", e => {
   e.waitUntil(
-    caches.open(CACHE).then(c =>
-      // Cache each file individually; a missing one no longer breaks the install
-      Promise.allSettled(SHELL.map(u => c.add(u)))
-    ).then(() => self.skipWaiting())
+    caches.open(CACHE)
+      .then(c => Promise.allSettled(SHELL.map(u => c.add(u))))
+      .then(() => self.skipWaiting())
   );
 });
 self.addEventListener("activate", e => {
@@ -18,15 +17,27 @@ self.addEventListener("activate", e => {
 });
 self.addEventListener("fetch", e => {
   if (e.request.method !== "GET" || !e.request.url.startsWith(self.location.origin)) return;
-  e.respondWith(
-    caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
-      if (res.ok) {
+  const isPage = e.request.mode === "navigate" || e.request.destination === "document";
+  if (isPage) {
+    // NETWORK-FIRST for the app page: updates show up on the next load, cache only when offline
+    e.respondWith(
+      fetch(e.request).then(res => {
         const copy = res.clone();
         caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {});
-      }
-      return res;
-    }).catch(() =>
-      caches.match("./fittrack.html").then(f => f || caches.match("./index.html"))
-    ))
-  );
+        return res;
+      }).catch(() =>
+        caches.match(e.request)
+          .then(f => f || caches.match("./index.html"))
+          .then(f => f || caches.match("./fittrack.html"))
+      )
+    );
+  } else {
+    // cache-first for icons/manifest/etc.
+    e.respondWith(
+      caches.match(e.request).then(hit => hit || fetch(e.request).then(res => {
+        if (res.ok) { const copy = res.clone(); caches.open(CACHE).then(c => c.put(e.request, copy)).catch(() => {}); }
+        return res;
+      }))
+    );
+  }
 });
