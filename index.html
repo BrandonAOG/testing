@@ -219,6 +219,23 @@ hr.sp{border:none;border-top:1px dashed var(--line);margin:14px 0}
   </div>
 
   <div class="card">
+    <div class="spread" style="margin-bottom:8px"><b>Sleep</b><span class="subtle" id="sleepAvg"></span></div>
+    <input class="f num" id="sleepIn" type="number" step="0.5" inputmode="decimal" placeholder="hours slept last night, e.g. 7.5" onchange="setSleep(this.value)">
+  </div>
+
+  <div class="card">
+    <div class="spread" style="margin-bottom:6px"><b>This week</b><span class="subtle num" id="wkRemain"></span></div>
+    <div class="row" id="wkChips" style="flex-wrap:wrap;gap:6px;margin-bottom:10px"></div>
+    <svg id="wkChart" viewBox="0 0 340 120" preserveAspectRatio="none" style="width:100%"></svg>
+    <p class="subtle" style="margin-top:6px" id="wkAvg"></p>
+  </div>
+
+  <div class="card" id="hlCard" style="display:none">
+    <b>Highlights</b>
+    <div id="hlBody" style="margin-top:8px"></div>
+  </div>
+
+  <div class="card">
     <b style="font-size:14px">Nutrients today</b>
     <div id="microBars" style="margin-top:8px;display:flex;flex-direction:column;gap:10px"></div>
   </div>
@@ -264,6 +281,14 @@ hr.sp{border:none;border-top:1px dashed var(--line);margin:14px 0}
     <div class="card"><div class="v" id="stToGo">–</div><div class="l">To go</div></div>
   </div>
   <div id="etaBanner" class="banner" style="display:none"></div>
+  <div class="card" id="wExtra" style="display:none;padding:12px 16px"></div>
+  <div class="card">
+    <div class="spread" style="margin-bottom:6px"><b>Trends</b><span class="subtle num" id="trAvg"></span></div>
+    <div class="row" id="trMetricChips" style="flex-wrap:wrap;gap:6px;margin-bottom:6px"></div>
+    <div class="row" id="trRangeChips" style="gap:6px;margin-bottom:10px"></div>
+    <svg id="trChart" viewBox="0 0 340 150" preserveAspectRatio="none" style="width:100%"></svg>
+    <p class="subtle" style="margin-top:6px" id="trFoot"></p>
+  </div>
   <div class="card">
     <div class="spread"><b>Weight</b><button class="btn small ghost" onclick="openWeight()">+ Log weight</button></div>
     <svg class="chart" id="wChart" viewBox="0 0 340 180" preserveAspectRatio="none"></svg>
@@ -385,6 +410,7 @@ hr.sp{border:none;border-top:1px dashed var(--line);margin:14px 0}
     </select>
     <div class="row" style="gap:12px">
       <div style="flex:1"><label class="f">Water goal (glasses)</label><input class="f" id="pWater" type="number" value="8"></div>
+      <div style="flex:1"><label class="f">Sleep goal (hrs)</label><input class="f" id="pSleep" type="number" step="0.5" value="8"></div>
       <div style="flex:1"><label class="f">Calorie override (optional)</label><input class="f" id="pCalOverride" type="number" placeholder="auto"></div>
     </div>
     <div class="row">
@@ -685,7 +711,7 @@ function saveProfile(quiet){
   const p={ sex:$("pSex").value, dob:$("pDob").value||null, age:+$("pAge").value||30, height:heightCm(), hUnit:$("pHUnit").value,
     weight:+$("pWeight").value||70, units:$("pUnits").value, activity:+$("pActivity").value,
     goalW:+$("pGoalW").value||+$("pWeight").value||70, rateKg:+$("pRate").value,
-    macro:$("pMacro").value, diet:$("pDiet").value, waterGoal:+$("pWater").value||8, calOverride:+$("pCalOverride").value||0,
+    macro:$("pMacro").value, diet:$("pDiet").value, waterGoal:+$("pWater").value||8, sleepGoal:+$("pSleep").value||8, calOverride:+$("pCalOverride").value||0,
     fiberG:+$("pFiber").value||28, sugarG:+$("pSugar").value||50, sodiumG:+$("pSodium").value||2300,
     weekendBoost:+$("pCycle").value||0 };
   S.profile=p;
@@ -705,7 +731,7 @@ function fillProfileForm(){
   $("pSex").value=p.sex;$("pDob").value=p.dob||"";$("pAge").value=p.age||30;
   $("pHUnit").value=p.hUnit||"cm"; hUnitChanged(false); $("pWeight").value=p.weight;
   $("pUnits").value=p.units;$("pActivity").value=p.activity;$("pGoalW").value=p.goalW;$("pRate").value=p.rateKg;
-  $("pMacro").value=p.macro;$("pWater").value=p.waterGoal;$("pCalOverride").value=p.calOverride||"";
+  $("pMacro").value=p.macro;$("pWater").value=p.waterGoal;$("pSleep").value=p.sleepGoal||8;$("pCalOverride").value=p.calOverride||"";
   $("pDiet").value=p.diet||"none"; $("dietDesc").textContent=(DIETS[p.diet||"none"]||DIETS.none).desc;
   if(p.macro&&![...$("pMacro").options].some(o=>o.value===p.macro)){ const o=document.createElement("option"); o.value=p.macro; o.textContent="Diet preset — "+p.macro.split(",").map((x,i)=>x+["P","C","F"][i]).join(" / "); $("pMacro").appendChild(o); $("pMacro").value=p.macro; }
   $("pFiber").value=p.fiberG||28;$("pSugar").value=p.sugarG||50;$("pSodium").value=p.sodiumG||2300;
@@ -779,7 +805,9 @@ function renderToday(){
     html+=`<button class="addto" onclick="openAdd('${name}')">+ Add to ${name.toLowerCase()}</button></div>`;
   }
   $("mealList").innerHTML=html;
-  renderFreqChips(); renderEatWindow(); renderTemplates();
+  renderFreqChips(); renderEatWindow(); renderTemplates(); renderWeekCard(); renderHighlights();
+  $("sleepIn").value=day().sleep||""; const sl7=[];for(let i=1;i<=7;i++){const dd=S.days[todayKey(new Date(Date.now()-i*864e5))];if(dd&&dd.sleep)sl7.push(dd.sleep);}
+  $("sleepAvg").textContent=sl7.length?(sl7.reduce((a,b)=>a+b,0)/sl7.length).toFixed(1)+" h nightly avg":"";
 
   // water
   const wg=S.profile?S.profile.waterGoal:8;
@@ -932,6 +960,154 @@ function saveCustom(persist){
   ["cName","cCal","cP","cC","cF","cFi","cSu","cSo","cServ"].forEach(i=>$(i).value="");
 }
 
+/* ============================= SLEEP / WEEK CARD / TRENDS / HIGHLIGHTS ============================= */
+function setSleep(v){ day().sleep=Math.max(0,Math.min(24,+v||0)); save(); renderToday(); }
+
+const METRICS={
+  cal:{n:"Calories",u:"",get:d=>dayTotals(d).cal,goal:pl=>pl?pl.target:2000,limit:true,col:"#3dbd7d"},
+  p:{n:"Protein",u:"g",get:d=>dayTotals(d).p,goal:pl=>pl?pl.p:120,limit:false,col:"#8f7dff"},
+  c:{n:"Carbs",u:"g",get:d=>dayTotals(d).c,goal:pl=>pl?pl.c:200,limit:pl=>!!(pl&&pl.limits&&pl.limits.includes("c")),col:"#7db2ff"},
+  nc:{n:"Net carbs",u:"g",get:d=>{const t=dayTotals(d);return Math.max(0,t.c-t.fi);},goal:pl=>pl?pl.c:200,limit:pl=>!!(pl&&pl.limits&&pl.limits.includes("c")),col:"#5aa2e8"},
+  fi:{n:"Fiber",u:"g",get:d=>dayTotals(d).fi,goal:()=>S.profile&&S.profile.fiberG||28,limit:false,col:"#4bbd85"},
+  su:{n:"Sugar",u:"g",get:d=>dayTotals(d).su,goal:()=>S.profile&&S.profile.sugarG||50,limit:true,col:"#f2a24a"},
+  so:{n:"Sodium",u:"mg",get:d=>dayTotals(d).so,goal:()=>S.profile&&S.profile.sodiumG||2300,limit:true,col:"#e08f5d"},
+  steps:{n:"Steps",u:"",get:d=>d.steps||0,goal:()=>8000,limit:false,col:"#6fc7a8"},
+  sleep:{n:"Sleep",u:"h",get:d=>d.sleep||0,goal:()=>S.profile&&S.profile.sleepGoal||8,limit:false,col:"#8fa3c7"}
+};
+function metricLimit(m,pl){ const L=METRICS[m].limit; return typeof L==="function"?L(pl):L; }
+
+let wkMetric="cal";
+function renderWeekCard(){
+  const pl=plan(), M=METRICS[wkMetric];
+  $("wkChips").innerHTML=Object.entries(METRICS).filter(([k])=>k!=="steps"&&k!=="sleep").map(([k,m])=>
+    `<button class="chip ${k===wkMetric?"on":""}" onclick="wkMetric='${k}';renderWeekCard()">${m.n}</button>`).join("");
+  // Monday-start week
+  const now=new Date(viewDate), dow=(now.getDay()+6)%7;
+  const days=[]; for(let i=0;i<7;i++){ const d=new Date(now); d.setDate(now.getDate()-dow+i); days.push(d); }
+  const goal=M.goal(pl), isLim=metricLimit(wkMetric,pl);
+  const todayV=M.get(day());
+  $("wkRemain").textContent=isLim?(goal-todayV>=0?r0(goal-todayV)+M.u+" under":r0(todayV-goal)+M.u+" OVER"):(todayV>=goal?"goal met ✓":r0(goal-todayV)+M.u+" to go");
+  $("wkRemain").style.color=isLim&&todayV>goal?"var(--red)":"var(--ink-soft)";
+  const W=340,H=120,pad=16,bw=26,gap=(W-2*pad-7*bw)/6;
+  const mx=Math.max(goal*1.25,...days.map(d=>{const dd=S.days[todayKey(d)];return dd?M.get(dd):0;}),1);
+  let s=`<line x1="${pad}" x2="${W-pad}" y1="${H-18-(H-38)*goal/mx}" y2="${H-18-(H-38)*goal/mx}" stroke="var(--ink-soft)" stroke-dasharray="3 4" stroke-width="1"/>`;
+  let prior=0,priorN=0;
+  days.forEach((d,i)=>{
+    const k=todayKey(d), dd=S.days[k], v=dd?M.get(dd):0, x=pad+i*(bw+gap);
+    const isTod=k===todayKey(new Date());
+    if(dd&&v>0&&!isTod&&d<new Date()){prior+=v;priorN++;}
+    const hFull=(H-38)*Math.min(v,mx)/mx, hGoal=(H-38)*Math.min(v,goal)/mx;
+    if(v>0){
+      s+=`<rect x="${x}" y="${H-18-hGoal}" width="${bw}" height="${Math.max(hGoal,1)}" rx="4" fill="${isLim&&v>goal?M.col:M.col}"/>`;
+      if(v>goal) s+=`<rect x="${x}" y="${H-18-hFull}" width="${bw}" height="${hFull-hGoal}" rx="3" fill="${isLim?"#e05d5d":"#3dbd7d"}"/>`;
+      if(!isLim&&v>=goal) s+=`<text x="${x+bw/2}" y="${H-22-hFull}" text-anchor="middle" font-size="9" fill="var(--green)">✓</text>`;
+    } else s+=`<rect x="${x}" y="${H-18-(H-38)}" width="${bw}" height="${H-38}" rx="4" fill="var(--line-soft)"/>`;
+    s+=`<text x="${x+bw/2}" y="${H-4}" text-anchor="middle" font-size="10" fill="var(--ink-soft)" ${isTod?'font-weight="800"':""}>${["M","Tu","W","Th","F","Sa","Su"][i]}</text>`;
+  });
+  $("wkChart").innerHTML=s;
+  $("wkAvg").textContent=priorN?`${r0(prior/priorN)}${M.u} avg prior to today · dashed line = ${isLim?"limit":"goal"} (${r0(goal)}${M.u})`:`Dashed line = ${isLim?"limit":"goal"} (${r0(goal)}${M.u})`;
+}
+
+let trMetric="cal", trRange=30;
+const TR_RANGES=[["1W",7],["1M",30],["3M",91],["6M",182],["1Y",365],["All",0]];
+function renderTrends(){
+  const M=METRICS[trMetric], pl=plan();
+  $("trMetricChips").innerHTML=Object.entries(METRICS).map(([k,m])=>
+    `<button class="chip ${k===trMetric?"on":""}" onclick="trMetric='${k}';renderTrends()">${m.n}</button>`).join("");
+  $("trRangeChips").innerHTML=TR_RANGES.map(([l,n])=>
+    `<button class="chip ${n===trRange?"on":""}" onclick="trRange=${n};renderTrends()">${l}</button>`).join("");
+  const keys=Object.keys(S.days).sort();
+  if(!keys.length){ $("trChart").innerHTML=""; $("trFoot").textContent="Log a few days to see trends."; $("trAvg").textContent=""; return; }
+  const end=new Date(), start=new Date();
+  if(trRange) start.setDate(end.getDate()-trRange+1); else start.setTime(new Date(keys[0]+"T00:00").getTime());
+  const pts=[]; const cur=new Date(start);
+  while(cur<=end){ const k=todayKey(cur), dd=S.days[k]; pts.push({k,v:dd?M.get(dd):0}); cur.setDate(cur.getDate()+1); }
+  const goal=M.goal(pl), vals=pts.map(p=>p.v).filter(v=>v>0);
+  const avg=vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:0;
+  const W=340,H=150,pad=14,axis=34;
+  const mx=Math.max(goal*1.15,...pts.map(p=>p.v),1);
+  const bw=Math.max(0.8,(W-pad-axis)/pts.length-0.6);
+  let s="";
+  pts.forEach((p,i)=>{ if(p.v<=0) return;
+    const x=pad+(W-pad-axis)*i/pts.length, h2=(H-30)*p.v/mx;
+    s+=`<rect x="${x}" y="${H-16-h2}" width="${bw}" height="${h2}" fill="${M.col}" opacity=".85"/>`; });
+  const gy=H-16-(H-30)*goal/mx;
+  s+=`<line x1="${pad}" x2="${W-axis}" y1="${gy}" y2="${gy}" stroke="var(--ink-soft)" stroke-dasharray="4 4" stroke-width="1.2"/>
+      <text x="${W-axis+3}" y="${gy+3}" font-size="10" font-weight="800" fill="var(--ink)" class="num">${r0(goal)}</text>
+      <text x="${pad}" y="${H-3}" font-size="9" fill="var(--ink-soft)">${new Date(pts[0].k+"T00:00").toLocaleDateString(undefined,{month:"short",year:trRange>182||!trRange?"numeric":undefined})}</text>
+      <text x="${W-axis}" y="${H-3}" text-anchor="end" font-size="9" fill="var(--ink-soft)">${new Date(pts[pts.length-1].k+"T00:00").toLocaleDateString(undefined,{month:"short",day:"numeric"})}</text>`;
+  $("trChart").innerHTML=s;
+  $("trAvg").textContent=vals.length?`${r0(avg)}${M.u} daily avg`:"no data in range";
+  const yk=todayKey(new Date(Date.now()-864e5)), yd=S.days[yk], yv=yd?M.get(yd):null;
+  $("trFoot").textContent=(yv!=null&&yv>0?`Yesterday: ${r0(yv)}${M.u} · `:"")+`dashed line = ${r0(goal)}${M.u} target · generated from your log`;
+}
+
+function topSources(nutKey,label,unit){
+  const agg={};
+  for(let i=0;i<7;i++){ const d=new Date(); d.setDate(d.getDate()-i); const dd=S.days[todayKey(d)]; if(!dd) continue;
+    Object.values(dd.meals).flat().forEach(it=>{ const v=it[nutKey]||0; if(v>0) agg[it.name]=(agg[it.name]||0)+v; }); }
+  const top=Object.entries(agg).sort((a,b)=>b[1]-a[1]).slice(0,3);
+  if(!top.length) return "";
+  return `<div style="margin-top:10px"><b style="font-size:13px">Top ${label} sources (7 days)</b>`+
+    top.map(([n,v])=>`<div class="spread subtle" style="margin-top:4px"><span>${n.length>34?n.slice(0,33)+"…":n}</span><b class="num">${r0(v)}${unit}</b></div>`).join("")+`</div>`;
+}
+function patternCard(){
+  // find a food where days including it average lower calories than days without (min 3 occurrences, 10 logged days)
+  const dayList=Object.entries(S.days).map(([k,d])=>({k,t:dayTotals(d),names:new Set(Object.values(d.meals).flat().map(i=>i.name))})).filter(x=>x.t.cal>0);
+  if(dayList.length<10) return "";
+  const counts={}; dayList.forEach(x=>x.names.forEach(n=>counts[n]=(counts[n]||0)+1));
+  let best=null;
+  for(const [n,c] of Object.entries(counts)){
+    if(c<3||c>dayList.length-3) continue;
+    const w=dayList.filter(x=>x.names.has(n)), wo=dayList.filter(x=>!x.names.has(n));
+    const aw=w.reduce((a,x)=>a+x.t.cal,0)/w.length, awo=wo.reduce((a,x)=>a+x.t.cal,0)/wo.length;
+    const diff=awo-aw;
+    if(diff>120&&(!best||diff>best.diff)) best={n,diff,aw};
+  }
+  if(!best) return "";
+  return `<div style="border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin-top:10px"><b style="font-size:13px">Pattern: ${best.n.length>28?best.n.slice(0,27)+"…":best.n}</b><p class="subtle" style="margin-top:4px">On days you include this, your total calories run about ${r0(best.diff)} kcal lower on average. It seems to fit your plan well.</p></div>`;
+}
+function renderHighlights(){
+  const html=patternCard()+topSources("p","protein","g")+topSources("fi","fiber","g");
+  $("hlCard").style.display=html?"block":"none";
+  $("hlBody").innerHTML=html;
+}
+
+function perfectWeeks(){
+  const pl=plan(), tgt=pl?pl.target:0; if(!tgt) return 0;
+  let n=0; const now=new Date();
+  for(let w=1;w<=52;w++){ // completed weeks only
+    let ok=true;
+    for(let i=0;i<7;i++){ const d=new Date(now); const dow=(now.getDay()+6)%7;
+      d.setDate(now.getDate()-dow-7*w+i);
+      const dd=S.days[todayKey(d)]; const c=dd?dayTotals(dd).cal:0;
+      if(!c||c>tgt*1.02){ ok=false; break; } }
+    if(ok) n++;
+  }
+  return n;
+}
+function renderWeightExtras(){
+  const el=$("wExtra"); if(!S.weights.length){el.style.display="none";return;}
+  const first=S.weights[S.weights.length-1], cur=latestWeight(), u=unit();
+  const lost=first.w-cur;
+  // weekly rate from last 14 days of entries
+  const cutoff=todayKey(new Date(Date.now()-14*864e5));
+  const recent=S.weights.filter(w=>w.d>=cutoff);
+  let rate=0;
+  if(recent.length>=2){ const a=recent[recent.length-1], b=recent[0];
+    const dDays=(new Date(b.d)-new Date(a.d))/864e5||1; rate=(b.w-a.w)/dDays*7; }
+  const stepMile=u==="lb"?5:2.5;
+  const nextMile=Math.ceil(lost/stepMile)*stepMile+ (lost%stepMile===0?stepMile:0);
+  const low10=Math.min(...S.weights.filter(w=>w.d>=todayKey(new Date(Date.now()-10*864e5))).map(w=>w.w).concat([Infinity]));
+  el.style.display="block";
+  el.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+    <div><span class="subtle">Since ${new Date(first.d+"T00:00").toLocaleDateString(undefined,{month:"numeric",day:"numeric",year:"2-digit"})}</span><br><b class="num" style="font-size:17px">${lost>=0?"↓ ":"↑ "}${Math.abs(lost).toFixed(1)} ${u}</b></div>
+    <div><span class="subtle">Weekly rate</span><br><b class="num" style="font-size:17px">${rate<=0?"↓ ":"↑ "}${Math.abs(rate).toFixed(1)} ${u}</b></div>
+    <div><span class="subtle">Next milestone</span><br><b class="num" style="font-size:17px">🚩 ${nextMile} ${u} lost</b></div>
+    <div><span class="subtle">10-day low</span><br><b class="num" style="font-size:17px">✨ ${low10===Infinity?"—":low10.toFixed(1)+" "+u}</b></div>
+  </div>`;
+}
+
 /* ============================= COPY YESTERDAY / FREQUENT / EATING WINDOW ============================= */
 function copyYesterday(){
   const prev=new Date(viewDate); prev.setDate(prev.getDate()-1);
@@ -997,9 +1173,9 @@ function exportCSV(){
   const keys=Object.keys(S.days).sort();
   if(!keys.length){ toast("Nothing to export yet"); return; }
   const wByDay={}; S.weights.forEach(w=>wByDay[w.d]=w.w);
-  let csv="date,calories,protein_g,carbs_g,fat_g,fiber_g,sugar_g,sodium_mg,water_glasses,exercise_kcal,weight,note\n";
+  let csv="date,calories,protein_g,carbs_g,fat_g,fiber_g,sugar_g,sodium_mg,water_glasses,sleep_hrs,exercise_kcal,weight,note\n";
   keys.forEach(k=>{ const d=S.days[k], t=dayTotals(d);
-    csv+=[k,r0(t.cal),r0(t.p),r0(t.c),r0(t.f),r0(t.fi),r0(t.su),r0(t.so),d.water||0,r0(t.burn),wByDay[k]??"",'"'+String(d.note||"").replace(/"/g,'""')+'"'].join(",")+"\n"; });
+    csv+=[k,r0(t.cal),r0(t.p),r0(t.c),r0(t.f),r0(t.fi),r0(t.su),r0(t.so),d.water||0,d.sleep||"",r0(t.burn),wByDay[k]??"",'"'+String(d.note||"").replace(/"/g,'""')+'"'].join(",")+"\n"; });
   const a=document.createElement("a");
   a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
   a.download="fittrack-"+todayKey(new Date())+".csv"; a.click(); toast("CSV downloaded ✓");
@@ -1272,7 +1448,7 @@ function renderProgress(){
   if(e&&p){ $("etaBanner").style.display="block";
     $("etaBanner").innerHTML=`📅 Projected goal date: <b>${e.date.toLocaleDateString(undefined,{weekday:"long",month:"long",day:"numeric",year:"numeric"})}</b> — about ${Math.ceil(e.weeks)} weeks at ${p.rateKg} kg/week.`;
   } else $("etaBanner").style.display="none";
-  drawWeightChart(); drawCalChart(); renderMeasures(); renderPhotos(); renderBMI(); renderBadges(); drawOverlayChart(); if($("usdaKey"))$("usdaKey").value=S.usdaKey||"";
+  drawWeightChart(); drawCalChart(); renderMeasures(); renderPhotos(); renderBMI(); renderBadges(); drawOverlayChart(); renderTrends(); renderWeightExtras(); if($("usdaKey"))$("usdaKey").value=S.usdaKey||"";
 }
 function drawWeightChart(){
   const svg=$("wChart"), W=340,H=180,pad=26;
@@ -1385,7 +1561,8 @@ function consistencyScore(){
 function renderHabits(){
   const s=streakInfo(), sc=consistencyScore();
   $("streakChip").textContent="🔥 "+s.streak;
-  $("habitLine").innerHTML=`<div class="spread"><span>🔥 <b>${s.streak}-day</b> logging streak${s.frozeOn?" <small style='color:var(--ink-soft)'>(1 freeze used)</small>":""}</span><span>Consistency <b class="num" style="color:${sc>=70?"var(--green)":sc>=40?"var(--tangerine)":"var(--red)"}">${sc}%</b></span></div>`;
+  const pw=perfectWeeks();
+  $("habitLine").innerHTML=`<div class="spread"><span>🔥 <b>${s.streak}-day</b> logging streak${s.frozeOn?" <small style='color:var(--ink-soft)'>(1 freeze used)</small>":""}</span><span>Consistency <b class="num" style="color:${sc>=70?"var(--green)":sc>=40?"var(--tangerine)":"var(--red)"}">${sc}%</b></span></div>${pw?`<div class="spread subtle" style="margin-top:4px"><span>🏆 Perfect weeks (all days logged & under budget)</span><b class="num">${pw}</b></div>`:""}`;
 }
 
 /* ============================= SMART MEAL MEMORY ============================= */
@@ -1692,7 +1869,7 @@ function renderAll(){ renderToday(); renderFastPresets(); tickFast(); renderFast
 /* ============================= AUTOSAVE ============================= */
 // 1. Profile & goal fields save themselves (no need to press the button)
 let autoT=null;
-["pSex","pDob","pHeight","pHft","pHin","pWeight","pUnits","pActivity","pGoalW","pRate","pMacro","pDiet","pWater","pCalOverride","pFiber","pSugar","pSodium","pCycle"].forEach(id=>{
+["pSex","pDob","pHeight","pHft","pHin","pWeight","pUnits","pActivity","pGoalW","pRate","pMacro","pDiet","pWater","pSleep","pCalOverride","pFiber","pSugar","pSodium","pCycle"].forEach(id=>{
   $(id).addEventListener("input",()=>{ clearTimeout(autoT); autoT=setTimeout(()=>{ saveProfile(true); },700); });
 });
 // 2. Flush to disk whenever the app is backgrounded or closed
