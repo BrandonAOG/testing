@@ -246,6 +246,27 @@ hr.sp{border:none;border-top:1px dashed var(--line);margin:14px 0}
   </div>
 </section>
 
+<!-- ============ WORKOUT ============ -->
+<section class="screen" id="scr-workout">
+  <div class="topbar">
+    <div><div class="eyebrow">Planet Fitness</div><h1>Workout</h1></div>
+    <span class="chip" id="wkDateChip"></span>
+  </div>
+  <div class="datebar card" style="padding:6px 8px">
+    <button onclick="wkShift(-1)" aria-label="Previous day">‹</button>
+    <b id="wkDateLabel"></b>
+    <button onclick="wkShift(1)" aria-label="Next day">›</button>
+  </div>
+  <div class="stat3">
+    <div class="card"><div class="eyebrow">Exercises</div><b class="num" style="font-size:20px" id="wkStatEx">0</b></div>
+    <div class="card"><div class="eyebrow">Sets</div><b class="num" style="font-size:20px" id="wkStatSets">0</b></div>
+    <div class="card"><div class="eyebrow">Volume</div><b class="num" style="font-size:20px" id="wkStatVol">0</b></div>
+  </div>
+  <button class="btn full" style="margin-bottom:12px" onclick="openWkPick()">+ Log an exercise</button>
+  <button class="btn full ghost" style="margin-bottom:14px" id="wkRepeatBtn" onclick="wkRepeatLast()">⟳ Repeat last workout</button>
+  <div id="wkList"><p class="subtle">Nothing logged yet — tap "Log an exercise" and pick from 200 Planet Fitness movements.</p></div>
+</section>
+
 <!-- ============ FASTING ============ -->
 <section class="screen" id="scr-fast">
   <div class="topbar"><div><div class="eyebrow">Intermittent</div><h1>Fasting</h1></div></div>
@@ -613,12 +634,33 @@ hr.sp{border:none;border-top:1px dashed var(--line);margin:14px 0}
   <button class="btn full" style="margin-top:14px" onclick="reportImage()">Download as image</button>
 </div></div>
 
+<!-- ============ WORKOUT PICKER ============ -->
+<div class="modal" id="mWkPick"><div class="sheet">
+  <div class="grab"></div>
+  <div class="spread"><h2>Pick an exercise</h2><button class="chip" onclick="closeModal('mWkPick')">Close</button></div>
+  <input class="f" id="wkSearch" placeholder="Search 200 exercises… (e.g. leg press)" oninput="renderWkPick()" style="margin-top:10px">
+  <div class="tabs" id="wkGroupTabs"></div>
+  <div id="wkPickList"></div>
+</div></div>
+
+<!-- ============ WORKOUT SET LOGGER ============ -->
+<div class="modal" id="mWkLog"><div class="sheet">
+  <div class="grab"></div>
+  <div class="spread"><h2 id="wkLogName" style="font-size:19px">Exercise</h2><button class="chip" onclick="closeModal('mWkLog')">Close</button></div>
+  <p class="subtle" id="wkLogMeta" style="margin:4px 0 2px"></p>
+  <div class="banner" id="wkLogLast" style="margin-top:10px;display:none"></div>
+  <div id="wkSetRows" style="margin-top:12px"></div>
+  <button class="btn small ghost" style="margin-top:10px" onclick="wkAddSet()">+ Add set</button>
+  <button class="btn full" style="margin-top:14px" onclick="saveWorkoutEntry()">Save exercise</button>
+</div></div>
+
 <div class="toast" id="toast"></div>
 
 <nav>
   <button id="nav-today" class="on" onclick="go('today')"><svg viewBox="0 0 24 24"><path d="M3 11l9-8 9 8"/><path d="M5 10v10h14V10"/></svg>Today</button>
   <button id="nav-fast" onclick="go('fast')"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/></svg>Fasting</button>
   <button class="fab" onclick="openAdd('Snacks')" aria-label="Add food"><span>+</span></button>
+  <button id="nav-workout" onclick="go('workout')"><svg viewBox="0 0 24 24"><path d="M6.5 6.5v11M17.5 6.5v11M3 9v6M21 9v6M6.5 12h11"/></svg>Workout</button>
   <button id="nav-progress" onclick="go('progress')"><svg viewBox="0 0 24 24"><path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/></svg>Progress</button>
   <button id="nav-settings" onclick="go('settings')"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 5-6 8-6s6.5 2 8 6"/></svg>Goals</button>
 </nav>
@@ -1962,12 +2004,233 @@ function ingestHealthParams(){
   if(got.length){ save(); history.replaceState(null,"",location.pathname); toast("⌚ Synced from Health: "+got.join(" · ")); }
 }
 
+/* ============================= WORKOUT TRACKER (Planet Fitness) ============================= */
+/* mode: "w" = weight x reps, "r" = reps (bodyweight, optional added weight), "t" = minutes */
+const WK_GROUPS=["All","Chest","Back","Shoulders","Biceps","Triceps","Forearms","Quads","Glutes & Hams","Calves","Core","Cardio"];
+const WORKOUTS=[
+/* ---- CHEST (20) ---- */
+["Chest Press Machine","Chest","w"],["Incline Chest Press Machine","Chest","w"],["Pec Fly Machine","Chest","w"],
+["Smith Machine Bench Press","Chest","w"],["Smith Machine Incline Press","Chest","w"],["Smith Machine Decline Press","Chest","w"],
+["Dumbbell Bench Press","Chest","w"],["Incline Dumbbell Press","Chest","w"],["Decline Dumbbell Press","Chest","w"],
+["Dumbbell Fly","Chest","w"],["Incline Dumbbell Fly","Chest","w"],["Dumbbell Squeeze Press","Chest","w"],
+["Dumbbell Pullover","Chest","w"],["Cable Crossover (high to low)","Chest","w"],["Cable Crossover (low to high)","Chest","w"],
+["Cable Chest Press","Chest","w"],["Single-Arm Cable Fly","Chest","w"],
+["Push-Up","Chest","r"],["Incline Push-Up (hands on bench)","Chest","r"],["Decline Push-Up (feet on bench)","Chest","r"],
+/* ---- BACK (27) ---- */
+["Lat Pulldown Machine","Back","w"],["Wide-Grip Lat Pulldown","Back","w"],["Close-Grip Lat Pulldown","Back","w"],
+["Reverse-Grip Lat Pulldown","Back","w"],["Single-Arm Lat Pulldown","Back","w"],
+["Seated Row Machine","Back","w"],["Wide-Grip Seated Cable Row","Back","w"],["Close-Grip Seated Cable Row","Back","w"],
+["Single-Arm Cable Row","Back","w"],["Machine High Row","Back","w"],["Machine Low Row","Back","w"],
+["Plate-Loaded T-Bar Row","Back","w"],["Assisted Pull-Up Machine","Back","w"],["Assisted Chin-Up Machine","Back","w"],
+["Pull-Up","Back","r"],["Chin-Up","Back","r"],
+["Smith Machine Bent-Over Row","Back","w"],["Dumbbell Bent-Over Row","Back","w"],["Single-Arm Dumbbell Row","Back","w"],
+["Chest-Supported Dumbbell Row (incline bench)","Back","w"],["Renegade Row","Back","w"],
+["Straight-Arm Cable Pulldown","Back","w"],["Cable Face Pull","Back","w"],
+["Back Extension Machine","Back","w"],["Hyperextension (Roman chair)","Back","r"],
+["Smith Machine Shrug","Back","w"],["Dumbbell Shrug","Back","w"],
+/* ---- SHOULDERS (20) ---- */
+["Shoulder Press Machine","Shoulders","w"],["Smith Machine Overhead Press","Shoulders","w"],
+["Seated Dumbbell Shoulder Press","Shoulders","w"],["Standing Dumbbell Shoulder Press","Shoulders","w"],
+["Arnold Press","Shoulders","w"],["Seated Neutral-Grip Dumbbell Press","Shoulders","w"],
+["Lateral Raise Machine","Shoulders","w"],["Dumbbell Lateral Raise","Shoulders","w"],["Cable Lateral Raise","Shoulders","w"],
+["Dumbbell Front Raise","Shoulders","w"],["Plate Front Raise","Shoulders","w"],["Cable Front Raise","Shoulders","w"],
+["Rear Delt Fly Machine","Shoulders","w"],["Bent-Over Dumbbell Rear Delt Fly","Shoulders","w"],["Cable Rear Delt Fly","Shoulders","w"],
+["Dumbbell Upright Row","Shoulders","w"],["Cable Upright Row","Shoulders","w"],["Smith Machine Upright Row","Shoulders","w"],
+["Cable Y-Raise","Shoulders","w"],["Dumbbell Around-the-World","Shoulders","w"],
+/* ---- BICEPS (17) ---- */
+["Bicep Curl Machine","Biceps","w"],["Preacher Curl Machine","Biceps","w"],
+["Dumbbell Bicep Curl","Biceps","w"],["Alternating Dumbbell Curl","Biceps","w"],["Hammer Curl","Biceps","w"],
+["Incline Dumbbell Curl","Biceps","w"],["Concentration Curl","Biceps","w"],["Cross-Body Hammer Curl","Biceps","w"],
+["Zottman Curl","Biceps","w"],["Spider Curl (incline bench)","Biceps","w"],
+["Fixed Barbell Curl","Biceps","w"],["EZ-Bar Curl (fixed bar)","Biceps","w"],["Wide-Grip Barbell Curl","Biceps","w"],
+["Cable Bicep Curl (bar)","Biceps","w"],["Cable Rope Hammer Curl","Biceps","w"],["Single-Arm Cable Curl","Biceps","w"],
+["21s (Dumbbell or Bar)","Biceps","w"],
+/* ---- TRICEPS (15) ---- */
+["Tricep Extension Machine","Triceps","w"],["Tricep Press (Dip) Machine","Triceps","w"],["Assisted Dip Machine","Triceps","w"],
+["Cable Pushdown (bar)","Triceps","w"],["Cable Rope Pushdown","Triceps","w"],["Single-Arm Cable Pushdown","Triceps","w"],
+["Overhead Cable Tricep Extension","Triceps","w"],["Cable Tricep Kickback","Triceps","w"],
+["Overhead Dumbbell Extension","Triceps","w"],["Lying Dumbbell Skull Crusher","Triceps","w"],["EZ-Bar Skull Crusher","Triceps","w"],
+["Dumbbell Kickback","Triceps","w"],["Close-Grip Smith Machine Press","Triceps","w"],
+["Bench Dip","Triceps","r"],["Close-Grip Push-Up","Triceps","r"],
+/* ---- FOREARMS (6) ---- */
+["Dumbbell Wrist Curl","Forearms","w"],["Reverse Wrist Curl","Forearms","w"],["Reverse EZ-Bar Curl","Forearms","w"],
+["Farmer's Carry","Forearms","w"],["Plate Pinch Hold","Forearms","t"],["Dead Hang","Forearms","t"],
+/* ---- QUADS & COMPOUND LEGS (22) ---- */
+["Leg Press Machine","Quads","w"],["Single-Leg Press","Quads","w"],["Leg Extension Machine","Quads","w"],
+["Single-Leg Extension","Quads","w"],["Hack Squat Machine","Quads","w"],
+["Smith Machine Squat","Quads","w"],["Smith Machine Front Squat","Quads","w"],["Smith Machine Split Squat","Quads","w"],
+["Smith Machine Lunge","Quads","w"],["Goblet Squat","Quads","w"],["Dumbbell Squat","Quads","w"],
+["Sumo Goblet Squat","Quads","w"],["Bulgarian Split Squat (dumbbell)","Quads","w"],
+["Dumbbell Walking Lunge","Quads","w"],["Dumbbell Reverse Lunge","Quads","w"],["Dumbbell Forward Lunge","Quads","w"],
+["Dumbbell Lateral Lunge","Quads","w"],["Dumbbell Step-Up","Quads","w"],
+["Bodyweight Squat","Quads","r"],["Jump Squat","Quads","r"],["Sissy Squat","Quads","r"],["Wall Sit","Quads","t"],
+/* ---- GLUTES & HAMSTRINGS (21) ---- */
+["Seated Leg Curl Machine","Glutes & Hams","w"],["Lying Leg Curl Machine","Glutes & Hams","w"],["Single-Leg Curl","Glutes & Hams","w"],
+["Dumbbell Romanian Deadlift","Glutes & Hams","w"],["Single-Leg Dumbbell RDL","Glutes & Hams","w"],
+["Smith Machine Romanian Deadlift","Glutes & Hams","w"],["Smith Machine Deadlift","Glutes & Hams","w"],
+["Smith Machine Good Morning","Glutes & Hams","w"],["Smith Machine Hip Thrust","Glutes & Hams","w"],
+["Dumbbell Hip Thrust","Glutes & Hams","w"],["Glute Kickback Machine","Glutes & Hams","w"],["Cable Glute Kickback","Glutes & Hams","w"],
+["Hip Abductor Machine","Glutes & Hams","w"],["Hip Adductor Machine","Glutes & Hams","w"],["Cable Hip Abduction","Glutes & Hams","w"],
+["Cable Pull-Through","Glutes & Hams","w"],
+["Glute Bridge","Glutes & Hams","r"],["Single-Leg Glute Bridge","Glutes & Hams","r"],
+["Donkey Kick","Glutes & Hams","r"],["Fire Hydrant","Glutes & Hams","r"],["Frog Pump","Glutes & Hams","r"],
+/* ---- CALVES (7) ---- */
+["Rotary Calf Machine (seated)","Calves","w"],["Calf Raise on Leg Press","Calves","w"],["Smith Machine Standing Calf Raise","Calves","w"],
+["Standing Dumbbell Calf Raise","Calves","w"],["Seated Dumbbell Calf Raise","Calves","w"],
+["Single-Leg Calf Raise","Calves","r"],["Tibialis Raise","Calves","r"],
+/* ---- CORE (29) ---- */
+["Ab Crunch Machine","Core","w"],["Torso Rotation Machine","Core","w"],["Cable Crunch","Core","w"],
+["Cable Woodchopper (high to low)","Core","w"],["Cable Woodchopper (low to high)","Core","w"],
+["Dumbbell Russian Twist","Core","w"],["Dumbbell Side Bend","Core","w"],["Weighted Plank","Core","t"],
+["Hanging Knee Raise","Core","r"],["Captain's Chair Leg Raise","Core","r"],
+["Crunch","Core","r"],["Reverse Crunch","Core","r"],["Bicycle Crunch","Core","r"],["Stability Ball Crunch","Core","r"],
+["Sit-Up","Core","r"],["Decline Sit-Up","Core","r"],["V-Up","Core","r"],["Toe Touches","Core","r"],
+["Russian Twist (bodyweight)","Core","r"],["Lying Leg Raise","Core","r"],["Flutter Kicks","Core","r"],
+["Mountain Climbers","Core","r"],["Dead Bug","Core","r"],["Bird Dog","Core","r"],
+["Stability Ball Rollout","Core","r"],["Superman Hold","Core","t"],
+["Plank","Core","t"],["Side Plank","Core","t"],["Hollow Body Hold","Core","t"],
+/* ---- CARDIO (16) ---- */
+["Treadmill Walk","Cardio","t"],["Treadmill Incline Walk","Cardio","t"],["Treadmill Jog","Cardio","t"],
+["Treadmill Run","Cardio","t"],["Treadmill Sprint Intervals","Cardio","t"],
+["Elliptical","Cardio","t"],["Arc Trainer","Cardio","t"],["Stairmaster / StepMill","Cardio","t"],
+["Upright Bike","Cardio","t"],["Recumbent Bike","Cardio","t"],["Spin Bike Intervals","Cardio","t"],
+["Rowing Machine","Cardio","t"],["PF 30-Minute Express Circuit","Cardio","t"],
+["Jumping Jacks","Cardio","r"],["Burpees","Cardio","r"],["High Knees","Cardio","t"]
+].map((x,i)=>({id:i,name:x[0],group:x[1],mode:x[2]}));
+
+let wkGroup="All", wkEditIdx=null, wkCur=null;
+function wday(){ const d=day(); if(!d.workouts) d.workouts=[]; return d; }
+function wkShift(n){ viewDate.setDate(viewDate.getDate()+n); renderWorkout(); }
+function wkModeLabel(m){ return m==="w"?"weight × reps":m==="r"?"reps (add weight optional)":"minutes"; }
+
+/* find the most recent previous day this exercise was logged */
+function wkLast(name){
+  const todayK=todayKey(viewDate);
+  const keys=Object.keys(S.days).filter(k=>k<todayK && S.days[k].workouts && S.days[k].workouts.some(w=>w.name===name)).sort().reverse();
+  if(!keys.length) return null;
+  const e=S.days[keys[0]].workouts.find(w=>w.name===name);
+  return {date:keys[0],sets:e.sets};
+}
+function wkPR(name){
+  let best=0;
+  Object.values(S.days).forEach(d=>(d.workouts||[]).forEach(w=>{ if(w.name===name) w.sets.forEach(s=>{ if((+s.w||0)>best) best=+s.w; }); }));
+  return best;
+}
+function wkSetStr(sets,mode){
+  if(mode==="t") return sets.map(s=>s.min+" min"+(s.w?" @ lvl "+s.w:"")).join(", ");
+  return sets.map(s=>(s.w?s.w+"×":"")+s.r).join(", ")+(mode==="w"?" lb×reps":" reps");
+}
+
+/* ---------- main screen ---------- */
+function renderWorkout(){
+  const d=wday(), isToday=todayKey(viewDate)===todayKey(new Date());
+  $("wkDateLabel").textContent=isToday?"Today · "+viewDate.toLocaleDateString(undefined,{weekday:"short",month:"short",day:"numeric"}):viewDate.toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"});
+  $("wkDateChip").textContent=d.workouts.length? d.workouts.length+" logged":"—";
+  let sets=0, vol=0;
+  d.workouts.forEach(w=>w.sets.forEach(s=>{ sets++; vol+=(+s.w||0)*(+s.r||0); }));
+  $("wkStatEx").textContent=d.workouts.length;
+  $("wkStatSets").textContent=sets;
+  $("wkStatVol").textContent=vol?vol.toLocaleString()+" lb":"0";
+  /* repeat-last button only when today is empty and a previous workout exists */
+  const prevKey=Object.keys(S.days).filter(k=>k<todayKey(viewDate)&&(S.days[k].workouts||[]).length).sort().pop();
+  $("wkRepeatBtn").style.display=(!d.workouts.length&&prevKey)?"":"none";
+  $("wkList").innerHTML=d.workouts.length
+    ? d.workouts.map((w,i)=>`<div class="card" style="padding:12px 14px">
+        <div class="spread">
+          <div><b style="font-size:14px">${esc(w.name)}</b><div class="subtle" style="font-size:12px">${esc(w.group)} · ${w.sets.length} set${w.sets.length>1?"s":""}</div></div>
+          <span class="row" style="gap:4px">
+            <button class="chip" onclick="editWk(${i})">✎</button>
+            <button class="del" style="color:var(--red);font-size:17px;padding:4px 8px" onclick="delWk(${i})">×</button>
+          </span>
+        </div>
+        <div class="num" style="margin-top:6px;font-size:13px;color:var(--green);font-weight:700">${esc(wkSetStr(w.sets,w.mode))}</div>
+      </div>`).join("")
+    : `<p class="subtle">Nothing logged yet — tap "Log an exercise" and pick from 200 Planet Fitness movements.</p>`;
+}
+function delWk(i){ wday().workouts.splice(i,1); save(); renderWorkout(); }
+function wkRepeatLast(){
+  const prevKey=Object.keys(S.days).filter(k=>k<todayKey(viewDate)&&(S.days[k].workouts||[]).length).sort().pop();
+  if(!prevKey) return;
+  wday().workouts=JSON.parse(JSON.stringify(S.days[prevKey].workouts));
+  save(); renderWorkout(); toast("Copied workout from "+prevKey+" ✓ — tap ✎ to update weights");
+}
+
+/* ---------- picker ---------- */
+function openWkPick(){
+  $("wkSearch").value=""; wkGroup="All";
+  renderWkTabs(); renderWkPick();
+  $("mWkPick").classList.add("open");
+}
+function renderWkTabs(){
+  $("wkGroupTabs").innerHTML=WK_GROUPS.map(g=>`<button class="chip ${wkGroup===g?"on":""}" onclick="wkGroup='${g.replace(/'/g,"\\'")}';renderWkTabs();renderWkPick()">${g}</button>`).join("");
+}
+function renderWkPick(){
+  const q=$("wkSearch").value.trim().toLowerCase();
+  const list=WORKOUTS.filter(w=>(wkGroup==="All"||w.group===wkGroup)&&(!q||w.name.toLowerCase().includes(q)));
+  $("wkPickList").innerHTML=list.length
+    ? list.map(w=>{ const last=wkLast(w.name);
+        return `<button class="foodresult" onclick="openWkLog(${w.id})">
+          <span class="g"><b>${esc(w.name)}</b><small>${esc(w.group)} · ${wkModeLabel(w.mode)}${last?" · last: "+esc(wkSetStr(last.sets,w.mode)):""}</small></span>
+          <span class="kc">›</span></button>`; }).join("")
+    : `<p class="subtle" style="padding:14px 4px">No matches — try another word or muscle group.</p>`;
+}
+
+/* ---------- set logger ---------- */
+function openWkLog(id,editIdx){
+  wkCur=WORKOUTS.find(w=>w.id===id); wkEditIdx=(editIdx==null?null:editIdx);
+  $("wkLogName").textContent=wkCur.name;
+  const pr=wkPR(wkCur.name);
+  $("wkLogMeta").textContent=wkCur.group+" · "+wkModeLabel(wkCur.mode)+(pr?" · PR "+pr+(wkCur.mode==="t"?" lvl":" lb"):"");
+  const last=wkLast(wkCur.name);
+  if(last&&wkEditIdx==null){ $("wkLogLast").style.display=""; $("wkLogLast").textContent="Last time ("+last.date+"): "+wkSetStr(last.sets,wkCur.mode)+" — beat it 💪"; }
+  else $("wkLogLast").style.display="none";
+  let sets;
+  if(wkEditIdx!=null) sets=wday().workouts[wkEditIdx].sets;
+  else if(last) sets=JSON.parse(JSON.stringify(last.sets));
+  else sets=wkCur.mode==="t"?[{min:20,w:""}]:[{w:wkCur.mode==="w"?"":0,r:10},{w:wkCur.mode==="w"?"":0,r:10},{w:wkCur.mode==="w"?"":0,r:10}];
+  $("wkSetRows").innerHTML=""; sets.forEach(s=>wkAddSet(s));
+  closeModal("mWkPick"); $("mWkLog").classList.add("open");
+}
+function editWk(i){ const e=wday().workouts[i]; const def=WORKOUTS.find(w=>w.name===e.name)||{id:-1,name:e.name,group:e.group,mode:e.mode}; if(def.id===-1){WORKOUTS.push(Object.assign(def,{id:WORKOUTS.length}));} openWkLog(def.id,i); }
+function wkAddSet(s){
+  s=s||{};
+  const n=$("wkSetRows").children.length+1, row=document.createElement("div");
+  row.className="row"; row.style.cssText="gap:8px;margin-bottom:8px";
+  if(wkCur.mode==="t"){
+    row.innerHTML=`<span class="chip" style="flex:0 0 58px;text-align:center">#${n}</span>
+      <input class="f num wk-min" type="number" inputmode="decimal" placeholder="minutes" value="${s.min!=null?s.min:""}" style="flex:1">
+      <input class="f num wk-w" type="number" inputmode="decimal" placeholder="level/speed" value="${s.w!=null?s.w:""}" style="flex:1">
+      <button class="del" style="color:var(--red);font-size:17px" onclick="this.parentNode.remove();wkRenum()">×</button>`;
+  }else{
+    row.innerHTML=`<span class="chip" style="flex:0 0 58px;text-align:center">#${n}</span>
+      <input class="f num wk-w" type="number" inputmode="decimal" placeholder="${wkCur.mode==="w"?"weight (lb)":"weight (opt)"}" value="${s.w!==""&&s.w!=null?s.w:""}" style="flex:1">
+      <input class="f num wk-r" type="number" inputmode="numeric" placeholder="reps" value="${s.r!=null?s.r:""}" style="flex:1">
+      <button class="del" style="color:var(--red);font-size:17px" onclick="this.parentNode.remove();wkRenum()">×</button>`;
+  }
+  $("wkSetRows").appendChild(row);
+}
+function wkRenum(){ [...$("wkSetRows").children].forEach((r,i)=>r.querySelector(".chip").textContent="#"+(i+1)); }
+function saveWorkoutEntry(){
+  const rows=[...$("wkSetRows").children], sets=[];
+  rows.forEach(r=>{
+    if(wkCur.mode==="t"){ const min=+r.querySelector(".wk-min").value||0, w=r.querySelector(".wk-w").value;
+      if(min>0) sets.push({min,w:w?+w:""}); }
+    else{ const w=r.querySelector(".wk-w").value, reps=+r.querySelector(".wk-r").value||0;
+      if(reps>0) sets.push({w:w?+w:0,r:reps}); }
+  });
+  if(!sets.length){ toast("Enter at least one set"); return; }
+  const entry={name:wkCur.name,group:wkCur.group,mode:wkCur.mode,sets};
+  if(wkEditIdx!=null) wday().workouts[wkEditIdx]=entry; else wday().workouts.push(entry);
+  save(); closeModal("mWkLog"); renderWorkout(); toast(wkCur.name+" saved ✓");
+}
+
 function go(scr){
-  const map={today:"scr-today",fast:"scr-fast",progress:"scr-progress",settings:"scr-settings"};
+  const map={today:"scr-today",fast:"scr-fast",workout:"scr-workout",progress:"scr-progress",settings:"scr-settings"};
   document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
   $(map[scr]).classList.add("active");
   document.querySelectorAll("nav button[id]").forEach(b=>b.classList.toggle("on",b.id==="nav-"+scr));
   if(scr==="today") renderToday();
+  if(scr==="workout") renderWorkout();
   if(scr==="fast"){ renderFastPresets(); tickFast(); renderFastHistory(); }
   if(scr==="progress") renderProgress();
   if(scr==="settings"){ fillProfileForm(); renderThemeUI(); if($("shortcutUrl"))$("shortcutUrl").textContent=shortcutUrlTemplate(); }
