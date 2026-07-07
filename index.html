@@ -2785,7 +2785,7 @@ function wkDecorateRows(){
       row.insertBefore(sp,row.querySelector(".del"));
       row.querySelectorAll("input").forEach(inp=>{
         inp.addEventListener("input",()=>wkCheckRow(row));
-        inp.addEventListener("change",()=>{ if(inp.classList.contains("wk-r")||inp.classList.contains("wk-min")){ if(+inp.value>0) startRest(S.restSec); } });
+        inp.addEventListener("change",()=>{ if(inp.classList.contains("wk-r")||inp.classList.contains("wk-min")){ if(+inp.value>0){ startRest(restForCur()); sessPause(); } } });
       });
     }
     wkCheckRow(row);
@@ -2892,24 +2892,32 @@ function confetti(){
   if(navigator.vibrate) navigator.vibrate([80,40,120]);
 }
 
-/* ---------- rest timer ---------- */
+/* ---------- rest timer (level-based: beginner 30s → advanced 90s) ---------- */
 let rtEnd=0, rtTotal=0, rtTick=null;
+S.level=S.level||"beginner";
+const LEVELS=[["beginner","B",90],["intermediate","I",60],["advanced","A",30]];
+const COMPOUND=/press|squat|deadlift|row|pulldown|pull-up|chin-up|thrust|lunge/i;
+function restForCur(){                       // adaptive rest: level base, +30s on heavy compounds
+  const base=(LEVELS.find(l=>l[0]===S.level)||LEVELS[0])[2];
+  return (wkCur&&wkCur.mode==="w"&&COMPOUND.test(wkCur.name))?base+30:base;
+}
 (function(){
   const el=document.createElement("div"); el.className="resttimer"; el.id="restTimer";
   el.innerHTML=`<span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#9ec4ae">Rest</span>
     <span class="rt-clock" id="rtClock">0:00</span>
-    ${[60,90,120].map(s=>`<button class="chip rt-p" data-s="${s}" onclick="startRest(${s},true)">${s}s</button>`).join("")}
+    ${LEVELS.map(([id,l,s])=>`<button class="chip rt-p" data-l="${id}" title="${id} · ${s}s" onclick="setLevel('${id}')">${l}·${s}s</button>`).join("")}
+    <button class="chip" onclick="rtEnd+=30000;rtTotal+=30;rtDraw()">+30</button>
     <button class="chip" onclick="stopRest()">✕</button><i class="rt-bar" id="rtBar"></i>`;
   document.body.appendChild(el);
 })();
-function startRest(sec,setDefault){
-  if(setDefault){ S.restSec=sec; save(); }
+function setLevel(id){ S.level=id; save(); startRest(restForCur()); toast(id[0].toUpperCase()+id.slice(1)+" pace — "+restForCur()+"s rests"); }
+function startRest(sec){
   rtTotal=sec; rtEnd=Date.now()+sec*1000;
   $("restTimer").classList.add("open");
-  document.querySelectorAll(".rt-p").forEach(b=>b.classList.toggle("on",+b.dataset.s===S.restSec));
+  document.querySelectorAll(".rt-p").forEach(b=>b.classList.toggle("on",b.dataset.l===S.level));
   clearInterval(rtTick); rtTick=setInterval(rtDraw,250); rtDraw();
 }
-function stopRest(){ clearInterval(rtTick); $("restTimer").classList.remove("open"); }
+function stopRest(){ clearInterval(rtTick); $("restTimer").classList.remove("open"); sessResume(); }
 function rtDraw(){
   const left=Math.max(0,Math.ceil((rtEnd-Date.now())/1000));
   $("rtClock").textContent=Math.floor(left/60)+":"+String(left%60).padStart(2,"0");
@@ -3099,13 +3107,45 @@ let sessTick=null, draftT=null, noteT=null;
 
 /* ---------- live session ---------- */
 function startSession(){
+  /* pre-workout check-in: pick your rest pace first */
+  let m=$("mSessStart");
+  if(!m){ m=document.createElement("div"); m.className="modal"; m.id="mSessStart";
+    m.innerHTML=`<div class="sheet"><div class="grab"></div>
+      <div class="spread"><h2>Set your rest timer</h2><button class="chip" onclick="closeModal('mSessStart')">Close</button></div>
+      <p class="subtle" style="margin-top:4px">Auto-starts between every set. Heavy compounds (presses, squats, rows…) get +30s on top.</p>
+      <div id="sessStartOpts" style="margin-top:12px"></div>
+      <button class="btn full" style="margin-top:14px;background:var(--tangerine)" onclick="beginSession()">▶ Start workout</button></div>`;
+    document.body.appendChild(m); m.addEventListener("click",e=>{ if(e.target===m) closeModal("mSessStart"); }); }
+  renderSessStartOpts();
+  m.classList.add("open");
+}
+function renderSessStartOpts(){
+  const DESC={beginner:"Full recovery between sets — best while learning the machines",
+              intermediate:"Steady pace — the hypertrophy sweet spot",
+              advanced:"Density work — short breathers, heart rate stays up"};
+  $("sessStartOpts").innerHTML=LEVELS.map(([id,l,s])=>`
+    <button class="card" style="width:100%;text-align:left;padding:13px 14px;display:flex;align-items:center;gap:12px;${S.level===id?"border-color:var(--green);outline:2px solid var(--green)":""}"
+      onclick="S.level='${id}';save();renderSessStartOpts()">
+      <b class="num" style="font-size:22px;flex:0 0 64px;color:${S.level===id?"var(--green)":"var(--ink)"}">${s}s</b>
+      <span style="flex:1"><b style="font-size:14px;text-transform:capitalize">${id}</b>
+        <span class="subtle" style="display:block;font-size:11.5px">${DESC[id]}</span></span>
+      <span style="font-size:18px;color:var(--green)">${S.level===id?"✓":""}</span>
+    </button>`).join("");
+}
+function beginSession(){
+  closeModal("mSessStart");
   S.session={start:Date.now(),d:todayKey(new Date())}; save();
-  renderWorkout(); toast("▶ Workout started — go get it");
+  renderWorkout(); toast("▶ Workout started — "+restForCur()+"s rests · go get it");
 }
 function sessFmt(ms){
   const s=Math.floor(ms/1000), h=Math.floor(s/3600), m=Math.floor(s%3600/60);
   return (h?h+":":"")+String(m).padStart(h?2:1,"0")+":"+String(s%60).padStart(2,"0");
 }
+function sessElapsed(){ if(!S.session) return 0;
+  return Date.now()-S.session.start-(S.session.pausedMs||0)-(S.session.pausedAt?Date.now()-S.session.pausedAt:0); }
+function sessPause(){ if(S.session&&!S.session.pausedAt){ S.session.pausedAt=Date.now(); save(); const c=$("sessClock"); if(c) c.style.opacity=".45"; } }
+function sessResume(){ if(S.session&&S.session.pausedAt){ S.session.pausedMs=(S.session.pausedMs||0)+(Date.now()-S.session.pausedAt); S.session.pausedAt=null; save(); const c=$("sessClock"); if(c) c.style.opacity="1"; } }
+function sessRestBtn(){ sessPause(); startRest(restForCur()); }
 function sessionUI(){
   const scr=$("scr-workout"); if(!scr) return;
   let sb=$("sessCard");
@@ -3120,23 +3160,27 @@ function sessionUI(){
     (d.workouts||[]).forEach(w=>w.sets.forEach(s=>{sets++;vol+=(+s.w||0)*(+s.r||0);}));
     sb.innerHTML=`<div class="card" style="background:var(--green-deep);color:#fff;padding:14px">
       <div class="spread">
-        <div><div class="eyebrow" style="color:#9ec4ae">Workout in progress</div>
-          <b class="num" id="sessClock" style="font-size:26px">${sessFmt(Date.now()-S.session.start)}</b></div>
-        <button class="btn small" style="background:var(--tangerine)" onclick="finishSession()">Finish ✔</button>
+        <div><div class="eyebrow" style="color:#9ec4ae">Workout in progress · ${S.level}</div>
+          <b class="num" id="sessClock" style="font-size:26px;${S.session.pausedAt?"opacity:.45":""}">${sessFmt(sessElapsed())}</b></div>
+        <span class="row" style="gap:6px">
+          <button class="btn small ghost" style="color:#fff;border-color:rgba(255,255,255,.4)" onclick="sessRestBtn()">⏸ Rest ${restForCur()}s</button>
+          <button class="btn small" style="background:var(--tangerine)" onclick="finishSession()">Finish ✔</button>
+        </span>
       </div>
       <div class="sessgrid">
         <div class="cell"><div class="v">${(d.workouts||[]).length}</div><div class="l">Exercises</div></div>
         <div class="cell"><div class="v">${sets}</div><div class="l">Sets</div></div>
         <div class="cell"><div class="v">${vol?vol.toLocaleString():0}</div><div class="l">lb volume</div></div>
       </div></div>`;
-    sessTick=setInterval(()=>{ const c=$("sessClock"); if(c) c.textContent=sessFmt(Date.now()-S.session.start); else clearInterval(sessTick); },1000);
+    sessTick=setInterval(()=>{ const c=$("sessClock"); if(c) c.textContent=sessFmt(sessElapsed()); else clearInterval(sessTick); },1000);
   }else{
     sb.innerHTML=`<button class="btn full" style="margin-bottom:12px;background:var(--tangerine)" onclick="startSession()">▶ Start workout</button>`;
   }
 }
 function finishSession(){
   if(!S.session) return;
-  const dur=Date.now()-S.session.start, d=wday(), tk=todayKey(new Date());
+  sessResume();
+  const dur=sessElapsed(), d=wday(), tk=todayKey(new Date());
   let sets=0,vol=0; (d.workouts||[]).forEach(w=>w.sets.forEach(s=>{sets++;vol+=(+s.w||0)*(+s.r||0);}));
   const prs=S.prs.filter(p=>p.d===tk);
   const prevKey=Object.keys(S.days).filter(k=>k<tk&&(S.days[k].workouts||[]).length).sort().pop();
