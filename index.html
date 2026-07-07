@@ -114,6 +114,14 @@ nav .fab span{position:absolute;top:-22px;left:50%;transform:translateX(-50%);wi
 .foodresult{display:flex;justify-content:space-between;align-items:center;padding:12px 4px;border-bottom:1px solid var(--line);width:100%;text-align:left}
 .foodresult .g small{color:var(--ink-soft)}
 .foodresult .kc{font-family:var(--mono);font-weight:700;color:var(--green)}
+.sessgrid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px}
+.sessgrid .cell{background:rgba(255,255,255,.08);border-radius:12px;padding:8px;text-align:center}
+.sessgrid .cell .l{font-size:9.5px;text-transform:uppercase;letter-spacing:.1em;color:#9ec4ae;font-weight:700}
+.sessgrid .cell .v{font-family:var(--mono);font-weight:800;font-size:16px}
+.prline{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--line-soft);font-size:13px}
+.prline:last-child{border-bottom:none}
+.exnote{width:100%;border:1.5px solid var(--line);border-radius:12px;background:var(--card);padding:10px 12px;font:inherit;font-size:13.5px;resize:none;margin-top:10px;color:inherit}
+.exnote:focus{outline:2px solid var(--green);border-color:var(--green)}
 /* --- progressive overload / rank / timer --- */
 .goalbanner{border:1.5px solid var(--banner-line);background:var(--banner-bg);border-radius:14px;padding:11px 13px;font-size:13.5px;line-height:1.45;margin-top:10px}
 .goalbanner b.num{font-size:14px}
@@ -2831,15 +2839,25 @@ function showWarmup(){
 const _saveWorkoutEntry=saveWorkoutEntry;
 saveWorkoutEntry=function(){
   const name=wkCur.name, mode=wkCur.mode, goal=wkGoal, wasEdit=wkEditIdx!=null;
-  const prevPR=mode!=="t"?wkPRbest(name,mode):0;
+  const prevB=mode!=="t"?wkBestsAll(name):null;
   _saveWorkoutEntry();
   if($("mWkLog").classList.contains("open")) return;            // validation failed
+  S.draft=null; save();                                          // typed sets are committed — clear the draft
   const entry=wasEdit?wday().workouts[wkEditIdx]:wday().workouts[wday().workouts.length-1];
-  if(entry&&mode!=="t"){
-    let best=0; entry.sets.forEach(s=>{ const v=mode==="w"?(+s.w||0):(+s.r||0); if(v>best)best=v; });
-    if(prevPR>0&&best>prevPR){
-      S.prs.push({d:todayKey(viewDate),name,v:best,mode});
-      confetti(); toast("🏆 NEW PR — "+name+": "+best+(mode==="w"?" lb":" reps")+"!");
+  if(entry&&mode!=="t"&&prevB){
+    let bw=0,br=0,be=0,bv=0;
+    entry.sets.forEach(s=>{ const w=+s.w||0,r=+s.r||0;
+      if(w>bw)bw=w; if(r>br)br=r; const e=e1rm(w,r); if(e>be)be=e; bv+=w*r; });
+    let pr=null;                                                 // one PR per save, biggest headline wins
+    if(mode==="w"){
+      if(prevB.w>0&&bw>prevB.w)      pr={type:"weight",v:bw,u:" lb"};
+      else if(prevB.e>0&&be>prevB.e) pr={type:"e1RM",v:be,u:" lb est. 1RM"};
+      else if(prevB.r>0&&br>prevB.r) pr={type:"reps",v:br,u:" reps"};
+      else if(prevB.v>0&&bv>prevB.v) pr={type:"volume",v:bv,u:" lb total"};
+    }else if(prevB.r>0&&br>prevB.r)  pr={type:"reps",v:br,u:" reps"};
+    if(pr){
+      S.prs.push({d:todayKey(viewDate),name,v:pr.v,mode,type:pr.type}); save();
+      confetti(); toast("🏆 NEW "+pr.type.toUpperCase()+" PR — "+name+": "+pr.v+pr.u+"!");
     }
     if(goal&&!wasEdit){                                          // progression outcome
       const top=wkTopSet(entry.sets)||{w:0,r:0};
@@ -2850,8 +2868,18 @@ saveWorkoutEntry=function(){
       if(!hit&&pm.m>=3) toast("Missed 3× — next session auto-deloads 10%");
     }
   }
+  if(typeof sessionUI==="function") sessionUI();
   if(wkQueue.length){ const next=wkQueue.shift(); setTimeout(()=>{ const def=WORKOUTS.find(w=>w.name===next); if(def) openWkLog(def.id); },350); }
 };
+const e1rm=(w,r)=>(w>0&&r>0)?Math.round(w*(1+r/30)):0;          // Epley estimated 1-rep max
+function wkBestsAll(name){                                       // historical bests across all days
+  const b={w:0,r:0,e:0,v:0};
+  Object.values(S.days).forEach(d=>(d.workouts||[]).forEach(x=>{ if(x.name!==name)return;
+    let v=0; (x.sets||[]).forEach(s=>{ const w=+s.w||0,r=+s.r||0;
+      if(w>b.w)b.w=w; if(r>b.r)b.r=r; const e=e1rm(w,r); if(e>b.e)b.e=e; v+=w*r; });
+    if(v>b.v)b.v=v; }));
+  return b;
+}
 
 /* ---------- confetti ---------- */
 function confetti(){
@@ -3011,8 +3039,8 @@ function openPRs(){
     document.body.appendChild(m); m.addEventListener("click",e=>{ if(e.target===m) closeModal("mPRs"); }); }
   $("prList").innerHTML=S.prs.length
     ? S.prs.slice().reverse().map(p=>`<div class="rankchip"><div><b style="font-size:13.5px">${esc(p.name)}</b>
-        <div class="subtle" style="font-size:11px">${p.d}</div></div>
-        <b class="num" style="color:var(--tangerine)">${p.v}${p.mode==="w"?" lb":" reps"}</b></div>`).join("")
+        <div class="subtle" style="font-size:11px">${p.d}${p.type?" · "+p.type+" PR":""}</div></div>
+        <b class="num" style="color:var(--tangerine)">${p.v}${p.mode==="w"?(p.type==="reps"?" reps":" lb"):" reps"}</b></div>`).join("")
     : `<p class="subtle">No PRs yet — every time you beat your best weight or reps on a lift, it lands here with confetti. 🎉</p>`;
   m.classList.add("open");
 }
@@ -3060,6 +3088,207 @@ function saveMeas(){
   if(li>=0&&S.meas[li].d===e.d) S.meas[li]=e; else S.meas.push(e);
   save(); closeModal("mMeas"); renderProgress(); toast("Measurements saved ✓");
 }
+
+/* ============================================================
+   SESSION MODE · e1RM CHARTS · PLATE CALC · NOTES · DRAFTS
+   ============================================================ */
+S.exNotes=S.exNotes||{};                 // per-exercise sticky notes ("seat 4, grip 3")
+if(S.session===undefined) S.session=null;// live workout session, survives reload
+if(S.plateBar===undefined) S.plateBar=45;
+let sessTick=null, draftT=null, noteT=null;
+
+/* ---------- live session ---------- */
+function startSession(){
+  S.session={start:Date.now(),d:todayKey(new Date())}; save();
+  renderWorkout(); toast("▶ Workout started — go get it");
+}
+function sessFmt(ms){
+  const s=Math.floor(ms/1000), h=Math.floor(s/3600), m=Math.floor(s%3600/60);
+  return (h?h+":":"")+String(m).padStart(h?2:1,"0")+":"+String(s%60).padStart(2,"0");
+}
+function sessionUI(){
+  const scr=$("scr-workout"); if(!scr) return;
+  let sb=$("sessCard");
+  if(!sb){ sb=document.createElement("div"); sb.id="sessCard"; scr.querySelector(".datebar").after(sb); }
+  /* a session from a previous day auto-finishes itself */
+  if(S.session&&S.session.d!==todayKey(new Date())){ S.session=null; save(); }
+  const isToday=todayKey(viewDate)===todayKey(new Date());
+  clearInterval(sessTick);
+  if(!isToday){ sb.innerHTML=""; return; }
+  if(S.session){
+    const d=wday(); let sets=0,vol=0;
+    (d.workouts||[]).forEach(w=>w.sets.forEach(s=>{sets++;vol+=(+s.w||0)*(+s.r||0);}));
+    sb.innerHTML=`<div class="card" style="background:var(--green-deep);color:#fff;padding:14px">
+      <div class="spread">
+        <div><div class="eyebrow" style="color:#9ec4ae">Workout in progress</div>
+          <b class="num" id="sessClock" style="font-size:26px">${sessFmt(Date.now()-S.session.start)}</b></div>
+        <button class="btn small" style="background:var(--tangerine)" onclick="finishSession()">Finish ✔</button>
+      </div>
+      <div class="sessgrid">
+        <div class="cell"><div class="v">${(d.workouts||[]).length}</div><div class="l">Exercises</div></div>
+        <div class="cell"><div class="v">${sets}</div><div class="l">Sets</div></div>
+        <div class="cell"><div class="v">${vol?vol.toLocaleString():0}</div><div class="l">lb volume</div></div>
+      </div></div>`;
+    sessTick=setInterval(()=>{ const c=$("sessClock"); if(c) c.textContent=sessFmt(Date.now()-S.session.start); else clearInterval(sessTick); },1000);
+  }else{
+    sb.innerHTML=`<button class="btn full" style="margin-bottom:12px;background:var(--tangerine)" onclick="startSession()">▶ Start workout</button>`;
+  }
+}
+function finishSession(){
+  if(!S.session) return;
+  const dur=Date.now()-S.session.start, d=wday(), tk=todayKey(new Date());
+  let sets=0,vol=0; (d.workouts||[]).forEach(w=>w.sets.forEach(s=>{sets++;vol+=(+s.w||0)*(+s.r||0);}));
+  const prs=S.prs.filter(p=>p.d===tk);
+  const prevKey=Object.keys(S.days).filter(k=>k<tk&&(S.days[k].workouts||[]).length).sort().pop();
+  let prevVol=0; if(prevKey) S.days[prevKey].workouts.forEach(w=>w.sets.forEach(s=>prevVol+=(+s.w||0)*(+s.r||0)));
+  const delta=prevVol?Math.round((vol/prevVol-1)*100):null;
+  const pts=sets+prs.length*4;
+  S.session=null; save(); renderWorkout();
+  let m=$("mSess");
+  if(!m){ m=document.createElement("div"); m.className="modal"; m.id="mSess";
+    m.innerHTML=`<div class="sheet"><div class="grab"></div><div id="sessSummary"></div>
+      <button class="btn full" style="margin-top:14px" onclick="closeModal('mSess')">Done</button></div>`;
+    document.body.appendChild(m); m.addEventListener("click",e=>{ if(e.target===m) closeModal("mSess"); }); }
+  $("sessSummary").innerHTML=`<h2 style="text-align:center">Workout complete 💪</h2>
+    <p class="subtle" style="text-align:center;margin-top:4px">${new Date().toLocaleDateString(undefined,{weekday:"long",month:"short",day:"numeric"})}</p>
+    <div class="stat3" style="margin-top:14px">
+      <div class="card"><div class="eyebrow">Duration</div><b class="num" style="font-size:19px">${sessFmt(dur)}</b></div>
+      <div class="card"><div class="eyebrow">Sets</div><b class="num" style="font-size:19px">${sets}</b></div>
+      <div class="card"><div class="eyebrow">Volume</div><b class="num" style="font-size:19px">${vol.toLocaleString()}</b></div>
+    </div>
+    ${delta!=null?`<div class="goalbanner">${delta>=0?"📈":"📉"} <b class="num">${delta>=0?"+":""}${delta}%</b> volume vs your last workout (${prevVol.toLocaleString()} lb)</div>`:""}
+    ${prs.length?`<div class="card" style="margin-top:10px"><b>🏆 PRs this workout</b>${prs.map(p=>
+      `<div class="prline"><span style="flex:1">${esc(p.name)}${p.type?" · "+p.type:""}</span><b class="num" style="color:var(--tangerine)">${p.v}${p.type==="reps"||p.mode==="r"?" reps":" lb"}</b></div>`).join("")}</div>`
+      :`<p class="subtle" style="text-align:center;margin-top:10px">No PRs today — deposits in the bank. They compound.</p>`}
+    <p class="subtle" style="text-align:center;margin-top:10px">🏅 +${pts} Lift Rank points earned</p>`;
+  m.classList.add("open");
+  if(prs.length) confetti();
+}
+
+/* ---------- e1RM / progress chart per exercise ---------- */
+function openExChart(name){
+  const def=WORKOUTS.find(w=>w.name===name)||{mode:"w"};
+  const mode=def.mode;
+  const pts=Object.keys(S.days).sort().map(k=>{
+    const e=(S.days[k].workouts||[]).find(w=>w.name===name); if(!e) return null;
+    let v=0; e.sets.forEach(s=>{ const val=mode==="w"?e1rm(+s.w||0,+s.r||0):(mode==="r"?(+s.r||0):(+s.min||0)); if(val>v)v=val; });
+    return v>0?{k,v}:null; }).filter(Boolean);
+  const b=wkBestsAll(name);
+  const unit=mode==="w"?"est. 1RM (lb)":mode==="r"?"best reps":"minutes";
+  let m=$("mExChart");
+  if(!m){ m=document.createElement("div"); m.className="modal"; m.id="mExChart";
+    m.innerHTML=`<div class="sheet"><div class="grab"></div>
+      <div class="spread"><h2 id="ecTitle" style="font-size:18px"></h2><button class="chip" onclick="closeModal('mExChart')">Close</button></div>
+      <div id="ecBody" style="margin-top:10px"></div></div>`;
+    document.body.appendChild(m); m.addEventListener("click",e=>{ if(e.target===m) closeModal("mExChart"); }); }
+  $("ecTitle").textContent=name;
+  let chart="";
+  if(pts.length>=2){
+    const W=320,H=130,pad=10, vs=pts.map(p=>p.v), mn=Math.min(...vs), mx=Math.max(...vs), sp=(mx-mn)||1;
+    const xy=pts.map((p,i)=>[pad+i*(W-2*pad)/(pts.length-1), H-pad-(p.v-mn)/sp*(H-2*pad)]);
+    chart=`<svg viewBox="0 0 ${W} ${H+18}" style="width:100%">
+      <polyline points="${xy.map(p=>p.join(",")).join(" ")}" fill="none" stroke="var(--green)" stroke-width="2.5" stroke-linejoin="round"/>
+      ${xy.map((p,i)=>`<circle cx="${p[0]}" cy="${p[1]}" r="3.4" fill="${pts[i].v>=mx?"var(--tangerine)":"var(--green)"}"/>`).join("")}
+      <text x="${pad}" y="${H+13}" font-size="9" fill="var(--ink-soft)">${pts[0].k}</text>
+      <text x="${W-pad}" y="${H+13}" font-size="9" fill="var(--ink-soft)" text-anchor="end">${pts[pts.length-1].k}</text>
+    </svg><p class="subtle" style="font-size:11px">${unit} over time — orange dot is your all-time best</p>`;
+  }else chart=`<p class="subtle">Log this exercise on two different days and a strength curve appears here.</p>`;
+  $("ecBody").innerHTML=`${mode==="w"?`<div class="stat3">
+      <div class="card"><div class="eyebrow">Best weight</div><b class="num" style="font-size:17px">${b.w||"–"}</b></div>
+      <div class="card"><div class="eyebrow">Best e1RM</div><b class="num" style="font-size:17px">${b.e||"–"}</b></div>
+      <div class="card"><div class="eyebrow">Best reps</div><b class="num" style="font-size:17px">${b.r||"–"}</b></div>
+    </div>`:""}
+    <div class="card">${chart}</div>
+    <div class="card"><b>Recent sessions</b>${pts.slice(-6).reverse().map(p=>
+      `<div class="prline"><span style="flex:1">${p.k}</span><b class="num">${p.v}${mode==="w"?" lb e1RM":mode==="r"?" reps":" min"}</b></div>`).join("")||"<p class='subtle'>None yet.</p>"}</div>`;
+  m.classList.add("open");
+}
+/* add a 📈 chip to each logged-exercise card */
+const _renderWorkout2=renderWorkout;
+renderWorkout=function(){
+  _renderWorkout2();
+  sessionUI();
+  const d=wday();
+  [...$("wkList").children].forEach((card,i)=>{
+    const row=card.querySelector(".row"), w=d.workouts[i];
+    if(!row||!w||card.querySelector(".ch-chart")) return;
+    const b=document.createElement("button"); b.className="chip ch-chart"; b.textContent="📈";
+    b.onclick=()=>openExChart(w.name);
+    row.insertBefore(b,row.firstChild);
+  });
+};
+
+/* ---------- plate / stack calculator ---------- */
+function openPlates(){
+  const firstW=+([...$("wkSetRows").children].map(r=>r.querySelector(".wk-w")).filter(Boolean).map(i=>+i.value||0).find(v=>v>0)||0);
+  if(!firstW){ toast("Enter a working weight first"); return; }
+  let out=$("wkPlateOut");
+  if(!out){ out=document.createElement("div"); out.id="wkPlateOut"; out.className="goalbanner";
+    $("wkWarmBtn").parentNode.insertBefore(out,$("wkWarmBtn")); }
+  const bars=[["45 lb bar",45],["20 lb Smith",20],["Dumbbell / stack",0]];
+  const bar=S.plateBar;
+  let body;
+  if(bar===0) body=`Grab the <b class="num">${firstW} lb</b> dumbbells, or set the machine pin to <b class="num">${firstW}</b>.`;
+  else if(firstW<bar) body=`${firstW} lb is lighter than the bar — use dumbbells or the empty bar.`;
+  else{
+    let side=(firstW-bar)/2, plates=[], rem=side;
+    [45,35,25,10,5,2.5].forEach(p=>{ while(rem>=p-0.001){ plates.push(p); rem-=p; } });
+    body=`<b class="num">${firstW} lb</b> = ${bar} lb bar + <b class="num">${plates.length?plates.join(" + "):"nothing"}</b> per side`
+      +(rem>0.01?` <span class="subtle">(+${rem.toFixed(1)} lb short — round to ${firstW-rem*2} or ${firstW-rem*2+5})</span>`:"");
+  }
+  out.innerHTML=`<div class="row" style="flex-wrap:wrap;gap:6px;margin-bottom:8px">${bars.map(([l,v])=>
+      `<button class="chip ${bar===v?"on":""}" onclick="S.plateBar=${v};save();openPlates()">${l}</button>`).join("")}</div>🏋️ ${body}`;
+}
+
+/* ---------- per-exercise notes + draft autosave in the logger ---------- */
+function wkCollectRows(){
+  return [...$("wkSetRows").children].map(r=>{
+    if(wkCur.mode==="t") return {min:r.querySelector(".wk-min")?r.querySelector(".wk-min").value:"",w:r.querySelector(".wk-w")?r.querySelector(".wk-w").value:""};
+    return {w:r.querySelector(".wk-w")?r.querySelector(".wk-w").value:"",r:r.querySelector(".wk-r")?r.querySelector(".wk-r").value:""};
+  });
+}
+function wkDraftSave(){
+  clearTimeout(draftT);
+  draftT=setTimeout(()=>{ if(!wkCur||!$("mWkLog").classList.contains("open")) return;
+    S.draft={name:wkCur.name,edit:wkEditIdx,d:todayKey(viewDate),sets:wkCollectRows()}; save(); },400);
+}
+const _openWkLog3=openWkLog;
+openWkLog=function(id,editIdx){
+  _openWkLog3(id,editIdx);
+  /* restore an unsaved draft (e.g. app closed mid-exercise) */
+  const dr=S.draft;
+  if(dr&&dr.name===wkCur.name&&dr.d===todayKey(viewDate)&&(dr.edit==null)===(wkEditIdx==null)){
+    $("wkSetRows").innerHTML=""; dr.sets.forEach(s=>wkAddSet(s)); wkDecorateRows();
+    toast("Restored unsaved sets ✓");
+  }
+  /* draft-save on every keystroke in the set rows */
+  $("wkSetRows").addEventListener("input",wkDraftSave);
+  /* plate calc button (weighted moves only) */
+  const oldP=$("wkPlateBtn"); if(oldP) oldP.remove();
+  const oldPO=$("wkPlateOut"); if(oldPO) oldPO.remove();
+  if(wkCur.mode==="w"&&$("wkWarmBtn")){
+    const btn=document.createElement("button");
+    btn.id="wkPlateBtn"; btn.className="btn small ghost"; btn.style.cssText="margin-top:10px;margin-right:8px";
+    btn.textContent="🏋️ Plates"; btn.onclick=openPlates;
+    $("wkWarmBtn").after(btn);
+  }
+  /* sticky note — autosaves as you type */
+  const oldN=$("exNote"); if(oldN) oldN.remove();
+  const ta=document.createElement("textarea");
+  ta.id="exNote"; ta.className="exnote"; ta.rows=2;
+  ta.placeholder="Notes for this machine — seat position, grip, cues… (autosaves)";
+  ta.value=S.exNotes[wkCur.name]||"";
+  ta.addEventListener("input",()=>{ clearTimeout(noteT); const nm=wkCur.name, v=ta.value;
+    noteT=setTimeout(()=>{ if(v.trim()) S.exNotes[nm]=v; else delete S.exNotes[nm]; save(); },500); });
+  $("wkSetRows").before(ta);
+  /* chart shortcut in the logger */
+  const meta=$("wkLogMeta");
+  if(!$("wkMetaChart")){ const cb=document.createElement("button"); cb.id="wkMetaChart"; cb.className="chip";
+    cb.style.cssText="margin-left:8px;font-size:11px"; meta.after(cb); }
+  $("wkMetaChart").textContent="📈 History & chart";
+  $("wkMetaChart").onclick=()=>openExChart(wkCur.name);
+};
+
 </script>
 </body>
 </html>
