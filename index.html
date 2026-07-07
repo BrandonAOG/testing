@@ -114,6 +114,27 @@ nav .fab span{position:absolute;top:-22px;left:50%;transform:translateX(-50%);wi
 .foodresult{display:flex;justify-content:space-between;align-items:center;padding:12px 4px;border-bottom:1px solid var(--line);width:100%;text-align:left}
 .foodresult .g small{color:var(--ink-soft)}
 .foodresult .kc{font-family:var(--mono);font-weight:700;color:var(--green)}
+/* --- progressive overload / rank / timer --- */
+.goalbanner{border:1.5px solid var(--banner-line);background:var(--banner-bg);border-radius:14px;padding:11px 13px;font-size:13.5px;line-height:1.45;margin-top:10px}
+.goalbanner b.num{font-size:14px}
+.wk-chk{flex:0 0 22px;text-align:center;font-weight:800;font-size:16px}
+.resttimer{position:fixed;bottom:76px;left:50%;transform:translateX(-50%);width:calc(100% - 24px);max-width:496px;background:var(--green-deep);color:#fff;border-radius:16px;padding:10px 14px;display:none;align-items:center;gap:10px;z-index:60;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+.resttimer.open{display:flex}
+.resttimer .rt-clock{font-family:var(--mono);font-size:22px;font-weight:800;flex:1}
+.resttimer .chip{border-color:rgba(255,255,255,.35);color:#fff;padding:5px 10px;font-size:12px}
+.resttimer .chip.on{background:#fff;color:var(--green-deep);border-color:#fff}
+.resttimer .rt-bar{position:absolute;left:0;bottom:0;height:3px;background:var(--tangerine);border-radius:0 0 0 16px;transition:width 1s linear}
+.rankchip{display:flex;align-items:center;justify-content:space-between;padding:8px 2px;border-bottom:1px solid var(--line-soft);font-size:13px}
+.rankchip:last-child{border-bottom:none}
+.rankchip .tier{font-weight:800;font-size:12px;padding:3px 10px;border-radius:999px;color:#fff}
+.rankchip .rk-bar{height:4px;border-radius:99px;background:var(--line-soft);overflow:hidden;margin-top:4px}
+.rankchip .rk-bar i{display:block;height:100%;border-radius:99px}
+.weekdots{display:flex;gap:6px}
+.weekdots i{width:14px;height:14px;border-radius:50%;border:2px solid var(--line);display:block}
+.weekdots i.on{background:var(--tangerine);border-color:var(--tangerine)}
+.confetti-bit{position:fixed;top:-12px;width:9px;height:14px;z-index:200;pointer-events:none;animation:cfall 2.4s cubic-bezier(.2,.6,.4,1) forwards}
+@keyframes cfall{to{transform:translateY(105vh) rotate(720deg);opacity:.7}}
+@media (prefers-reduced-motion:reduce){.confetti-bit{display:none}}
 /* --- exercise pictograms --- */
 .foodresult.wk{gap:10px;justify-content:flex-start}
 .foodresult.wk .g{flex:1;min-width:0}
@@ -2705,6 +2726,340 @@ if("serviceWorker" in navigator && location.protocol.startsWith("http")){
 }
 renderAll();
 if(!S.profile){ go("settings"); toast("Set up your profile to get your daily budget"); }
+
+/* ============================================================
+   LIFT RANK + PROGRESSIVE OVERLOAD ENGINE (patch layer)
+   ============================================================ */
+S.prog=S.prog||{};        // per-exercise progression state {misses}
+S.prs=S.prs||[];          // PR history [{d,name,v,mode}]
+S.routines=S.routines||[];// [{name, ex:[exercise names]}]
+S.meas=S.meas||[];        // [{d, waist, hips, chest, arm, thigh}]
+S.wkWeekGoal=S.wkWeekGoal||3;
+S.restSec=S.restSec||90;
+
+const WK_UPPER=["Chest","Back","Shoulders","Biceps","Triceps","Forearms"];
+const wkRange=g=>WK_UPPER.includes(g)?[8,12]:[15,25];   // upper 8–12, core/legs 15–25
+const round5=v=>Math.max(5,Math.round(v/5)*5);
+let wkGoal=null, wkQueue=[], wkVolGroup="All";
+
+function wkTopSet(sets){ let t=null; (sets||[]).forEach(s=>{ const w=+s.w||0,r=+s.r||0; if(r>0&&(!t||w>t.w||(w===t.w&&r>t.r))) t={w,r}; }); return t; }
+function wkPRbest(name,mode){ let b=0; Object.values(S.days).forEach(d=>(d.workouts||[]).forEach(w=>{ if(w.name===name)(w.sets||[]).forEach(s=>{ const v=mode==="w"?(+s.w||0):(+s.r||0); if(v>b)b=v; }); })); return b; }
+
+/* ---------- double-progression target ---------- */
+function wkTarget(name){
+  const def=WORKOUTS.find(w=>w.name===name); if(!def||def.mode==="t") return null;
+  const last=wkLast(name); if(!last) return null;
+  const top=wkTopSet(last.sets); if(!top) return null;
+  const [lo,hi]=wkRange(def.group), pm=S.prog[name]||{m:0};
+  if(def.mode==="r"){ // bodyweight: chase reps
+    return {mode:"r",w:0,r:top.r+1,lo,hi,last:top,deload:false,levelUp:top.r>=hi};
+  }
+  if(pm.m>=3) return {mode:"w",w:round5(top.w*0.9),r:lo,lo,hi,last:top,deload:true};
+  if(top.r>=hi) return {mode:"w",w:top.w+5,r:lo,lo,hi,last:top,deload:false,levelUp:true};
+  return {mode:"w",w:top.w,r:Math.max(lo,top.r+1),lo,hi,last:top,deload:false};
+}
+function wkGoalStr(g){ return g.mode==="r" ? g.r+" reps" : g.w+" lb × "+g.r; }
+
+/* ---------- set-row decoration: ✓/✗ + rest-timer autostart ---------- */
+function wkCheckRow(row){
+  const el=row.querySelector(".wk-chk"); if(!el) return;
+  const rI=row.querySelector(".wk-r"), wI=row.querySelector(".wk-w");
+  if(!wkGoal||!rI){ el.textContent=""; return; }
+  const r=+rI.value||0, w=wI?(+wI.value||0):0;
+  if(!r){ el.textContent=""; return; }
+  const hit=wkGoal.mode==="r" ? r>=wkGoal.r : (w>=wkGoal.w&&r>=wkGoal.r);
+  el.textContent=hit?"✓":"✗"; el.style.color=hit?"var(--green)":"var(--red)";
+}
+function wkDecorateRows(){
+  [...$("wkSetRows").children].forEach(row=>{
+    if(!row.querySelector(".wk-chk")){
+      const sp=document.createElement("span"); sp.className="wk-chk";
+      row.insertBefore(sp,row.querySelector(".del"));
+      row.querySelectorAll("input").forEach(inp=>{
+        inp.addEventListener("input",()=>wkCheckRow(row));
+        inp.addEventListener("change",()=>{ if(inp.classList.contains("wk-r")||inp.classList.contains("wk-min")){ if(+inp.value>0) startRest(S.restSec); } });
+      });
+    }
+    wkCheckRow(row);
+  });
+}
+const _wkAddSet=wkAddSet;
+wkAddSet=function(s){ _wkAddSet(s); wkDecorateRows(); };
+
+/* ---------- logger: goal banner + prefilled targets + warm-up ---------- */
+const _openWkLog=openWkLog;
+openWkLog=function(id,editIdx){
+  _openWkLog(id,editIdx);
+  wkGoal=(wkEditIdx==null)?wkTarget(wkCur.name):null;
+  const b=$("wkLogLast");
+  if(wkGoal){
+    b.style.display="";
+    const lastStr=wkGoal.mode==="r"?wkGoal.last.r+" reps":wkGoal.last.w+" lb × "+wkGoal.last.r;
+    b.className="goalbanner";
+    b.innerHTML=(wkGoal.deload
+      ? `😮‍💨 Missed 3 sessions in a row — <b>deload week.</b><br>Last: <b class="num">${lastStr}</b> → Today: <b class="num">${wkGoalStr(wkGoal)}</b>. Reset, then climb back.`
+      : wkGoal.levelUp
+        ? `⬆️ You topped the ${wkGoal.lo}–${wkGoal.hi} rep range!<br>Last: <b class="num">${lastStr}</b> → Today's goal: <b class="num">${wkGoalStr(wkGoal)}</b>${wkGoal.mode==="r"?"":" (+5 lb, back to "+wkGoal.lo+")"}`
+        : `🎯 Last: <b class="num">${lastStr}</b> → Today's goal: <b class="num">${wkGoalStr(wkGoal)}</b>`)
+      +`<div class="subtle" style="font-size:11px;margin-top:4px">Rep range for ${esc(wkCur.group)}: ${wkGoal.lo}–${wkGoal.hi} · beat the goal on any set ✓</div>`;
+    [...$("wkSetRows").children].forEach(row=>{
+      const wI=row.querySelector(".wk-w"), rI=row.querySelector(".wk-r");
+      if(rI){ if(wI&&wkGoal.mode==="w") wI.value=wkGoal.w; rI.value=wkGoal.r; }
+    });
+  }
+  wkDecorateRows();
+  /* warm-up calculator button (weighted moves only) */
+  const old=$("wkWarmBtn"); if(old) old.parentNode.removeChild(old);
+  const oldOut=$("wkWarmOut"); if(oldOut) oldOut.parentNode.removeChild(oldOut);
+  if(wkCur.mode==="w"){
+    const btn=document.createElement("button");
+    btn.id="wkWarmBtn"; btn.className="btn small ghost"; btn.style.cssText="margin-top:10px;margin-right:8px";
+    btn.textContent="🔥 Warm-up sets"; btn.onclick=showWarmup;
+    const addBtn=$("wkSetRows").nextElementSibling;
+    addBtn.parentNode.insertBefore(btn,addBtn);
+  }
+};
+function showWarmup(){
+  const firstW=+([...$("wkSetRows").children].map(r=>r.querySelector(".wk-w")).filter(Boolean).map(i=>+i.value||0).find(v=>v>0)||0);
+  if(!firstW){ toast("Enter a working weight first"); return; }
+  let out=$("wkWarmOut");
+  if(!out){ out=document.createElement("div"); out.id="wkWarmOut"; out.className="goalbanner"; $("wkWarmBtn").parentNode.insertBefore(out,$("wkWarmBtn")); }
+  out.innerHTML=`<b>Warm-up for ${firstW} lb:</b><br><span class="num">${round5(firstW*.5)} lb × 8 &nbsp;→&nbsp; ${round5(firstW*.7)} lb × 5 &nbsp;→&nbsp; ${round5(firstW*.9)} lb × 2</span><br><span class="subtle" style="font-size:11px">Rest ~60s between warm-ups, then start your working sets.</span>`;
+}
+
+/* ---------- save hook: PR confetti, progression outcome, routine queue ---------- */
+const _saveWorkoutEntry=saveWorkoutEntry;
+saveWorkoutEntry=function(){
+  const name=wkCur.name, mode=wkCur.mode, goal=wkGoal, wasEdit=wkEditIdx!=null;
+  const prevPR=mode!=="t"?wkPRbest(name,mode):0;
+  _saveWorkoutEntry();
+  if($("mWkLog").classList.contains("open")) return;            // validation failed
+  const entry=wasEdit?wday().workouts[wkEditIdx]:wday().workouts[wday().workouts.length-1];
+  if(entry&&mode!=="t"){
+    let best=0; entry.sets.forEach(s=>{ const v=mode==="w"?(+s.w||0):(+s.r||0); if(v>best)best=v; });
+    if(prevPR>0&&best>prevPR){
+      S.prs.push({d:todayKey(viewDate),name,v:best,mode});
+      confetti(); toast("🏆 NEW PR — "+name+": "+best+(mode==="w"?" lb":" reps")+"!");
+    }
+    if(goal&&!wasEdit){                                          // progression outcome
+      const top=wkTopSet(entry.sets)||{w:0,r:0};
+      const hit=goal.mode==="r"?top.r>=goal.r:(top.w>=goal.w&&top.r>=goal.r);
+      const pm=S.prog[name]||{m:0};
+      pm.m=hit?0:pm.m+1;
+      S.prog[name]=pm; save();
+      if(!hit&&pm.m>=3) toast("Missed 3× — next session auto-deloads 10%");
+    }
+  }
+  if(wkQueue.length){ const next=wkQueue.shift(); setTimeout(()=>{ const def=WORKOUTS.find(w=>w.name===next); if(def) openWkLog(def.id); },350); }
+};
+
+/* ---------- confetti ---------- */
+function confetti(){
+  const cols=["#f2790f","#1f6f4a","#2f6fed","#d64545","#e8b40f","#8a5cf6"];
+  for(let i=0;i<70;i++){
+    const b=document.createElement("div"); b.className="confetti-bit";
+    b.style.cssText=`left:${Math.random()*100}vw;background:${cols[i%cols.length]};animation-delay:${Math.random()*.5}s;border-radius:${Math.random()>.5?"50%":"2px"}`;
+    document.body.appendChild(b); setTimeout(()=>b.remove(),3000);
+  }
+  if(navigator.vibrate) navigator.vibrate([80,40,120]);
+}
+
+/* ---------- rest timer ---------- */
+let rtEnd=0, rtTotal=0, rtTick=null;
+(function(){
+  const el=document.createElement("div"); el.className="resttimer"; el.id="restTimer";
+  el.innerHTML=`<span style="font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#9ec4ae">Rest</span>
+    <span class="rt-clock" id="rtClock">0:00</span>
+    ${[60,90,120].map(s=>`<button class="chip rt-p" data-s="${s}" onclick="startRest(${s},true)">${s}s</button>`).join("")}
+    <button class="chip" onclick="stopRest()">✕</button><i class="rt-bar" id="rtBar"></i>`;
+  document.body.appendChild(el);
+})();
+function startRest(sec,setDefault){
+  if(setDefault){ S.restSec=sec; save(); }
+  rtTotal=sec; rtEnd=Date.now()+sec*1000;
+  $("restTimer").classList.add("open");
+  document.querySelectorAll(".rt-p").forEach(b=>b.classList.toggle("on",+b.dataset.s===S.restSec));
+  clearInterval(rtTick); rtTick=setInterval(rtDraw,250); rtDraw();
+}
+function stopRest(){ clearInterval(rtTick); $("restTimer").classList.remove("open"); }
+function rtDraw(){
+  const left=Math.max(0,Math.ceil((rtEnd-Date.now())/1000));
+  $("rtClock").textContent=Math.floor(left/60)+":"+String(left%60).padStart(2,"0");
+  $("rtBar").style.width=(left/rtTotal*100)+"%";
+  if(left<=0){ stopRest(); rtBeep(); if(navigator.vibrate) navigator.vibrate([200,80,200]); toast("⏱ Rest over — next set!"); }
+}
+function rtBeep(){ try{ const c=new (window.AudioContext||window.webkitAudioContext)(); const o=c.createOscillator(),g=c.createGain(); o.connect(g); g.connect(c.destination); o.frequency.value=880; g.gain.setValueAtTime(.25,c.currentTime); g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.6); o.start(); o.stop(c.currentTime+.6);}catch(e){} }
+
+/* ---------- Lift Rank (metal tiers per muscle group) ---------- */
+const TIERS=[["Iron","#7a7f85"],["Bronze","#b0703c"],["Silver","#9aa7b4"],["Gold","#d9a514"],["Platinum","#5fc4c9"],["Diamond","#7aa7f2"]];
+const TIER_STEPS=[0,25,60,120,220,400];   // points per group
+function wkRankData(){
+  const pts={}; WK_GROUPS.slice(1).forEach(g=>pts[g]=0);
+  Object.values(S.days).forEach(d=>(d.workouts||[]).forEach(w=>{ if(pts[w.group]!=null) pts[w.group]+=(w.sets||[]).length; }));
+  S.prs.forEach(p=>{ const def=WORKOUTS.find(w=>w.name===p.name); if(def&&pts[def.group]!=null) pts[def.group]+=4; });
+  return Object.entries(pts).map(([g,p])=>{
+    let ti=0; TIER_STEPS.forEach((s,i)=>{ if(p>=s) ti=i; });
+    const next=TIER_STEPS[ti+1], prog=next?Math.min(1,(p-TIER_STEPS[ti])/(next-TIER_STEPS[ti])):1;
+    return {g,p,ti,tier:TIERS[ti][0],color:TIERS[ti][1],next,prog};
+  });
+}
+
+/* ---------- workout screen extras ---------- */
+const _renderWorkout=renderWorkout;
+renderWorkout=function(){
+  _renderWorkout();
+  const scr=$("scr-workout");
+  let ex=$("wkExtras");
+  if(!ex){ ex=document.createElement("div"); ex.id="wkExtras"; scr.appendChild(ex); }
+  /* week ring + streak + beat-average, inserted right under the stat row */
+  let wc=$("wkWeekCard");
+  if(!wc){ wc=document.createElement("div"); wc.id="wkWeekCard"; wc.className="card"; wc.style.padding="12px 14px";
+    scr.querySelector(".stat3").after(wc); }
+  const now=new Date(viewDate), dow=(now.getDay()+6)%7, mon=new Date(now); mon.setDate(now.getDate()-dow);
+  let dots="", wkDays=0;
+  for(let i=0;i<7;i++){ const d=new Date(mon); d.setDate(mon.getDate()+i); const dd=S.days[todayKey(d)];
+    const on=!!(dd&&(dd.workouts||[]).length); if(on) wkDays++; dots+=`<i class="${on?"on":""}"></i>`; }
+  let streak=0;                                            // consecutive weeks hitting the goal
+  for(let w=0;w<104;w++){ const m=new Date(mon); m.setDate(mon.getDate()-7*w); let c=0;
+    for(let i=0;i<7;i++){ const d=new Date(m); d.setDate(m.getDate()+i); const dd=S.days[todayKey(d)]; if(dd&&(dd.workouts||[]).length)c++; }
+    if(c>=S.wkWeekGoal) streak++;
+    else if(w===0) continue;                               // current week still in progress — doesn't break the streak
+    else break; }
+  const volToday=(wday().workouts||[]).reduce((a,w)=>a+w.sets.reduce((b,s)=>b+(+s.w||0)*(+s.r||0),0),0);
+  const prevVols=Object.entries(S.days).filter(([k,d])=>k<todayKey(viewDate)&&(d.workouts||[]).some(w=>w.sets.length))
+    .sort((a,b)=>a[0]<b[0]?-1:1).slice(-10)
+    .map(([k,d])=>d.workouts.reduce((a,w)=>a+w.sets.reduce((b,s)=>b+(+s.w||0)*(+s.r||0),0),0)).filter(v=>v>0);
+  const avg=prevVols.length?prevVols.reduce((a,b)=>a+b,0)/prevVols.length:0;
+  const beat=avg&&volToday?Math.round((volToday/avg-1)*100):null;
+  wc.innerHTML=`<div class="spread">
+      <div><div class="eyebrow">This week</div>
+        <div class="row" style="gap:10px;margin-top:5px"><span class="weekdots">${dots}</span>
+        <b class="num" style="font-size:13px">${wkDays}/${S.wkWeekGoal}</b></div></div>
+      <div style="text-align:right"><div class="eyebrow">${beat!=null?"Beat your avg":"Streak"}</div>
+        <b class="num" style="font-size:19px;color:${beat!=null?(beat>=0?"var(--green)":"var(--red)"):"var(--tangerine)"}">
+        ${beat!=null?(beat>=0?"+":"")+beat+"%":"🔥 "+streak+" wk"}</b></div>
+    </div>
+    <button class="chip" style="margin-top:8px;font-size:11px" onclick="setWeekGoal()">goal: ${S.wkWeekGoal} workouts/week ✎</button>`;
+  /* routines + rank + PRs + volume chart */
+  const rd=wkRankData().filter(r=>r.p>0).sort((a,b)=>b.p-a.p);
+  ex.innerHTML=`
+  <div class="card">
+    <div class="spread" style="margin-bottom:6px"><b>Routines</b>
+      <button class="btn small ghost" onclick="saveRoutine()">+ Save today as routine</button></div>
+    ${S.routines.length
+      ? `<div class="row" style="flex-wrap:wrap;gap:6px">${S.routines.map((r,i)=>
+          `<span class="row" style="gap:0"><button class="chip on" onclick="playRoutine(${i})">▶ ${esc(r.name)} (${r.ex.length})</button>
+           <button class="del" style="color:var(--red);padding:2px 6px" onclick="delRoutine(${i})">×</button></span>`).join("")}</div>
+        <p class="subtle" style="font-size:11px;margin-top:6px">Tap ▶ to queue every exercise in order — each save opens the next one.</p>`
+      : `<p class="subtle" style="font-size:12.5px">Log a workout, then save it as "Push Day" or "Leg Day" for one-tap repeats.</p>`}
+  </div>
+  <div class="card">
+    <div class="spread" style="margin-bottom:4px"><b>🏅 Lift Rank</b>
+      <button class="btn small ghost" onclick="openPRs()">🏆 PR history (${S.prs.length})</button></div>
+    ${rd.length ? rd.map(r=>`<div class="rankchip"><div style="flex:1;margin-right:10px">
+        <div class="spread"><b>${esc(r.g)}</b><span class="tier" style="background:${r.color}">${r.tier}</span></div>
+        <div class="rk-bar"><i style="width:${Math.round(r.prog*100)}%;background:${r.color}"></i></div>
+        <div class="subtle" style="font-size:10.5px;margin-top:2px">${r.p} pts${r.next?" · "+(r.next-r.p)+" to "+TIERS[r.ti+1][0]:" · MAX"}</div>
+      </div></div>`).join("")
+      : `<p class="subtle" style="font-size:12.5px">Earn points with every set and PR. Climb Iron → Bronze → Silver → Gold → Platinum → Diamond, per muscle group.</p>`}
+  </div>
+  <div class="card">
+    <div class="spread" style="margin-bottom:8px"><b>Weekly volume</b><span class="subtle" style="font-size:11px">lb lifted / week</span></div>
+    <div class="row" style="flex-wrap:wrap;gap:6px;margin-bottom:8px">${["All",...WK_GROUPS.slice(1).filter(g=>g!=="Cardio")].map(g=>
+      `<button class="chip ${wkVolGroup===g?"on":""}" onclick="wkVolGroup='${g.replace(/'/g,"\\'")}';renderWorkout()">${g}</button>`).join("")}</div>
+    ${volChartSVG()}
+  </div>`;
+};
+function setWeekGoal(){ const v=prompt("Workouts per week goal (1–7):",S.wkWeekGoal); const n=+v; if(n>=1&&n<=7){ S.wkWeekGoal=n; save(); renderWorkout(); } }
+function volChartSVG(){
+  const weeks=[], now=new Date(), dow=(now.getDay()+6)%7, mon=new Date(now); mon.setDate(now.getDate()-dow);
+  for(let w=7;w>=0;w--){ const m=new Date(mon); m.setDate(mon.getDate()-7*w); let v=0;
+    for(let i=0;i<7;i++){ const d=new Date(m); d.setDate(m.getDate()+i); const dd=S.days[todayKey(d)];
+      if(dd)(dd.workouts||[]).forEach(x=>{ if(wkVolGroup==="All"||x.group===wkVolGroup) x.sets.forEach(s=>v+=(+s.w||0)*(+s.r||0)); }); }
+    weeks.push({l:(m.getMonth()+1)+"/"+m.getDate(),v}); }
+  const mx=Math.max(...weeks.map(w=>w.v),1), bw=32, gap=8, pad=6, H=120;
+  return `<svg viewBox="0 0 ${pad*2+8*(bw+gap)} ${H+22}" style="width:100%">
+    ${weeks.map((w,i)=>{ const h=Math.max(2,w.v/mx*H), x=pad+i*(bw+gap);
+      return `<rect x="${x}" y="${H-h}" width="${bw}" height="${h}" rx="5" fill="${i===7?"var(--tangerine)":"var(--green)"}" opacity="${i===7?1:.55}"/>
+        ${w.v?`<text x="${x+bw/2}" y="${H-h-4}" text-anchor="middle" font-size="8.5" fill="var(--ink-soft)" font-family="var(--mono)">${w.v>=1000?(w.v/1000).toFixed(1)+"k":w.v}</text>`:""}
+        <text x="${x+bw/2}" y="${H+14}" text-anchor="middle" font-size="8.5" fill="var(--ink-soft)">${w.l}</text>`; }).join("")}
+  </svg><p class="subtle" style="font-size:11px;margin-top:4px">Flat bars for 3+ weeks = plateau — the goal engine will push you through it.</p>`;
+}
+
+/* ---------- routines ---------- */
+function saveRoutine(){
+  const ws=wday().workouts||[];
+  if(!ws.length){ toast("Log today's workout first, then save it"); return; }
+  const name=prompt("Name this routine:","Push Day"); if(!name) return;
+  S.routines.push({name:name.trim(),ex:ws.map(w=>w.name)}); save(); renderWorkout(); toast("Routine saved ✓");
+}
+function delRoutine(i){ if(confirm("Delete \""+S.routines[i].name+"\"?")){ S.routines.splice(i,1); save(); renderWorkout(); } }
+function playRoutine(i){
+  const r=S.routines[i]; wkQueue=r.ex.slice();
+  toast("▶ "+r.name+" — "+wkQueue.length+" exercises queued");
+  const first=wkQueue.shift(); const def=WORKOUTS.find(w=>w.name===first);
+  if(def) openWkLog(def.id);
+}
+
+/* ---------- PR history ---------- */
+function openPRs(){
+  let m=$("mPRs");
+  if(!m){ m=document.createElement("div"); m.className="modal"; m.id="mPRs";
+    m.innerHTML=`<div class="sheet"><div class="grab"></div>
+      <div class="spread"><h2>🏆 PR history</h2><button class="chip" onclick="closeModal('mPRs')">Close</button></div>
+      <div id="prList" style="margin-top:10px"></div></div>`;
+    document.body.appendChild(m); m.addEventListener("click",e=>{ if(e.target===m) closeModal("mPRs"); }); }
+  $("prList").innerHTML=S.prs.length
+    ? S.prs.slice().reverse().map(p=>`<div class="rankchip"><div><b style="font-size:13.5px">${esc(p.name)}</b>
+        <div class="subtle" style="font-size:11px">${p.d}</div></div>
+        <b class="num" style="color:var(--tangerine)">${p.v}${p.mode==="w"?" lb":" reps"}</b></div>`).join("")
+    : `<p class="subtle">No PRs yet — every time you beat your best weight or reps on a lift, it lands here with confetti. 🎉</p>`;
+  m.classList.add("open");
+}
+
+/* ---------- body measurements (Progress tab) ---------- */
+const _renderProgress=renderProgress;
+renderProgress=function(){
+  _renderProgress();
+  let c=$("measCard");
+  if(!c){ c=document.createElement("div"); c.className="card"; c.id="measCard"; $("scr-progress").appendChild(c); }
+  const last=S.meas[S.meas.length-1];
+  const F=["waist","hips","chest","arm","thigh"];
+  c.innerHTML=`<div class="spread"><b>Body measurements</b>
+      <button class="btn small ghost" onclick="openMeas()">+ Log</button></div>
+    ${last?`<div class="row" style="flex-wrap:wrap;gap:6px;margin-top:10px">${F.filter(f=>last[f]).map(f=>
+        `<span class="chip">${f}: <b class="num">${last[f]}"</b></span>`).join("")}</div>
+      <p class="subtle" style="font-size:11px;margin-top:6px">Last logged ${last.d}${S.meas.length>1?deltaStr(F):""}</p>`
+      :`<p class="subtle" style="font-size:12.5px;margin-top:8px">Track waist, hips, chest, arms & thighs — inches move even when the scale doesn't.</p>`}`;
+};
+function deltaStr(F){
+  const a=S.meas[S.meas.length-2], b=S.meas[S.meas.length-1], out=[];
+  F.forEach(f=>{ if(a[f]&&b[f]){ const d=+(b[f]-a[f]).toFixed(1); if(d) out.push(f+" "+(d>0?"+":"")+d+'"'); } });
+  return out.length?" · since prior: "+out.join(", "):"";
+}
+function openMeas(){
+  let m=$("mMeas");
+  if(!m){ m=document.createElement("div"); m.className="modal"; m.id="mMeas";
+    m.innerHTML=`<div class="sheet"><div class="grab"></div>
+      <div class="spread"><h2>Measurements</h2><button class="chip" onclick="closeModal('mMeas')">Close</button></div>
+      <p class="subtle" style="margin-top:4px">Inches — leave blank to skip. Measure relaxed, same time of day.</p>
+      ${["waist","hips","chest","arm","thigh"].map(f=>`<label class="f">${f[0].toUpperCase()+f.slice(1)}</label>
+        <input class="f num" id="ms_${f}" type="number" step="0.1" inputmode="decimal" placeholder="in">`).join("")}
+      <button class="btn full" style="margin-top:14px" onclick="saveMeas()">Save measurements</button></div>`;
+    document.body.appendChild(m); m.addEventListener("click",e=>{ if(e.target===m) closeModal("mMeas"); }); }
+  const last=S.meas[S.meas.length-1]||{};
+  ["waist","hips","chest","arm","thigh"].forEach(f=>$("ms_"+f).value=last[f]||"");
+  m.classList.add("open");
+}
+function saveMeas(){
+  const e={d:todayKey(new Date())};
+  let any=false;
+  ["waist","hips","chest","arm","thigh"].forEach(f=>{ const v=+$("ms_"+f).value; if(v>0){ e[f]=v; any=true; } });
+  if(!any){ toast("Enter at least one measurement"); return; }
+  const li=S.meas.length-1;
+  if(li>=0&&S.meas[li].d===e.d) S.meas[li]=e; else S.meas.push(e);
+  save(); closeModal("mMeas"); renderProgress(); toast("Measurements saved ✓");
+}
 </script>
 </body>
 </html>
