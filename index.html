@@ -2907,26 +2907,16 @@ function restForCur(){                       // adaptive rest: level base, +30s 
     <span class="rt-clock" id="rtClock">0:00</span>
     ${LEVELS.map(([id,l,s])=>`<button class="chip rt-p" data-l="${id}" title="${id} · ${s}s" onclick="setLevel('${id}')">${l}·${s}s</button>`).join("")}
     <button class="chip" onclick="rtEnd+=30000;rtTotal+=30;rtDraw()">+30</button>
-    <button class="chip" id="rtSnd" onclick="cycleSound()"></button>
+    <button class="chip" id="rtSnd" onclick="S.sound=!S.sound;save();$('rtSnd').textContent=S.sound?'🔔':'🔕';toast(S.sound?'Chime on':'Chime off — timer stays visual (good while playing music)')"></button>
     <button class="chip" onclick="stopRest()">✕</button><i class="rt-bar" id="rtBar"></i>`;
   document.body.appendChild(el);
 })();
 function setLevel(id){ S.level=id; save(); startRest(restForCur()); toast(id[0].toUpperCase()+id.slice(1)+" pace — "+restForCur()+"s rests"); }
-const SND_ICON={loud:"🔔",mix:"🎵",off:"🔕"};
-function cycleSound(){
-  const order=["loud","mix","off"], m=order[(order.indexOf(soundMode())+1)%3];
-  S.sound=m; save(); $("rtSnd").textContent=SND_ICON[m];
-  toast(m==="loud"?"🔔 Loud — rings even on silent (may pause music)"
-       :m==="mix"?"🎵 Music-friendly — plays over your music without pausing it"
-       :"🔕 Off — visual timer only");
-  if(m==="mix") mixBell();          // preview inside the tap gesture (unlocks iOS audio too)
-  if(m==="loud") rtBeep();
-}
 function startRest(sec){
-  if(S.sound===undefined){ S.sound="loud"; save(); }
+  if(S.sound===undefined){ S.sound=true; save(); }
   rtTotal=sec; rtEnd=Date.now()+sec*1000;
   $("restTimer").classList.add("open");
-  $("rtSnd").textContent=SND_ICON[soundMode()];
+  $("rtSnd").textContent=S.sound?"🔔":"🔕";
   document.querySelectorAll(".rt-p").forEach(b=>b.classList.toggle("on",b.dataset.l===S.level));
   clearInterval(rtTick); rtTick=setInterval(rtDraw,250); rtDraw();
 }
@@ -2937,70 +2927,37 @@ function rtDraw(){
   $("rtBar").style.width=(left/rtTotal*100)+"%";
   if(left<=0){ stopRest(); rtBeep(); if(navigator.vibrate) navigator.vibrate([200,80,200]); toast("⏱ Rest over — next set!"); }
 }
-/* Chime plays through an <audio> element (media channel), NOT Web Audio.
-   On iPhone, Web Audio is muted by the ringer/silent switch, but media
-   playback rings through — same channel YouTube uses. The WAV is generated
-   in-code (three-note bell) so the app stays a single offline file, and it's
-   unlocked by the first tap since iOS requires a gesture before playback. */
-let chimeEl=null, chimeUnlocked=false;
-function buildChime(){
-  const SR=22050, DUR=1.4, N=Math.floor(SR*DUR), pcm=new Float32Array(N);
-  [[659.25,0],[830.61,.16],[987.77,.32]].forEach(([f,dt])=>{     // E5 → G#5 → B5
-    const s0=Math.floor(dt*SR);
-    for(let i=s0;i<N;i++){ const t=(i-s0)/SR;
-      pcm[i]+=Math.sin(2*Math.PI*f*t)*0.28*Math.exp(-t*4)*Math.min(1,t*90); }
-  });
-  const buf=new ArrayBuffer(44+N*2), v=new DataView(buf);
-  const ws=(o,s)=>{for(let i=0;i<s.length;i++)v.setUint8(o+i,s.charCodeAt(i));};
-  ws(0,"RIFF"); v.setUint32(4,36+N*2,true); ws(8,"WAVEfmt "); v.setUint32(16,16,true);
-  v.setUint16(20,1,true); v.setUint16(22,1,true); v.setUint32(24,SR,true);
-  v.setUint32(28,SR*2,true); v.setUint16(32,2,true); v.setUint16(34,16,true);
-  ws(36,"data"); v.setUint32(40,N*2,true);
-  for(let i=0;i<N;i++) v.setInt16(44+i*2,Math.max(-1,Math.min(1,pcm[i]))*32767,true);
-  let bin=""; const u8=new Uint8Array(buf);
-  for(let i=0;i<u8.length;i+=8192) bin+=String.fromCharCode.apply(null,u8.subarray(i,i+8192));
-  chimeEl=new Audio("data:audio/wav;base64,"+btoa(bin));
-  chimeEl.preload="auto"; chimeEl.setAttribute("playsinline","");
-}
-buildChime();
+/* pleasant three-note chime. iOS Safari blocks audio until a user gesture,
+   so we create & unlock the AudioContext on the first tap anywhere. */
+let audioCtx=null;
 function unlockAudio(){
-  if(chimeUnlocked||!chimeEl) return;
-  /* prime the element inside the user gesture: play muted, stop instantly */
-  chimeEl.muted=true;
-  const p=chimeEl.play();
-  if(p&&p.then) p.then(()=>{ chimeEl.pause(); chimeEl.currentTime=0; chimeEl.muted=false; chimeUnlocked=true; }).catch(()=>{ chimeEl.muted=false; });
-  else { chimeEl.pause(); chimeEl.currentTime=0; chimeEl.muted=false; chimeUnlocked=true; }
-}
-document.addEventListener("touchend",unlockAudio);
-document.addEventListener("click",unlockAudio);
-/* three chime modes — an iOS tradeoff you can't avoid, so the user picks:
-   loud = <audio> media channel: rings even on silent / no music open, but
-          claiming the session PAUSES background music.
-   mix  = Web Audio ringer channel: overlays on top of playing music without
-          pausing it, but the silent switch mutes it when no music is active.
-   off  = visual + vibrate only. */
-function soundMode(){ if(S.sound===true||S.sound===undefined) return "loud"; if(S.sound===false) return "off"; return S.sound; }
-let mixCtx=null;
-function mixBell(){
   try{
-    if(!mixCtx) mixCtx=new (window.AudioContext||window.webkitAudioContext)();
-    if(mixCtx.state==="suspended") mixCtx.resume();
-    const t0=mixCtx.currentTime;
-    [[659.25,0],[830.61,.16],[987.77,.32]].forEach(([f,dt])=>{
-      const o=mixCtx.createOscillator(), g=mixCtx.createGain();
-      o.type="sine"; o.frequency.value=f; o.connect(g); g.connect(mixCtx.destination);
+    if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state==="suspended") audioCtx.resume();
+    /* play a silent blip so iOS marks the context as user-activated */
+    const b=audioCtx.createBuffer(1,1,22050), s=audioCtx.createBufferSource();
+    s.buffer=b; s.connect(audioCtx.destination); s.start(0);
+    document.removeEventListener("touchend",unlockAudio); document.removeEventListener("click",unlockAudio);
+  }catch(e){}
+}
+document.addEventListener("touchend",unlockAudio,{once:false});
+document.addEventListener("click",unlockAudio,{once:false});
+function rtBeep(){
+  if(S.sound===false) return;                 // muted: visual + vibrate only
+  try{
+    if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state==="suspended") audioCtx.resume();
+    const t0=audioCtx.currentTime;
+    [[659.25,0],[830.61,.16],[987.77,.32]].forEach(([f,dt])=>{   // E5 → G#5 → B5 — a soft major-chord bell
+      const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+      o.type="sine"; o.frequency.value=f;
+      o.connect(g); g.connect(audioCtx.destination);
       g.gain.setValueAtTime(0.0001,t0+dt);
-      g.gain.exponentialRampToValueAtTime(0.25,t0+dt+.02);
+      g.gain.exponentialRampToValueAtTime(0.22,t0+dt+.02);
       g.gain.exponentialRampToValueAtTime(0.0001,t0+dt+.9);
       o.start(t0+dt); o.stop(t0+dt+1);
     });
   }catch(e){}
-}
-function rtBeep(){
-  const m=soundMode();
-  if(m==="off") return;
-  if(m==="mix"){ mixBell(); return; }
-  try{ chimeEl.currentTime=0; chimeEl.volume=0.9; chimeEl.play().catch(()=>{}); }catch(e){}
 }
 
 /* ---------- Lift Rank (metal tiers per muscle group) ---------- */
