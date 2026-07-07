@@ -2907,24 +2907,58 @@ function restForCur(){                       // adaptive rest: level base, +30s 
     <span class="rt-clock" id="rtClock">0:00</span>
     ${LEVELS.map(([id,l,s])=>`<button class="chip rt-p" data-l="${id}" title="${id} · ${s}s" onclick="setLevel('${id}')">${l}·${s}s</button>`).join("")}
     <button class="chip" onclick="rtEnd+=30000;rtTotal+=30;rtDraw()">+30</button>
+    <button class="chip" id="rtSnd" onclick="S.sound=!S.sound;save();$('rtSnd').textContent=S.sound?'🔔':'🔕';toast(S.sound?'Chime on':'Chime off — timer stays visual (good while playing music)')"></button>
     <button class="chip" onclick="stopRest()">✕</button><i class="rt-bar" id="rtBar"></i>`;
   document.body.appendChild(el);
 })();
 function setLevel(id){ S.level=id; save(); startRest(restForCur()); toast(id[0].toUpperCase()+id.slice(1)+" pace — "+restForCur()+"s rests"); }
 function startRest(sec){
+  if(S.sound===undefined){ S.sound=true; save(); }
   rtTotal=sec; rtEnd=Date.now()+sec*1000;
   $("restTimer").classList.add("open");
+  $("rtSnd").textContent=S.sound?"🔔":"🔕";
   document.querySelectorAll(".rt-p").forEach(b=>b.classList.toggle("on",b.dataset.l===S.level));
   clearInterval(rtTick); rtTick=setInterval(rtDraw,250); rtDraw();
 }
-function stopRest(){ clearInterval(rtTick); $("restTimer").classList.remove("open"); sessResume(); }
+function stopRest(){ clearInterval(rtTick); $("restTimer").classList.remove("open"); if(!(S.session&&S.session.manual)) sessResume(); if(typeof sessionUI==="function") sessionUI(); }
 function rtDraw(){
   const left=Math.max(0,Math.ceil((rtEnd-Date.now())/1000));
   $("rtClock").textContent=Math.floor(left/60)+":"+String(left%60).padStart(2,"0");
   $("rtBar").style.width=(left/rtTotal*100)+"%";
   if(left<=0){ stopRest(); rtBeep(); if(navigator.vibrate) navigator.vibrate([200,80,200]); toast("⏱ Rest over — next set!"); }
 }
-function rtBeep(){ try{ const c=new (window.AudioContext||window.webkitAudioContext)(); const o=c.createOscillator(),g=c.createGain(); o.connect(g); g.connect(c.destination); o.frequency.value=880; g.gain.setValueAtTime(.25,c.currentTime); g.gain.exponentialRampToValueAtTime(.001,c.currentTime+.6); o.start(); o.stop(c.currentTime+.6);}catch(e){} }
+/* pleasant three-note chime. iOS Safari blocks audio until a user gesture,
+   so we create & unlock the AudioContext on the first tap anywhere. */
+let audioCtx=null;
+function unlockAudio(){
+  try{
+    if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state==="suspended") audioCtx.resume();
+    /* play a silent blip so iOS marks the context as user-activated */
+    const b=audioCtx.createBuffer(1,1,22050), s=audioCtx.createBufferSource();
+    s.buffer=b; s.connect(audioCtx.destination); s.start(0);
+    document.removeEventListener("touchend",unlockAudio); document.removeEventListener("click",unlockAudio);
+  }catch(e){}
+}
+document.addEventListener("touchend",unlockAudio,{once:false});
+document.addEventListener("click",unlockAudio,{once:false});
+function rtBeep(){
+  if(S.sound===false) return;                 // muted: visual + vibrate only
+  try{
+    if(!audioCtx) audioCtx=new (window.AudioContext||window.webkitAudioContext)();
+    if(audioCtx.state==="suspended") audioCtx.resume();
+    const t0=audioCtx.currentTime;
+    [[659.25,0],[830.61,.16],[987.77,.32]].forEach(([f,dt])=>{   // E5 → G#5 → B5 — a soft major-chord bell
+      const o=audioCtx.createOscillator(), g=audioCtx.createGain();
+      o.type="sine"; o.frequency.value=f;
+      o.connect(g); g.connect(audioCtx.destination);
+      g.gain.setValueAtTime(0.0001,t0+dt);
+      g.gain.exponentialRampToValueAtTime(0.22,t0+dt+.02);
+      g.gain.exponentialRampToValueAtTime(0.0001,t0+dt+.9);
+      o.start(t0+dt); o.stop(t0+dt+1);
+    });
+  }catch(e){}
+}
 
 /* ---------- Lift Rank (metal tiers per muscle group) ---------- */
 const TIERS=[["Iron","#7a7f85"],["Bronze","#b0703c"],["Silver","#9aa7b4"],["Gold","#d9a514"],["Platinum","#5fc4c9"],["Diamond","#7aa7f2"]];
@@ -3132,10 +3166,26 @@ function renderSessStartOpts(){
       <span style="font-size:18px;color:var(--green)">${S.level===id?"✓":""}</span>
     </button>`).join("");
 }
+/* ---------- screen wake lock: display stays on during a session.
+     Uses only the native Wake Lock API — it does NOT touch the audio
+     session, so background music keeps playing. No hidden-video hacks. */
+let wakeLock=null;
+async function wakeAcquire(){
+  if(!("wakeLock" in navigator)||!S.session) return;
+  try{
+    wakeLock=await navigator.wakeLock.request("screen");
+    wakeLock.addEventListener("release",()=>{ wakeLock=null; });
+  }catch(e){ wakeLock=null; }
+}
+function wakeRelease(){ if(wakeLock){ wakeLock.release().catch(()=>{}); wakeLock=null; } }
+/* iOS releases the lock whenever the app is backgrounded — grab it back on return */
+document.addEventListener("visibilitychange",()=>{ if(!document.hidden&&S.session&&!wakeLock) wakeAcquire(); });
+
 function beginSession(){
-  closeModal("mSessStart");
+  const ms=$("mSessStart"); if(ms) ms.classList.remove("open");
   S.session={start:Date.now(),d:todayKey(new Date())}; save();
-  renderWorkout(); toast("▶ Workout started — "+restForCur()+"s rests · go get it");
+  wakeAcquire();
+  renderWorkout(); toast("▶ Workout started — "+restForCur()+"s rests"+(("wakeLock" in navigator)?" · ☀ screen stays awake":""));
 }
 function sessFmt(ms){
   const s=Math.floor(ms/1000), h=Math.floor(s/3600), m=Math.floor(s%3600/60);
@@ -3145,13 +3195,21 @@ function sessElapsed(){ if(!S.session) return 0;
   return Date.now()-S.session.start-(S.session.pausedMs||0)-(S.session.pausedAt?Date.now()-S.session.pausedAt:0); }
 function sessPause(){ if(S.session&&!S.session.pausedAt){ S.session.pausedAt=Date.now(); save(); const c=$("sessClock"); if(c) c.style.opacity=".45"; } }
 function sessResume(){ if(S.session&&S.session.pausedAt){ S.session.pausedMs=(S.session.pausedMs||0)+(Date.now()-S.session.pausedAt); S.session.pausedAt=null; save(); const c=$("sessClock"); if(c) c.style.opacity="1"; } }
+function sessTogglePause(){
+  if(!S.session) return;
+  if(S.session.pausedAt&&S.session.manual){ S.session.manual=false; sessResume(); toast("▶ Clock running"); }
+  else if(!S.session.pausedAt){ S.session.manual=true; sessPause(); toast("⏸ Paused — switching machines"); }
+  else { S.session.manual=true; save(); }   // was rest-paused; keep it held after timer ends
+  sessionUI();
+}
 function sessRestBtn(){ sessPause(); startRest(restForCur()); }
 function sessionUI(){
   const scr=$("scr-workout"); if(!scr) return;
   let sb=$("sessCard");
   if(!sb){ sb=document.createElement("div"); sb.id="sessCard"; scr.querySelector(".datebar").after(sb); }
   /* a session from a previous day auto-finishes itself */
-  if(S.session&&S.session.d!==todayKey(new Date())){ S.session=null; save(); }
+  if(S.session&&S.session.d!==todayKey(new Date())){ S.session=null; wakeRelease(); save(); }
+  else if(S.session&&!wakeLock) wakeAcquire();      // page was reloaded mid-session
   const isToday=todayKey(viewDate)===todayKey(new Date());
   clearInterval(sessTick);
   if(!isToday){ sb.innerHTML=""; return; }
@@ -3163,7 +3221,8 @@ function sessionUI(){
         <div><div class="eyebrow" style="color:#9ec4ae">Workout in progress · ${S.level}</div>
           <b class="num" id="sessClock" style="font-size:26px;${S.session.pausedAt?"opacity:.45":""}">${sessFmt(sessElapsed())}</b></div>
         <span class="row" style="gap:6px">
-          <button class="btn small ghost" style="color:#fff;border-color:rgba(255,255,255,.4)" onclick="sessRestBtn()">⏸ Rest ${restForCur()}s</button>
+          <button class="btn small ghost" style="color:#fff;border-color:rgba(255,255,255,.4)" onclick="sessTogglePause()">${S.session.pausedAt?"▶ Resume":"⏸ Pause"}</button>
+          <button class="btn small ghost" style="color:#fff;border-color:rgba(255,255,255,.4)" onclick="sessRestBtn()">Rest ${restForCur()}s</button>
           <button class="btn small" style="background:var(--tangerine)" onclick="finishSession()">Finish ✔</button>
         </span>
       </div>
@@ -3180,6 +3239,7 @@ function sessionUI(){
 function finishSession(){
   if(!S.session) return;
   sessResume();
+  wakeRelease();
   const dur=sessElapsed(), d=wday(), tk=todayKey(new Date());
   let sets=0,vol=0; (d.workouts||[]).forEach(w=>w.sets.forEach(s=>{sets++;vol+=(+s.w||0)*(+s.r||0);}));
   const prs=S.prs.filter(p=>p.d===tk);
