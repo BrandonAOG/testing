@@ -2919,7 +2919,8 @@ function cycleSound(){
   toast(m==="loud"?"🔔 Loud — rings even on silent (may pause music)"
        :m==="mix"?"🎵 Music-friendly — plays over your music without pausing it"
        :"🔕 Off — visual timer only");
-  if(m==="mix") mixBell();          // preview inside the tap gesture (unlocks iOS audio too)
+  if(m==="mix"){ mixBell(); if(S.session) mixKeepAlive(true); }  // preview + hold session if mid-workout
+  if(m!=="mix"&&!S.session) mixKeepAlive(false);
   if(m==="loud") rtBeep();
 }
 function startRest(sec){
@@ -2931,7 +2932,7 @@ function startRest(sec){
   document.querySelectorAll(".rt-p").forEach(b=>b.classList.toggle("on",b.dataset.l===S.level));
   clearInterval(rtTick); rtTick=setInterval(rtDraw,250); rtDraw();
 }
-function stopRest(){ clearInterval(rtTick); $("restTimer").classList.remove("open"); setTimeout(()=>mixKeepAlive(false),1500); if(!(S.session&&S.session.manual)) sessResume(); if(typeof sessionUI==="function") sessionUI(); }
+function stopRest(){ clearInterval(rtTick); $("restTimer").classList.remove("open"); if(!S.session) setTimeout(()=>mixKeepAlive(false),1500); if(!(S.session&&S.session.manual)) sessResume(); if(typeof sessionUI==="function") sessionUI(); }
 function rtDraw(){
   const left=Math.max(0,Math.ceil((rtEnd-Date.now())/1000));
   $("rtClock").textContent=Math.floor(left/60)+":"+String(left%60).padStart(2,"0");
@@ -2996,17 +2997,33 @@ function mixCtxReady(){
 }
 /* inaudible tone that holds our audio session open during the countdown,
    so the context is still alive (not suspended) when the bell fires */
+function mixKeepAliveStartTone(){
+  try{
+    const c=mixCtx, o=c.createOscillator(), g=c.createGain();
+    o.frequency.value=30; g.gain.value=0.001;        // effectively silent
+    o.connect(g); g.connect(c.destination); o.start();
+    return {o,g};
+  }catch(e){ return null; }
+}
 function mixKeepAlive(on){
   if(on){
     if(keepAlive) return;
-    try{
-      const c=mixCtxReady(), o=c.createOscillator(), g=c.createGain();
-      o.frequency.value=30; g.gain.value=0.001;      // effectively silent
-      o.connect(g); g.connect(c.destination); o.start();
-      keepAlive={o,g};
-    }catch(e){}
+    mixCtxReady();
+    keepAlive={tone:mixKeepAliveStartTone(),
+      /* iOS defers activating our session while Music is already playing —
+         keep retrying every 3s; when iOS finally lets us in, restart the
+         silent tone on the live context so the session stays held */
+      retry:setInterval(()=>{
+        if(!mixCtx||mixCtx.state!=="running"){
+          mixCtxReady();
+          if(keepAlive){ try{keepAlive.tone&&keepAlive.tone.o.stop()}catch(e){}
+            keepAlive.tone=mixKeepAliveStartTone(); }
+        }
+      },3000)};
   }else if(keepAlive){
-    try{keepAlive.o.stop()}catch(e){} keepAlive=null;
+    clearInterval(keepAlive.retry);
+    try{keepAlive.tone&&keepAlive.tone.o.stop()}catch(e){}
+    keepAlive=null;
   }
 }
 function mixBell(){
@@ -3255,6 +3272,7 @@ function beginSession(){
   const ms=$("mSessStart"); if(ms) ms.classList.remove("open");
   S.session={start:Date.now(),d:todayKey(new Date())}; save();
   wakeAcquire();
+  if(soundMode()==="mix") mixKeepAlive(true);        // hold the audio session for the whole workout
   renderWorkout(); toast("▶ Workout started — "+restForCur()+"s rests"+(("wakeLock" in navigator)?" · ☀ screen stays awake":""));
 }
 function sessFmt(ms){
@@ -3310,6 +3328,7 @@ function finishSession(){
   if(!S.session) return;
   sessResume();
   wakeRelease();
+  mixKeepAlive(false);
   const dur=sessElapsed(), d=wday(), tk=todayKey(new Date());
   let sets=0,vol=0; (d.workouts||[]).forEach(w=>w.sets.forEach(s=>{sets++;vol+=(+s.w||0)*(+s.r||0);}));
   const prs=S.prs.filter(p=>p.d===tk);
