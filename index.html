@@ -2429,8 +2429,91 @@ generic:{f:function(){
 }}
 };
 
+
+/* ---- Planet Fitness machine-specific figures ---- */
+XARCH.pecdeck={f:function(){
+  const eq=`<g class="xeq"><line x1="40" y1="61" x2="60" y2="61" stroke-width="5"/><line x1="50" y1="61" x2="50" y2="90"/></g>`;
+  const s={hd:[50,15],nk:[50,23],hp:[50,55],el:[36,29],ha:[25,32],el2:[64,29],ha2:[75,32],k1:[43,65],f1:[41,86],k2:[57,65],f2:[59,86]};
+  const e={hd:[50,15],nk:[50,23],hp:[50,55],el:[41,31],ha:[46,36],el2:[59,31],ha2:[54,36],k1:[43,65],f1:[41,86],k2:[57,65],f2:[59,86]};
+  return [eq+XFIG(s)+XDB([25,32],90)+XDB([75,32],90), eq+XFIG(e)+XDB([46,36],90)+XDB([54,36],90)];
+}};
+XARCH.reardeltmach={f:function(){ const fr=XARCH.pecdeck.f(); return [fr[1],fr[0]]; }};
+XARCH.machshoulderpress={f:function(){
+  const eq=XBACK(36,24,64)+XSEAT(42,66,18);
+  const s={hd:[44,26],nk:[44,34],hp:[43,62],el:[53,38],ha:[53,27],k1:[56,66],f1:[60,84],k2:[54,68],f2:[58,86]};
+  const e={hd:[44,26],nk:[44,34],hp:[43,62],el:[48,21],ha:[50,10],k1:[56,66],f1:[60,84],k2:[54,68],f2:[58,86]};
+  return [eq+XFIG(s)+XDB([53,27],0), eq+XFIG(e)+XDB([50,10],0)];
+}};
+XARCH.machcurl={f:function(){
+  const eq=XSEAT(38,66,18)+`<line class="xeq" x1="46" y1="49" x2="64" y2="58" stroke-width="5"/>`;
+  const s={hd:[40,26],nk:[40,34],hp:[38,62],el:[52,51],ha:[64,58],k1:[52,66],f1:[56,84],k2:[50,68],f2:[54,86]};
+  const e={hd:[40,26],nk:[40,34],hp:[38,62],el:[52,51],ha:[58,40],k1:[52,66],f1:[56,84],k2:[50,68],f2:[54,86]};
+  return [eq+XFIG(s)+XDB([64,58],40), eq+XFIG(e)+XDB([58,40],60)];
+}};
+XARCH.machtriext={f:function(){
+  const eq=XBACK(34,26,64)+XSEAT(40,66,18)+`<line class="xeq" x1="46" y1="42" x2="58" y2="48" stroke-width="5"/>`;
+  const s={hd:[40,26],nk:[40,34],hp:[39,62],el:[52,45],ha:[48,34],k1:[54,66],f1:[58,84],k2:[52,68],f2:[56,86]};
+  const e={hd:[40,26],nk:[40,34],hp:[39,62],el:[52,45],ha:[66,54],k1:[54,66],f1:[58,84],k2:[52,68],f2:[56,86]};
+  return [eq+XFIG(s)+XDB([48,34],60), eq+XFIG(e)+XDB([66,54],30)];
+}};
+XARCH.machlatraise={f:function(){
+  const eq=`<g class="xeq"><line x1="40" y1="61" x2="60" y2="61" stroke-width="5"/><line x1="50" y1="61" x2="50" y2="90"/></g>`;
+  const s={hd:[50,15],nk:[50,23],hp:[50,55],el:[42,36],ha:[41,48],el2:[58,36],ha2:[59,48],k1:[43,65],f1:[41,86],k2:[57,65],f2:[59,86]};
+  const e={hd:[50,15],nk:[50,23],hp:[50,55],el:[34,26],ha:[22,25],el2:[66,26],ha2:[78,25],k1:[43,65],f1:[41,86],k2:[57,65],f2:[59,86]};
+  return [eq+XFIG(s)+XDB([41,48],90)+XDB([59,48],90), eq+XFIG(e)+XDB([22,25],0)+XDB([78,25],0)];
+}};
+XARCH.assisted={f:function(){
+  const eq=`<g class="xeq"><line x1="22" y1="14" x2="78" y2="14" stroke-width="5"/><line x1="24" y1="14" x2="24" y2="90"/><line x1="76" y1="14" x2="76" y2="90"/></g>`;
+  const pad=y=>`<rect class="xw" x="38" y="${y}" width="24" height="5" rx="2.5"/>`;
+  const s={hd:[50,30],nk:[50,38],hp:[50,60],el:[43,26],ha:[42,16],el2:[57,26],ha2:[58,16],k1:[46,72],f1:[41,82],k2:[54,72],f2:[59,82]};
+  const e={hd:[50,20],nk:[50,28],hp:[50,50],el:[40,24],ha:[42,15],el2:[60,24],ha2:[58,15],k1:[46,62],f1:[41,72],k2:[54,62],f2:[59,72]};
+  return [eq+pad(72)+XFIG(s), eq+pad(62)+XFIG(e)];
+}};
+XARCH.glutepress={f:function(){
+  const eq=`<g class="xeq"><line x1="24" y1="34" x2="24" y2="90"/><line x1="24" y1="40" x2="34" y2="40" stroke-width="5"/></g>`;
+  const s={hd:[42,22],nk:[42,30],hp:[44,54],el:[34,38],ha:[27,40],k1:[43,72],f1:[42,90],k2:[52,68],f2:[50,82]};
+  const e={hd:[42,22],nk:[42,30],hp:[44,54],el:[34,38],ha:[27,40],k1:[43,72],f1:[42,90],k2:[60,62],f2:[74,68]};
+  return [eq+XFIG(s)+XDB([52,84],120), eq+XFIG(e)+XDB([78,70],120)];
+}};
+XARCH.abcrunch={f:function(){
+  const eq=XBACK(34,26,64)+XSEAT(40,66,18);
+  const s={hd:[42,26],nk:[42,34],hp:[40,62],el:[50,40],ha:[46,33],k1:[54,66],f1:[58,84],k2:[52,68],f2:[56,86]};
+  const e={hd:[52,38],nk:[50,44],hp:[40,62],el:[56,50],ha:[52,43],k1:[54,66],f1:[58,84],k2:[52,68],f2:[56,86]};
+  return [eq+XFIG(s)+XDB([46,33],90), eq+XFIG(e)+XDB([52,43],90)];
+}};
+XARCH.seatedcalf={f:function(){
+  const eq=XSEAT(40,66,18);
+  const toe=f=>`<line class="xbody" x1="${f[0]}" y1="${f[1]}" x2="${f[0]+5}" y2="90"/>`;
+  const s={hd:[42,28],nk:[42,36],hp:[40,62],el:[50,50],ha:[54,58],k1:[56,64],f1:[58,88],k2:[54,66],f2:[56,89]};
+  const e={hd:[42,28],nk:[42,36],hp:[40,62],el:[50,48],ha:[54,54],k1:[56,58],f1:[58,82],k2:[54,60],f2:[56,83]};
+  return [eq+XGND+XFIG(s)+XDB([56,60],0), eq+XGND+XFIG(e)+toe([58,82])+toe([56,83])+XDB([56,55],0)];
+}};
+XARCH.hacksquat={f:function(){
+  const eq=`<line class="xeq" x1="26" y1="88" x2="64" y2="24" stroke-width="5"/>`;
+  const s={hd:[57,29],nk:[55,36],hp:[47,58],el:[62,40],ha:[60,32],k1:[44,74],f1:[38,90],k2:[48,74],f2:[43,90]};
+  const e={hd:[50,43],nk:[48,50],hp:[40,70],el:[55,54],ha:[53,46],k1:[54,76],f1:[38,90],k2:[57,78],f2:[43,90]};
+  return [XGND+eq+XFIG(s), XGND+eq+XFIG(e)];
+}};
+XARCH.torsorot={f:function(){
+  const eq=`<g class="xeq"><line x1="36" y1="76" x2="56" y2="76" stroke-width="5"/><line x1="46" y1="76" x2="46" y2="90"/></g>`;
+  const fr=XARCH.twist.f();
+  return [eq+fr[0], eq+fr[1]];
+}};
+
 /* map every exercise name to an archetype (checked in order) */
 const XRULES=[
+[/pec fly machine/,"pecdeck"],
+[/rear delt fly machine/,"reardeltmach"],
+[/assisted pull|assisted chin/,"assisted"],
+[/shoulder press machine/,"machshoulderpress"],
+[/bicep curl machine|preacher curl machine/,"machcurl"],
+[/tricep extension machine|tricep press \(dip\) machine/,"machtriext"],
+[/lateral raise machine/,"machlatraise"],
+[/glute kickback machine/,"glutepress"],
+[/rotary calf|seated dumbbell calf raise/,"seatedcalf"],
+[/ab crunch machine/,"abcrunch"],
+[/hack squat/,"hacksquat"],
+[/torso rotation/,"torsorot"],
 [/rowing machine/,"erg"],
 [/upright row/,"uprightrow"],
 [/face pull/,"reardelt"],
