@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
 <title>NEON//GRID — Retro Arcade Hub</title>
 <style>
 /* ============================================================
@@ -22,7 +22,7 @@
   --line:#2c1b5e;
   --font-ui:ui-monospace,'Cascadia Mono','JetBrains Mono',Menlo,Consolas,monospace;
 }
-*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;touch-action:manipulation;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 html,body{height:100%}
 body{
   background:var(--bg-deep);
@@ -66,7 +66,7 @@ body{
 }
 @keyframes gridScroll{from{background-position:0 0,0 0}to{background-position:0 0,0 64px}}
 .scanlines{
-  position:fixed;inset:0;z-index:50;pointer-events:none;mix-blend-mode:overlay;opacity:.5;
+  position:fixed;inset:0;z-index:50;pointer-events:none;opacity:.25;
   background:repeating-linear-gradient(180deg,rgba(255,255,255,.05) 0 1px,transparent 1px 3px);
 }
 @media (prefers-reduced-motion:reduce){
@@ -152,7 +152,7 @@ nav.tabs{display:flex;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--line)
 /* ---------- Game modal ---------- */
 .stage{
   position:fixed;inset:0;z-index:100;display:none;flex-direction:column;
-  background:rgba(6,3,14,.92);backdrop-filter:blur(6px);
+  background:rgba(6,3,14,.97);
 }
 .stage.open{display:flex}
 .stage-bar{
@@ -170,6 +170,7 @@ nav.tabs{display:flex;gap:8px;flex-wrap:wrap;border-bottom:1px solid var(--line)
 .stage .framewrap{flex:1;position:relative;overflow:hidden}
 .stage iframe{position:absolute;inset:0;width:100%;height:100%;border:0;background:#05030c}
 .toast{
+  pointer-events:none;
   position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(80px);
   background:var(--bg-panel);border:1px solid var(--neon-amber);color:var(--neon-amber);
   padding:10px 20px;border-radius:6px;font-size:12px;letter-spacing:.14em;z-index:200;
@@ -244,7 +245,7 @@ footer{margin-top:40px;font-size:10px;letter-spacing:.2em;color:var(--ink-dim);t
 <template id="game-boilerplate">
 <meta charset="UTF-8">
 <style>
-  html,body{margin:0;height:100%;width:100%;background:#05030c;overflow:hidden;position:fixed;inset:0;font-family:ui-monospace,Menlo,Consolas,monospace;overscroll-behavior:none}
+  html,body{margin:0;height:100%;width:100%;background:#05030c;overflow:hidden;position:fixed;inset:0;font-family:ui-monospace,Menlo,Consolas,monospace;overscroll-behavior:none;touch-action:none}
   canvas{display:block;width:100%;height:100%;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;cursor:crosshair}
 </style>
 <canvas id="c"></canvas>
@@ -263,6 +264,20 @@ footer{margin-top:40px;font-size:10px;letter-spacing:.2em;color:var(--ink-dim);t
     gameOver:     (finalScore)  => send("gameOver",{finalScore})
   };
 })();
+/* ---- mobile gesture guards ---- */
+(function(){
+  let last=0;
+  document.addEventListener("touchend",e=>{
+    const now=Date.now();
+    const el=e.target instanceof Element ? e.target : null;
+    if(now-last<400 && !(el&&el.closest("button"))) e.preventDefault();
+    last=now;
+  },{passive:false,capture:true});
+  document.addEventListener("dblclick",e=>e.preventDefault(),{passive:false,capture:true});
+  document.addEventListener("selectstart",e=>e.preventDefault(),{capture:true});
+  for(const g of ["gesturestart","gesturechange","gestureend"])
+    document.addEventListener(g,e=>e.preventDefault(),{passive:false});
+})();
 
 /* ================= PHOTON POP — sanity-check game =================
    Click/tap photons before their fuses expire. Infinite levels.
@@ -273,7 +288,7 @@ footer{margin-top:40px;font-size:10px;letter-spacing:.2em;color:var(--ink-dim);t
 "use strict";
 const cvs=document.getElementById("c"), ctx=cvs.getContext("2d");
 let W=0,H=0,DPR=Math.min(2,window.devicePixelRatio||1);
-function resize(){W=document.documentElement.clientWidth||innerWidth;H=document.documentElement.clientHeight||innerHeight;cvs.width=W*DPR;cvs.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);}
+function resize(){const nw=document.documentElement.clientWidth||innerWidth,nh=document.documentElement.clientHeight||innerHeight;if(nw===W&&nh===H)return;W=nw;H=nh;cvs.width=W*DPR;cvs.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);}
 addEventListener("resize",resize);addEventListener("orientationchange",()=>setTimeout(resize,120));resize();
 
 /* ---------- Procedural Audio Engine ---------- */
@@ -498,8 +513,8 @@ requestAnimationFrame(frame);
     --pellet:#ffe9b0;
     --bezel:#1c1a22;
   }
-  *{margin:0;padding:0;box-sizing:border-box}
-  html,body{height:100%;background:#000;overflow:hidden}
+  *{margin:0;padding:0;box-sizing:border-box;touch-action:manipulation;-webkit-tap-highlight-color:transparent;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
+  html,body{height:100%;background:#000;overflow:hidden;position:fixed;inset:0;width:100%;overscroll-behavior:none}
   body{
     display:flex;align-items:center;justify-content:center;
     font-family:"Courier New",monospace;
@@ -544,6 +559,7 @@ requestAnimationFrame(frame);
     width:58px;height:58px;border-radius:12px;border:1px solid #3a3646;
     background:#211e2b;color:var(--phosphor);font-size:22px;font-family:inherit;
   }
+  #pad button{touch-action:manipulation;-webkit-user-select:none;user-select:none}
   #pad button:active{background:#33304a}
   @media (pointer:coarse){#pad{display:block}}
 </style>
@@ -571,6 +587,20 @@ requestAnimationFrame(frame);
     achievement:  (achievementId)=> send("achievement",{achievementId}),
     gameOver:     (finalScore)   => send("gameOver",{finalScore})
   };
+})();
+/* ---- mobile gesture guards ---- */
+(function(){
+  let last=0;
+  document.addEventListener("touchend",e=>{
+    const now=Date.now();
+    const el=e.target instanceof Element ? e.target : null;
+    if(now-last<400 && !(el&&el.closest("button"))) e.preventDefault();
+    last=now;
+  },{passive:false,capture:true});
+  document.addEventListener("dblclick",e=>e.preventDefault(),{passive:false,capture:true});
+  document.addEventListener("selectstart",e=>e.preventDefault(),{capture:true});
+  for(const g of ["gesturestart","gesturechange","gestureend"])
+    document.addEventListener(g,e=>e.preventDefault(),{passive:false});
 })();
 GameBridge.ready();
 /* ============ MAZE RUNNER — standalone HTML remake ============ */
@@ -872,7 +902,7 @@ loadLevel(0);
 <template id="game-gridfall">
 <meta charset="UTF-8">
 <style>
-  html,body{margin:0;height:100%;width:100%;background:#05030c;overflow:hidden;position:fixed;inset:0;font-family:ui-monospace,Menlo,Consolas,monospace;overscroll-behavior:none}
+  html,body{margin:0;height:100%;width:100%;background:#05030c;overflow:hidden;position:fixed;inset:0;font-family:ui-monospace,Menlo,Consolas,monospace;overscroll-behavior:none;touch-action:none}
   canvas{display:block;width:100%;height:100%;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
 </style>
 <canvas id="c"></canvas>
@@ -890,6 +920,20 @@ loadLevel(0);
     gameOver:     (finalScore)   => send("gameOver",{finalScore})
   };
 })();
+/* ---- mobile gesture guards ---- */
+(function(){
+  let last=0;
+  document.addEventListener("touchend",e=>{
+    const now=Date.now();
+    const el=e.target instanceof Element ? e.target : null;
+    if(now-last<400 && !(el&&el.closest("button"))) e.preventDefault();
+    last=now;
+  },{passive:false,capture:true});
+  document.addEventListener("dblclick",e=>e.preventDefault(),{passive:false,capture:true});
+  document.addEventListener("selectstart",e=>e.preventDefault(),{capture:true});
+  for(const g of ["gesturestart","gesturechange","gestureend"])
+    document.addEventListener(g,e=>e.preventDefault(),{passive:false});
+})();
 
 /* ================= GRIDFALL =================
    Original neon falling-block stacker for the NEON//GRID hub.
@@ -901,7 +945,7 @@ loadLevel(0);
 "use strict";
 const cvs=document.getElementById("c"), ctx=cvs.getContext("2d");
 let W=0,H=0,DPR=Math.min(2,window.devicePixelRatio||1);
-function resize(){W=document.documentElement.clientWidth||innerWidth;H=document.documentElement.clientHeight||innerHeight;cvs.width=W*DPR;cvs.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);}
+function resize(){const nw=document.documentElement.clientWidth||innerWidth,nh=document.documentElement.clientHeight||innerHeight;if(nw===W&&nh===H)return;W=nw;H=nh;cvs.width=W*DPR;cvs.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);}
 addEventListener("resize",resize);addEventListener("orientationchange",()=>setTimeout(resize,120));resize();
 
 /* ---------- Procedural Audio Engine ---------- */
@@ -1584,6 +1628,23 @@ $("#wipeBtn").onclick=()=>{
     notify("Memory core wiped.");
   }
 };
+
+/* ---------- Double-tap / selection / pinch suppression ---------- */
+let _lastTouchEnd=0;
+document.addEventListener("touchend",e=>{
+  const now=Date.now();
+  const el=e.target instanceof Element ? e.target : null;
+  if(now-_lastTouchEnd<400 && !(el&&el.closest("button,a,input,select,textarea,iframe"))){
+    e.preventDefault();          // second fast tap on background: eat it
+  }
+  _lastTouchEnd=now;
+},{passive:false,capture:true});
+document.addEventListener("dblclick",e=>e.preventDefault(),{passive:false,capture:true});
+document.addEventListener("selectstart",e=>e.preventDefault(),{capture:true});
+// iOS pinch gesture events (Safari-only, harmless elsewhere)
+for(const g of ["gesturestart","gesturechange","gestureend"])
+  document.addEventListener(g,e=>e.preventDefault(),{passive:false});
+document.addEventListener("contextmenu",e=>{ if(!(e.target instanceof HTMLInputElement)) e.preventDefault(); });
 
 /* ---------- Boot ---------- */
 renderTabs(); renderGrid(); renderBoard(); renderStats();
