@@ -483,17 +483,85 @@ requestAnimationFrame(frame);
 </script>
 </template>
 
-<template id="game-maze-muncher">
+<template id="game-maze-runner">
 <meta charset="UTF-8">
 <style>
-  html,body{margin:0;height:100%;width:100%;background:#05030c;overflow:hidden;position:fixed;inset:0;font-family:ui-monospace,Menlo,Consolas,monospace;overscroll-behavior:none}
-  canvas{display:block;width:100%;height:100%;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
+  :root{
+    --crt-black:#0a0a0f;
+    --phosphor:#3ef05c;
+    --maze-blue:#2a5fd0;
+    --maze-glow:#4f86ff;
+    --runner-amber:#ffb000;
+    --enemy-red:#e83b3b;
+    --enemy-pink:#e86bb0;
+    --enemy-cyan:#39d4d4;
+    --pellet:#ffe9b0;
+    --bezel:#1c1a22;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;background:#000;overflow:hidden}
+  body{
+    display:flex;align-items:center;justify-content:center;
+    font-family:"Courier New",monospace;
+    background:radial-gradient(ellipse at center,#14121c 0%,#000 75%);
+  }
+  #cabinet{
+    position:relative;
+    padding:22px 22px 16px;
+    background:linear-gradient(160deg,#26232e,#14121a 60%);
+    border-radius:18px;
+    box-shadow:0 0 60px rgba(79,134,255,.12), inset 0 1px 0 rgba(255,255,255,.06);
+  }
+  #screenwrap{
+    position:relative;border-radius:10px;overflow:hidden;
+    background:var(--crt-black);
+    box-shadow:inset 0 0 40px rgba(0,0,0,.9);
+  }
+  canvas{display:block;image-rendering:pixelated;width:min(480px,calc(100vw - 68px),calc((100vh - 190px)*0.7692));height:auto;touch-action:none;-webkit-tap-highlight-color:transparent}
+  /* CRT scanlines + vignette */
+  #screenwrap::after{
+    content:"";position:absolute;inset:0;pointer-events:none;
+    background:
+      repeating-linear-gradient(0deg, rgba(0,0,0,.22) 0 1px, transparent 1px 3px),
+      radial-gradient(ellipse at center, transparent 55%, rgba(0,0,0,.45) 100%);
+  }
+  @media (prefers-reduced-motion:no-preference){
+    #screenwrap::before{
+      content:"";position:absolute;inset:-100% 0;pointer-events:none;
+      background:linear-gradient(0deg,transparent 48%,rgba(255,255,255,.025) 50%,transparent 52%);
+      animation:roll 9s linear infinite;
+    }
+    @keyframes roll{to{transform:translateY(50%)}}
+  }
+  #plate{
+    margin-top:12px;text-align:center;color:#8a8496;font-size:11px;letter-spacing:.2em;
+  }
+  #plate b{color:var(--runner-amber);letter-spacing:.3em}
+  /* touch controls */
+  #pad{display:none;margin-top:14px;user-select:none;-webkit-user-select:none;touch-action:none}
+  #pad .row{display:flex;justify-content:center;gap:10px;margin:5px 0}
+  #pad button{
+    width:58px;height:58px;border-radius:12px;border:1px solid #3a3646;
+    background:#211e2b;color:var(--phosphor);font-size:22px;font-family:inherit;
+  }
+  #pad button:active{background:#33304a}
+  @media (pointer:coarse){#pad{display:block}}
 </style>
-<canvas id="c"></canvas>
+
+
+<div id="cabinet">
+  <div id="screenwrap"><canvas id="c" width="480" height="576"></canvas></div>
+  <div id="plate"><b>MAZE&nbsp;RUNNER</b> &nbsp;·&nbsp; ARROWS / WASD &nbsp;·&nbsp; P PAUSE</div>
+  <div id="pad">
+    <div class="row"><button data-d="up">▲</button></div>
+    <div class="row"><button data-d="left">◀</button><button data-d="down">▼</button><button data-d="right">▶</button></div>
+  </div>
+</div>
 <script>
+"use strict";
 /* ================= GameBridge CLIENT STUB (v1) ================= */
 (function(){
-  const GAME_ID = "maze-muncher";
+  const GAME_ID = "maze-runner";
   function send(type, payload){ parent.postMessage({source:"GameBridge",v:1,gameId:GAME_ID,type,payload},"*"); }
   window.GameBridge = {
     id: GAME_ID,
@@ -504,524 +572,300 @@ requestAnimationFrame(frame);
     gameOver:     (finalScore)   => send("gameOver",{finalScore})
   };
 })();
-
-/* ================= MAZE MUNCHER =================
-   Original neon maze-chase game for the NEON//GRID hub.
-   Eat every pellet, dodge the wraiths, grab charge cores
-   to turn the tables. Infinite procedurally generated mazes.
-   Laws: strict FSM, vector juice, WebAudio-only SFX,
-   canvas vector art, deterministic level scaling, GameBridge. */
-(function(){
-"use strict";
-const cvs=document.getElementById("c"), ctx=cvs.getContext("2d");
-let W=0,H=0,DPR=Math.min(2,window.devicePixelRatio||1);
-function resize(){W=document.documentElement.clientWidth||innerWidth;H=document.documentElement.clientHeight||innerHeight;cvs.width=W*DPR;cvs.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);}
-addEventListener("resize",resize);addEventListener("orientationchange",()=>setTimeout(resize,120));resize();
-
-/* ---------- Procedural Audio Engine ---------- */
-const AudioFX=(function(){
-  let ac=null,wakaHi=true;
-  function actx(){ if(!ac) ac=new (window.AudioContext||window.webkitAudioContext)(); if(ac.state==="suspended") ac.resume(); return ac; }
-  function blip(f0,f1,dur,type,vol){
-    const a=actx(),t=a.currentTime,o=a.createOscillator(),g=a.createGain();
-    o.type=type;o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(Math.max(1,f1),t+dur);
-    g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(0.0001,t+dur);
-    o.connect(g).connect(a.destination);o.start(t);o.stop(t+dur);
-  }
-  function noise(dur,vol,fFrom,fTo){
-    const a=actx(),t=a.currentTime,len=a.sampleRate*dur,buf=a.createBuffer(1,len,a.sampleRate),d=buf.getChannelData(0);
-    for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*(1-i/len);
-    const s=a.createBufferSource(),g=a.createGain(),f=a.createBiquadFilter();
-    f.type="lowpass";f.frequency.setValueAtTime(fFrom,t);f.frequency.exponentialRampToValueAtTime(fTo,t+dur);
-    s.buffer=buf;g.gain.value=vol;s.connect(f).connect(g).connect(a.destination);s.start(t);
-  }
-  return{
-    unlock:actx,
-    waka(){ wakaHi=!wakaHi; blip(wakaHi?520:390, wakaHi?390:520, 0.06,"square",0.10); },
-    power(){ blip(180,720,0.28,"sawtooth",0.18); setTimeout(()=>blip(720,180,0.22,"sawtooth",0.14),120); },
-    eatWraith(){ blip(300,1400,0.18,"square",0.2); noise(0.12,0.15,4000,600); },
-    death(){ blip(600,50,0.7,"sawtooth",0.25); noise(0.5,0.4,2500,80); },
-    level(){ [523,659,784,1046].forEach((f,i)=>setTimeout(()=>blip(f,f*1.5,0.12,"triangle",0.18),i*90)); },
-    siren(){ blip(240,300,0.15,"triangle",0.05); }
-  };
-})();
-
-/* ---------- Juice: camera shake + particles ---------- */
-const Camera={x:0,y:0,trauma:0,
-  shake(a){this.trauma=Math.min(1,this.trauma+a);},
-  update(dt){this.trauma=Math.max(0,this.trauma-dt*1.8);
-    const s=this.trauma*this.trauma*12;
-    this.x=(Math.random()*2-1)*s;this.y=(Math.random()*2-1)*s;}
-};
-class Particle{
-  constructor(x,y,hue){
-    const a=Math.random()*Math.PI*2,sp=50+Math.random()*220;
-    this.x=x;this.y=y;this.vx=Math.cos(a)*sp;this.vy=Math.sin(a)*sp;
-    this.life=this.max=0.35+Math.random()*0.45;this.hue=hue;this.r=1.5+Math.random()*2.2;
-  }
-  step(dt){this.life-=dt;this.vx*=Math.pow(0.03,dt);this.vy*=Math.pow(0.03,dt);this.x+=this.vx*dt;this.y+=this.vy*dt;}
-  draw(){const p=this.life/this.max;ctx.globalAlpha=p;
-    ctx.fillStyle="hsl("+this.hue+" 100% "+(55+p*35)+"%)";
-    ctx.beginPath();ctx.arc(this.x,this.y,this.r*p+0.4,0,7);ctx.fill();ctx.globalAlpha=1;}
-}
-let particles=[];
-function burst(x,y,hue,n){for(let i=0;i<n;i++)particles.push(new Particle(x,y,hue));}
-
-/* ---------- Deterministic level scaling ---------- */
-function levelCfg(level){
-  return{
-    hue:(200+level*29)%360,                                  // maze palette shift
-    wraithSpeed:3.4*Math.pow(1.05,level-1),                  // tiles/sec
-    playerSpeed:4.2*Math.pow(1.015,level-1),                 // gentle creep, wraiths close the gap
-    frightTime:Math.max(2.2,7*Math.pow(0.93,level-1)),       // seconds of charged mode
-    wraithCount:Math.min(6,3+Math.floor((level-1)/3)),       // +1 wraith every 3 levels, cap 6
-    cores:Math.max(2,4-Math.floor(level/8)),                 // power cores per maze
-    loopiness:Math.min(0.22,0.08+level*0.01)                 // extra wall knock-outs -> more escape routes
-  };
-}
-
-/* ---------- Seeded RNG (mulberry32) ---------- */
-function rng(seed){
-  let a=seed>>>0;
-  return function(){a|=0;a=(a+0x6D2B79F5)|0;let t=Math.imul(a^(a>>>15),1|a);
-    t=(t+Math.imul(t^(t>>>7),61|t))^t;return((t^(t>>>14))>>>0)/4294967296;};
-}
-
-/* ---------- Procedural maze (recursive backtracker + mirror symmetry) ---------- */
-const COLS=21, ROWS=17; // odd dims; left half carved, mirrored right
-function genMaze(level,cfg){
-  const rand=rng(level*2654435761+42);
-  const g=Array.from({length:ROWS},()=>Array(COLS).fill(1)); // 1=wall
-  const half=Math.floor(COLS/2);
-  // carve odd-cell lattice on the left half (inclusive of center column)
-  function carve(cx,cy){
-    g[cy][cx]=0;
-    const dirs=[[2,0],[-2,0],[0,2],[0,-2]].sort(()=>rand()-0.5);
-    for(const[dx,dy]of dirs){
-      const nx=cx+dx,ny=cy+dy;
-      if(nx>0&&nx<=half&&ny>0&&ny<ROWS-1&&g[ny][nx]===1){
-        g[cy+dy/2][cx+dx/2]=0;carve(nx,ny);
-      }
-    }
-  }
-  carve(1,1);
-  // knock out extra walls for loops (arcade mazes are never perfect trees)
-  for(let y=1;y<ROWS-1;y++)for(let x=1;x<=half;x++){
-    if(g[y][x]===1&&rand()<cfg.loopiness){
-      const open=(g[y-1][x]===0&&g[y+1][x]===0)||(g[y][x-1]===0&&g[y][x+1]===0);
-      if(open)g[y][x]=0;
-    }
-  }
-  // mirror left onto right
-  for(let y=0;y<ROWS;y++)for(let x=0;x<half;x++)g[y][COLS-1-x]=g[y][x];
-  // side tunnels on the middle row (wrap-around)
-  const mid=Math.floor(ROWS/2);
-  g[mid][0]=0;g[mid][COLS-1]=0;
-  let x=0;while(x<COLS&&g[mid][x]!==0||false)x++;
-  for(let i=0;i<=half;i++){ if(g[mid][i]===0)break; g[mid][i]=0; g[mid][COLS-1-i]=0; }
-  // wraith den: open the 3x3 center
-  for(let y=mid-1;y<=mid+1;y++)for(let i=half-1;i<=half+1;i++)g[y][i]=0;
-  return g;
-}
-function openNeighbors(g,x,y){
-  const out=[];
-  const dirs=[[1,0],[-1,0],[0,1],[0,-1]];
-  for(const[dx,dy]of dirs){
-    let nx=x+dx,ny=y+dy;
-    if(nx<0)nx=COLS-1; if(nx>=COLS)nx=0;            // tunnel wrap
-    if(ny>=0&&ny<ROWS&&g[ny][nx]===0)out.push([dx,dy]);
-  }
-  return out;
-}
-
-/* ---------- Entities ---------- */
-function tileEq(a,b){return a.tx===b.tx&&a.ty===b.ty;}
-class Mover{
-  constructor(tx,ty,speed){this.tx=tx;this.ty=ty;this.px=tx;this.py=ty;this.dir=[0,0];this.speed=speed;}
-  at(){return Math.abs(this.px-this.tx)<1e-9&&Math.abs(this.py-this.ty)<1e-9;}
-  step(dt,g){
-    if(this.at()){
-      const[dx,dy]=this.dir;
-      let nx=this.tx+dx,ny=this.ty+dy;
-      if(nx<0)nx=COLS-1; if(nx>=COLS)nx=0;
-      if(dx===0&&dy===0)return;
-      if(ny<0||ny>=ROWS||g[ny][nx]===1){this.dir=[0,0];return;}
-      this.tx=nx;this.ty=ny;
-    }
-    const d=this.speed*dt;
-    // wrap-aware interpolation
-    let ddx=this.tx-this.px;
-    if(ddx>1)ddx-=COLS; if(ddx<-1)ddx+=COLS;
-    const ddy=this.ty-this.py, dist=Math.hypot(ddx,ddy);
-    if(dist<=d){this.px=this.tx;this.py=this.ty;}
-    else{this.px+=ddx/dist*d;this.py+=ddy/dist*d;
-      if(this.px<-0.5)this.px+=COLS; if(this.px>COLS-0.5)this.px-=COLS;}
-  }
-}
-class Wraith extends Mover{
-  constructor(tx,ty,speed,mode,hue){super(tx,ty,speed);this.mode=mode;this.hue=hue;this.frightened=0;this.eyes=[1,0];}
-  think(g,player,rand){
-    if(!this.at())return;
-    const opts=openNeighbors(g,this.tx,this.ty)
-      .filter(([dx,dy])=>!(dx===-this.dir[0]&&dy===-this.dir[1]&&this.dir[0]+this.dir[1]!==0));
-    const pool=opts.length?opts:openNeighbors(g,this.tx,this.ty);
-    if(!pool.length)return;
-    let target;
-    if(this.frightened>0){ // flee: maximize distance
-      target=null;
-      let best=-1,pick=pool[0];
-      for(const[dx,dy]of pool){
-        const d=Math.hypot(this.tx+dx-player.px,this.ty+dy-player.py);
-        if(d>best){best=d;pick=[dx,dy];}
-      }
-      this.dir=pick;this.eyes=pick;return;
-    }
-    if(this.mode==="chase")target=[player.px,player.py];
-    else if(this.mode==="ambush")target=[player.px+player.dir[0]*4,player.py+player.dir[1]*4];
-    else if(this.mode==="flank")target=[player.px-player.dir[0]*4,player.py-player.dir[1]*4];
-    else target=[rand()*COLS,rand()*ROWS];
-    let best=1e9,pick=pool[(rand()*pool.length)|0];
-    for(const[dx,dy]of pool){
-      const d=Math.hypot(this.tx+dx-target[0],this.ty+dy-target[1]);
-      if(d<best){best=d;pick=[dx,dy];}
-    }
-    this.dir=pick;this.eyes=pick;
-  }
-}
-
-/* ---------- Strict Finite State Machine ---------- */
-const S={MENU:"MENU",PLAYING:"PLAYING",PAUSED:"PAUSED",GAME_OVER:"GAME_OVER"};
-const game={
-  state:S.MENU,level:1,score:0,lives:3,
-  cfg:levelCfg(1),grid:null,pellets:null,pelletCount:0,
-  player:null,wraiths:[],want:[0,0],fright:0,combo:0,
-  rand:rng(1),deathT:0,sirenT:0,
-  set(n){this.state=n;}
-};
 GameBridge.ready();
+/* ============ MAZE RUNNER — standalone HTML remake ============ */
+const TILE=24, COLS=20, ROWS=22;
+const cv=document.getElementById('c'), cx=cv.getContext('2d');
+cv.width=COLS*TILE; cv.height=ROWS*TILE+TILE*2; // +2 rows HUD
 
-function buildLevel(level){
-  const cfg=levelCfg(level);
-  game.cfg=cfg;game.rand=rng(level*99991+7);
-  game.grid=genMaze(level,cfg);
-  // pellets on every open tile except the den
-  const mid=Math.floor(ROWS/2),half=Math.floor(COLS/2);
-  game.pellets=Array.from({length:ROWS},()=>Array(COLS).fill(0));
-  game.pelletCount=0;
-  const openTiles=[];
-  for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){
-    if(game.grid[y][x]===0){
-      const den=Math.abs(y-mid)<=1&&Math.abs(x-half)<=1;
-      if(!den){game.pellets[y][x]=1;game.pelletCount++;openTiles.push([x,y]);}
+/* Maze legend: #=wall .=pellet o=power  space=empty  P=player  E=enemy spawn  -=gate */
+const LEVELS=[
+[
+"####################",
+"#........##........#",
+"#o##.###.##.###.##o#",
+"#..................#",
+"#.##.#.######.#.##.#",
+"#....#...##...#....#",
+"####.###.##.###.####",
+"   #.#........#.#   ",
+"####.#.##--##.#.####",
+"    ...#EEEE#...    ",
+"####.#.######.#.####",
+"   #.#........#.#   ",
+"####.#.######.#.####",
+"#........##........#",
+"#.##.###.##.###.##.#",
+"#o.#.....P......#.o#",
+"##.#.#.######.#.#.##",
+"#....#...##...#....#",
+"#.######.##.######.#",
+"#..................#",
+"#..................#",
+"####################"],
+[
+"####################",
+"#o.......##.......o#",
+"#.######.##.######.#",
+"#.#....#....#....#.#",
+"#.#.##.####.##.#.#.#",
+"#...##...##...##...#",
+"###.####.##.####.###",
+"#...#....##....#...#",
+"#.###.##----##.###.#",
+"#.....#EEEEEE#.....#",
+"#.###.########.###.#",
+"#...#..........#...#",
+"###.#.########.#.###",
+"#.....#..##..#.....#",
+"#.####.#.##.#.####.#",
+"#.#......P.......#.#",
+"#.#.############.#.#",
+"#...#..........#...#",
+"#.#.#.########.#.#.#",
+"#o#............#.#o#",
+"#..................#",
+"####################"]
+];
+
+/* ---- audio: POKEY-ish square blips ---- */
+let AC=null;
+function beep(f,d=.06,t='square',g=.05){
+  if(!AC) return;
+  const o=AC.createOscillator(),v=AC.createGain();
+  o.type=t;o.frequency.value=f;v.gain.value=g;
+  v.gain.exponentialRampToValueAtTime(.0001,AC.currentTime+d);
+  o.connect(v).connect(AC.destination);o.start();o.stop(AC.currentTime+d);
+}
+function initAudio(){ if(!AC){ try{AC=new (window.AudioContext||window.webkitAudioContext)()}catch(e){} } }
+
+/* ---- state ---- */
+let grid,pellets,level=0,score=0,hi=0,lives=3,state='title',frame=0,frightT=0;
+const player={x:0,y:0,px:0,py:0,dir:null,want:null,speed:.11};
+let enemies=[];
+const ECOLORS=['--enemy-red','--enemy-pink','--enemy-cyan','--runner-amber'];
+
+function css(n){return getComputedStyle(document.documentElement).getPropertyValue(n).trim()}
+
+function loadLevel(n){
+  const map=LEVELS[n%LEVELS.length];
+  grid=[];pellets=0;enemies=[];
+  for(let y=0;y<ROWS;y++){
+    grid[y]=[];
+    for(let x=0;x<COLS;x++){
+      let ch=map[y][x];
+      if(ch==='P'){player.x=x;player.y=y;player.px=x;player.py=y;player.dir=null;player.want=null;ch='.';}
+      if(ch==='E'){enemies.push(mkEnemy(x,y,enemies.length));ch=' ';}
+      if(ch==='.'||ch==='o')pellets++;
+      grid[y][x]=ch;
     }
   }
-  // charge cores: deterministic far-corner picks
-  const corners=[[1,1],[COLS-2,1],[1,ROWS-2],[COLS-2,ROWS-2]];
-  let placed=0;
-  for(const[cx,cy]of corners){
-    if(placed>=cfg.cores)break;
-    // nearest open pellet tile to the corner
-    let best=1e9,pick=null;
-    for(const[x,y]of openTiles){const d=Math.hypot(x-cx,y-cy);if(d<best){best=d;pick=[x,y];}}
-    if(pick&&game.pellets[pick[1]][pick[0]]===1){game.pellets[pick[1]][pick[0]]=2;placed++;}
-  }
-  spawnActors();
-  game.fright=0;game.combo=0;
+  frightT=0;
 }
-function spawnActors(){
-  const cfg=game.cfg,mid=Math.floor(ROWS/2),half=Math.floor(COLS/2);
-  game.player=new Mover(1,1,cfg.playerSpeed);
-  game.want=[0,0];game.player.dir=[0,0];
-  const modes=["chase","ambush","flank","wander","chase","ambush"];
-  const hues=[330,180,270,45,0,120];
-  game.wraiths=[];
-  for(let i=0;i<cfg.wraithCount;i++){
-    const w=new Wraith(half-1+(i%3),mid-1+((i/3)|0),cfg.wraithSpeed,modes[i],hues[i]);
-    game.wraiths.push(w);
-  }
-}
-function startRun(){
-  game.level=1;game.score=0;game.lives=3;
-  buildLevel(1);game.set(S.PLAYING);AudioFX.level();
-}
-function advanceLevel(){
-  game.level++;buildLevel(game.level);
-  AudioFX.level();Camera.shake(0.35);
-  GameBridge.levelUp(game.level);
-  if(game.level===3)GameBridge.achievement("maze-muncher:level3");
-  if(game.level===7)GameBridge.achievement("maze-muncher:level7");
-}
-function loseLife(){
-  AudioFX.death();Camera.shake(1);
-  burst(tX(game.player.px),tY(game.player.py),game.cfg.hue,50);
-  game.lives--;
-  if(game.lives<=0){game.set(S.GAME_OVER);GameBridge.gameOver(game.score);}
-  else{game.deathT=1.1;} // brief freeze, then respawn
+function mkEnemy(x,y,i){
+  return {x,y,px:x,py:y,dir:'left',home:{x,y},col:ECOLORS[i%4],speed:.085+i*.006,dead:false,exitT:i*120};
 }
 
-/* ---------- Input ---------- */
-const KEYMAP={ArrowUp:[0,-1],ArrowDown:[0,1],ArrowLeft:[-1,0],ArrowRight:[1,0],
-  w:[0,-1],s:[0,1],a:[-1,0],d:[1,0],W:[0,-1],S:[0,1],A:[-1,0],D:[1,0]};
-addEventListener("keydown",e=>{
-  AudioFX.unlock();
-  if(e.key==="p"||e.key==="P"){
-    if(game.state===S.PLAYING)game.set(S.PAUSED);
-    else if(game.state===S.PAUSED)game.set(S.PLAYING);
-    return;
-  }
-  if(KEYMAP[e.key]){
-    e.preventDefault();
-    if(game.state===S.MENU||game.state===S.GAME_OVER){startRun();}
-    game.want=KEYMAP[e.key];
-  }
-});
-// touch: swipe to steer, tap to start
-let touchStart=null;
-cvs.addEventListener("pointerdown",e=>{
-  AudioFX.unlock();
-  if(game.state===S.MENU||game.state===S.GAME_OVER){startRun();return;}
-  if(game.state===S.PAUSED){game.set(S.PLAYING);return;}
-  const pdx=e.clientX-pad.cx,pdy=e.clientY-pad.cy;
-  if(TOUCH&&Math.hypot(pdx,pdy)<=pad.r*1.35){   // D-pad steer
-    game.want=Math.abs(pdx)>Math.abs(pdy)?[Math.sign(pdx),0]:[0,Math.sign(pdy)];
-    touchStart=null;return;
-  }
-  touchStart=[e.clientX,e.clientY];             // anywhere else: swipe
-});
-cvs.addEventListener("contextmenu",e=>e.preventDefault());
-cvs.addEventListener("pointerup",e=>{
-  if(!touchStart)return;
-  const dx=e.clientX-touchStart[0],dy=e.clientY-touchStart[1];
-  if(Math.hypot(dx,dy)>24)
-    game.want=Math.abs(dx)>Math.abs(dy)?[Math.sign(dx),0]:[0,Math.sign(dy)];
-  touchStart=null;
-});
-
-/* ---------- Layout helpers ---------- */
-let TILE=24,OX=0,OY=0;
-const TOUCH=(window.matchMedia?matchMedia("(pointer: coarse)").matches:false)||("ontouchstart" in window);
-const pad={cx:0,cy:0,r:0};
-function layout(){
-  const padSpace=TOUCH?Math.min(170,H*0.24):0;
-  TILE=Math.floor(Math.min((W-24)/COLS,(H-70-padSpace)/ROWS));
-  OX=(W-COLS*TILE)/2;OY=Math.max(34,(H-padSpace-ROWS*TILE)/2+18);
-  pad.r=TOUCH?Math.max(46,Math.min(70,padSpace*0.42)):0;
-  pad.cx=W/2;pad.cy=H-pad.r-14;
+/* ---- movement helpers ---- */
+const DIRS={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};
+function walk(x,y,d,ghost){
+  const [dx,dy]=DIRS[d];
+  let nx=(x+dx+COLS)%COLS, ny=y+dy;
+  if(ny<0||ny>=ROWS)return null;
+  const t=grid[ny][nx];
+  if(t==='#')return null;
+  if(t==='-'&&!ghost)return null;
+  return [nx,ny];
 }
-function tX(px){return OX+(px+0.5)*TILE;}
-function tY(py){return OY+(py+0.5)*TILE;}
 
-/* ---------- Update ---------- */
-function tryTurn(m,want,g){
-  if(!m.at())return;
-  const[dx,dy]=want;
-  if(dx===0&&dy===0)return;
-  let nx=m.tx+dx,ny=m.ty+dy;
-  if(nx<0)nx=COLS-1; if(nx>=COLS)nx=0;
-  if(ny>=0&&ny<ROWS&&g[ny][nx]===0)m.dir=want;
-}
-function update(dt){
-  if(game.deathT>0){
-    game.deathT-=dt;
-    if(game.deathT<=0)spawnActors();
-    return;
-  }
-  const p=game.player,g=game.grid;
-  p.speed=game.cfg.playerSpeed*(game.fright>0?1.12:1);
-  tryTurn(p,game.want,g);
-  p.step(dt,g);
-
-  // pellet consumption
-  const cx=Math.round(p.px),cy=Math.round(p.py);
-  const gx=((cx%COLS)+COLS)%COLS;
-  if(cy>=0&&cy<ROWS&&game.pellets[cy][gx]>0){
-    const kind=game.pellets[cy][gx];
-    game.pellets[cy][gx]=0;game.pelletCount--;
-    if(kind===1){game.score+=10;AudioFX.waka();}
-    else{
-      game.score+=50;game.fright=game.cfg.frightTime;game.combo=0;
-      AudioFX.power();Camera.shake(0.25);
-      burst(tX(gx),tY(cy),game.cfg.hue,30);
-      for(const w of game.wraiths)w.frightened=game.fright;
+function stepActor(a,ghost){
+  // at tile center: pick direction
+  const atCenter=Math.abs(a.px-a.x)<.01&&Math.abs(a.py-a.y)<.01;
+  if(atCenter){
+    a.px=a.x;a.py=a.y;
+    if(a===player){
+      if(a.want&&walk(a.x,a.y,a.want)) a.dir=a.want;
+      if(a.dir&&!walk(a.x,a.y,a.dir)) a.dir=null;
     }
-    GameBridge.reportScore(game.score);
-    if(game.pelletCount<=0){advanceLevel();return;}
+    if(a.dir){
+      const n=walk(a.x,a.y,a.dir,ghost);
+      if(n){a.tx=n[0];a.ty=n[1];}else a.dir=null;
+    }
   }
-
-  // frightened timer
-  if(game.fright>0){
-    game.fright-=dt;
-    if(game.fright<=0){game.fright=0;game.combo=0;for(const w of game.wraiths)w.frightened=0;}
+  if(a.dir){
+    const [dx,dy]=DIRS[a.dir];
+    a.px+=dx*a.speed; a.py+=dy*a.speed;
+    // tunnel wrap
+    if(a.px<-.5)a.px+=COLS; if(a.px>COLS-.5)a.px-=COLS;
+    if(Math.abs(a.px-a.tx)<a.speed&&Math.abs(a.py-a.ty)<a.speed||
+       (dx&&Math.sign(a.tx-a.px)!==dx&&Math.abs(a.ty-a.py)<.01)||
+       (dy&&Math.sign(a.ty-a.py)!==dy&&Math.abs(a.tx-a.px)<.01)){
+      a.x=a.tx;a.y=a.ty;a.px=a.tx;a.py=a.ty;
+    }
   }
+}
 
-  // siren heartbeat
-  game.sirenT-=dt;
-  if(game.sirenT<=0&&game.fright<=0){AudioFX.siren();game.sirenT=1.4;}
+function enemyAI(e){
+  const atCenter=Math.abs(e.px-e.x)<.01&&Math.abs(e.py-e.y)<.01;
+  if(!atCenter)return;
+  if(e.exitT>0){e.exitT--;return;}
+  const opts=[];
+  const rev={up:'down',down:'up',left:'right',right:'left'}[e.dir];
+  for(const d in DIRS){
+    if(d===rev)continue;
+    if(walk(e.x,e.y,d,true))opts.push(d);
+  }
+  if(!opts.length){e.dir=rev;return;}
+  let target=e.dead?e.home:{x:player.x,y:player.y};
+  let best=opts[0],bd=frightT>0&&!e.dead?-1:1e9;
+  for(const d of opts){
+    const [dx,dy]=DIRS[d];
+    const nx=e.x+dx,ny=e.y+dy;
+    const dist=(nx-target.x)**2+(ny-target.y)**2;
+    if(frightT>0&&!e.dead){ if(dist>bd){bd=dist;best=d} }
+    else { if(dist<bd){bd=dist;best=d} }
+  }
+  // touch of chaos, like the original hardware's pseudo-random
+  if(Math.random()<.12&&frightT<=0&&!e.dead)best=opts[Math.floor(Math.random()*opts.length)];
+  e.dir=best;
+}
 
-  // wraiths
-  for(const w of game.wraiths){
-    w.frightened=game.fright>0?game.fright:0;
-    w.speed=game.cfg.wraithSpeed*(w.frightened>0?0.55:1);
-    w.think(g,p,game.rand);
-    w.step(dt,g);
-    // collision (wrap-aware)
-    let dx=Math.abs(w.px-p.px); dx=Math.min(dx,COLS-dx);
-    const dist=Math.hypot(dx,w.py-p.py);
-    if(dist<0.6){
-      if(w.frightened>0){
-        game.combo++;
-        const pts=100*Math.pow(2,Math.min(4,game.combo));
-        game.score+=pts;GameBridge.reportScore(game.score);
-        AudioFX.eatWraith();Camera.shake(0.35);
-        burst(tX(w.px),tY(w.py),w.hue,36);
-        const mid=Math.floor(ROWS/2),half=Math.floor(COLS/2);
-        w.tx=half;w.ty=mid;w.px=half;w.py=mid;w.frightened=0;w.dir=[0,0];
-        if(game.combo===4)GameBridge.achievement("maze-muncher:quad-snack");
-      }else{
-        loseLife();return;
+/* ---- update ---- */
+function update(){
+  frame++;
+  if(state!=='play')return;
+  stepActor(player);
+  const t=grid[player.y][player.x];
+  if(t==='.'||t==='o'){
+    grid[player.y][player.x]=' ';pellets--;score+=t==='.'?10:50;GameBridge.reportScore(score);
+    beep(t==='.'?740:220,.05);
+    if(t==='o'){frightT=420;enemies.forEach(e=>{if(!e.dead)e.dir={up:'down',down:'up',left:'right',right:'left'}[e.dir]||e.dir})}
+    if(pellets===0){state='clear';setTimeout(()=>{level++;loadLevel(level);state='play';GameBridge.levelUp(level+1);},1600);beep(990,.4,'square',.06)}
+  }
+  if(frightT>0)frightT--;
+  for(const e of enemies){
+    enemyAI(e);stepActor(e,true);
+    if(e.dead&&e.x===e.home.x&&e.y===e.home.y){e.dead=false;e.exitT=180;}
+    if(Math.abs(e.px-player.px)<.55&&Math.abs(e.py-player.py)<.55){
+      if(e.dead)continue;
+      if(frightT>0){e.dead=true;score+=200;GameBridge.reportScore(score);beep(180,.15,'sawtooth');beep(360,.15)}
+      else{ // caught
+        lives--;beep(110,.5,'sawtooth',.08);
+        if(lives<=0){state='over';hi=Math.max(hi,score);GameBridge.gameOver(score);}
+        else{state='caught';setTimeout(()=>{respawn();state='play'},1200)}
+        break;
       }
     }
   }
 }
-
-/* ---------- Render ---------- */
-function drawMaze(t){
-  const hue=game.cfg.hue,g=game.grid;
-  ctx.lineWidth=2;
-  for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){
-    if(g[y][x]===1){
-      const px=OX+x*TILE,py=OY+y*TILE;
-      ctx.fillStyle="hsl("+hue+" 70% 14%)";
-      ctx.fillRect(px+2,py+2,TILE-4,TILE-4);
-      ctx.strokeStyle="hsl("+hue+" 100% 55% / 0.55)";
-      ctx.strokeRect(px+2.5,py+2.5,TILE-5,TILE-5);
-    }
-  }
-  // pellets + charge cores
-  for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){
-    const k=game.pellets[y][x];
-    if(!k)continue;
-    if(k===1){
-      ctx.fillStyle="hsl("+((hue+180)%360)+" 100% 75%)";
-      ctx.beginPath();ctx.arc(tX(x),tY(y),Math.max(2,TILE*0.08),0,7);ctx.fill();
-    }else{
-      const r=TILE*0.24*(1+0.15*Math.sin(t*7+x));
-      ctx.shadowBlur=16;ctx.shadowColor="hsl("+((hue+180)%360)+" 100% 65%)";
-      ctx.fillStyle="hsl("+((hue+180)%360)+" 100% 70%)";
-      ctx.beginPath();ctx.arc(tX(x),tY(y),r,0,7);ctx.fill();ctx.shadowBlur=0;
-    }
-  }
-}
-function drawPlayer(t){
-  const p=game.player,x=tX(p.px),y=tY(p.py),r=TILE*0.42;
-  const ang=Math.atan2(p.dir[1],p.dir[0]);
-  const moving=p.dir[0]||p.dir[1];
-  const mouth=moving?(0.22+0.2*Math.abs(Math.sin(t*12))):0.06;
-  ctx.save();ctx.translate(x,y);if(moving)ctx.rotate(ang);
-  ctx.shadowBlur=18;ctx.shadowColor="#ffd23e";
-  ctx.fillStyle="#ffd23e";
-  ctx.beginPath();ctx.moveTo(0,0);
-  ctx.arc(0,0,r,mouth*Math.PI,(2-mouth)*Math.PI);
-  ctx.closePath();ctx.fill();
-  ctx.restore();ctx.shadowBlur=0;
-}
-function drawWraith(w,t){
-  const x=tX(w.px),y=tY(w.py),r=TILE*0.40;
-  const fr=w.frightened>0;
-  const flick=fr&&w.frightened<2&&Math.sin(t*16)>0;
-  const hue=fr?(flick?0:220):w.hue;
-  ctx.save();ctx.translate(x,y);
-  ctx.shadowBlur=16;ctx.shadowColor="hsl("+hue+" 100% 60%)";
-  ctx.fillStyle=fr?"hsl("+hue+" 80% "+(flick?85:45)+"%)":"hsl("+hue+" 95% 58%)";
-  // angular wraith: rotating diamond shard with a tail of chevrons
-  const spin=t*2+w.hue;
-  ctx.beginPath();
-  for(let i=0;i<4;i++){
-    const a=spin+i*Math.PI/2, rr=i%2?r*0.72:r;
-    const px=Math.cos(a)*rr,py=Math.sin(a)*rr;
-    i?ctx.lineTo(px,py):ctx.moveTo(px,py);
-  }
-  ctx.closePath();ctx.fill();
-  // eye slit shows heading
-  ctx.fillStyle="#05030c";
-  ctx.beginPath();ctx.arc(w.eyes[0]*r*0.3,w.eyes[1]*r*0.3,r*0.22,0,7);ctx.fill();
-  ctx.fillStyle=fr?"#fff":"hsl("+hue+" 100% 85%)";
-  ctx.beginPath();ctx.arc(w.eyes[0]*r*0.38,w.eyes[1]*r*0.38,r*0.1,0,7);ctx.fill();
-  ctx.restore();ctx.shadowBlur=0;
-}
-function drawPad(){
-  ctx.save();ctx.globalAlpha=0.45;
-  ctx.strokeStyle="hsl("+game.cfg.hue+" 100% 60%)";ctx.lineWidth=2;
-  ctx.beginPath();ctx.arc(pad.cx,pad.cy,pad.r,0,7);ctx.stroke();
-  ctx.fillStyle="hsl("+game.cfg.hue+" 100% 72%)";
-  [[0,-1],[0,1],[-1,0],[1,0]].forEach(([dx,dy])=>{
-    const ax=pad.cx+dx*pad.r*0.58,ay=pad.cy+dy*pad.r*0.58;
-    ctx.save();ctx.translate(ax,ay);ctx.rotate(Math.atan2(dy,dx));
-    ctx.beginPath();ctx.moveTo(pad.r*0.24,0);ctx.lineTo(-pad.r*0.10,-pad.r*0.17);ctx.lineTo(-pad.r*0.10,pad.r*0.17);ctx.closePath();ctx.fill();
-    ctx.restore();
-  });
-  ctx.restore();
-}
-function banner(t,big,mid,small){
-  ctx.save();
-  ctx.fillStyle="rgba(5,3,12,0.78)";ctx.fillRect(-20,H/2-110,W+40,220);
-  ctx.textAlign="center";
-  ctx.shadowBlur=24;ctx.shadowColor="hsl("+game.cfg.hue+" 100% 60%)";
-  ctx.fillStyle="hsl("+game.cfg.hue+" 100% 70%)";
-  ctx.font="700 40px ui-monospace,monospace";
-  ctx.fillText(big,W/2,H/2-30);
-  ctx.shadowBlur=0;ctx.fillStyle="#e8e4ff";ctx.font="14px ui-monospace,monospace";
-  if(mid)ctx.fillText(mid,W/2,H/2+8);
-  ctx.globalAlpha=0.6+0.4*Math.sin(t*4);
-  ctx.fillText(small,W/2,H/2+44);
-  ctx.restore();ctx.globalAlpha=1;
+function respawn(){
+  const map=LEVELS[level%LEVELS.length];
+  for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++)if(map[y][x]==='P'){player.x=x;player.y=y;player.px=x;player.py=y}
+  player.dir=null;player.want=null;
+  enemies.forEach((e,i)=>{e.x=e.home.x;e.y=e.home.y;e.px=e.x;e.py=e.y;e.dead=false;e.exitT=i*120;e.dir='left'});
+  frightT=0;
 }
 
-/* ---------- Main loop ---------- */
-let last=performance.now();
-function frame(now){
-  const dt=Math.min(0.05,(now-last)/1000);last=now;
-  const t=now/1000;
-  layout();Camera.update(dt);
-  if(game.state===S.PLAYING)update(dt);
-  for(let i=particles.length-1;i>=0;i--){particles[i].step(dt);if(particles[i].life<=0)particles.splice(i,1);}
-
-  ctx.save();ctx.translate(Camera.x,Camera.y);
-  ctx.fillStyle="#05030c";ctx.fillRect(-20,-20,W+40,H+40);
-
-  if(game.grid){
-    drawMaze(t);
-    if(game.state!==S.MENU){
-      for(const w of game.wraiths)drawWraith(w,t);
-      if(game.deathT<=0||Math.sin(t*20)>0)drawPlayer(t);
-    }
-    for(const p of particles)p.draw();
-  }
-
+/* ---- render ---- */
+function draw(){
+  cx.fillStyle=css('--crt-black');cx.fillRect(0,0,cv.width,cv.height);
   // HUD
-  ctx.textAlign="left";ctx.fillStyle="#e8e4ff";ctx.font="14px ui-monospace,monospace";
-  ctx.fillText("SCORE "+game.score,16,26);
-  ctx.fillText("LEVEL "+game.level,180,26);
-  ctx.fillText("LIVES "+"\u2665".repeat(Math.max(0,game.lives)),290,26);
-  if(game.fright>0){
-    ctx.fillStyle="#22e6ff";
-    ctx.fillText("CHARGED "+game.fright.toFixed(1)+"s",420,26);
+  cx.fillStyle=css('--phosphor');cx.font='bold 16px "Courier New",monospace';
+  cx.textBaseline='middle';
+  cx.fillText('SCORE '+String(score).padStart(6,'0'),10,20);
+  cx.fillText('HI '+String(Math.max(hi,score)).padStart(6,'0'),200,20);
+  cx.fillText('LVL '+(level+1),370,20);
+  for(let i=0;i<lives;i++){
+    cx.fillStyle=css('--runner-amber');
+    cx.beginPath();cx.arc(20+i*24,cv.height-16,8,0.6,Math.PI*2-0.6);cx.lineTo(20+i*24,cv.height-16);cx.fill();
   }
-  if(TOUCH&&(game.state===S.PLAYING||game.state===S.PAUSED))drawPad();
-
-  if(game.state===S.MENU){
-    banner(t,"MAZE MUNCHER","Clear every pellet \u00B7 charge cores turn the wraiths blue","ARROWS / WASD / SWIPE \u00B7 ANY KEY TO START \u00B7 P = PAUSE");
-  }else if(game.state===S.PAUSED){
-    banner(t,"PAUSED","","PRESS P TO RESUME");
-  }else if(game.state===S.GAME_OVER){
-    banner(t,"GAME OVER","FINAL SCORE "+game.score+" \u00B7 REACHED LEVEL "+game.level,"ANY KEY / TAP TO RETRY");
+  cx.save();cx.translate(0,TILE*1.4);
+  // maze
+  for(let y=0;y<ROWS;y++)for(let x=0;x<COLS;x++){
+    const t=grid[y][x],px=x*TILE,py=y*TILE;
+    if(t==='#'){
+      cx.fillStyle=css('--maze-blue');
+      cx.fillRect(px+2,py+2,TILE-4,TILE-4);
+      cx.strokeStyle=css('--maze-glow');cx.lineWidth=2;
+      cx.strokeRect(px+2,py+2,TILE-4,TILE-4);
+    }else if(t==='-'){
+      cx.fillStyle=css('--enemy-pink');cx.fillRect(px+2,py+TILE/2-2,TILE-4,4);
+    }else if(t==='.'){
+      cx.fillStyle=css('--pellet');cx.fillRect(px+TILE/2-2,py+TILE/2-2,4,4);
+    }else if(t==='o'){
+      if((frame>>4)&1){cx.fillStyle=css('--pellet');cx.beginPath();cx.arc(px+TILE/2,py+TILE/2,6,0,7);cx.fill()}
+    }
   }
-  ctx.restore();
-  requestAnimationFrame(frame);
+  // enemies
+  for(const e of enemies){
+    const px=e.px*TILE+TILE/2,py=e.py*TILE+TILE/2;
+    let col=e.dead?'#556':(frightT>0?(frightT<120&&(frame>>3)&1?'#eee':'#3946e8'):css(e.col));
+    cx.fillStyle=col;
+    cx.beginPath();cx.arc(px,py-2,9,Math.PI,0);
+    cx.lineTo(px+9,py+9);
+    for(let i=0;i<3;i++)cx.lineTo(px+9-(i*2+1)*3,py+((frame>>3)&1?6:9));
+    cx.lineTo(px-9,py+9);cx.closePath();cx.fill();
+    cx.fillStyle='#fff';cx.fillRect(px-6,py-5,4,5);cx.fillRect(px+2,py-5,4,5);
+    cx.fillStyle='#111';
+    const [ex,ey]=DIRS[e.dir]||[0,0];
+    cx.fillRect(px-5+ex*1.5,py-4+ey*1.5,2,3);cx.fillRect(px+3+ex*1.5,py-4+ey*1.5,2,3);
+  }
+  // player
+  {
+    const px=player.px*TILE+TILE/2,py=player.py*TILE+TILE/2;
+    const mouth=.25+.2*Math.sin(frame*.3);
+    const ang={right:0,down:Math.PI/2,left:Math.PI,up:-Math.PI/2}[player.dir]??0;
+    cx.fillStyle=css('--runner-amber');
+    cx.beginPath();cx.arc(px,py,10,ang+mouth,ang-mouth+Math.PI*2);cx.lineTo(px,py);cx.fill();
+  }
+  cx.restore();
+  // overlays
+  cx.textAlign='center';
+  if(state==='title'){
+    banner('MAZE RUNNER',css('--runner-amber'),cv.height/2-30);
+    if((frame>>4)&1)banner('PRESS ANY KEY',css('--phosphor'),cv.height/2+20,16);
+    banner('EAT EVERY PELLET · DODGE THE HUNTERS',css('--pellet'),cv.height/2+56,12);
+  }else if(state==='over'){
+    banner('GAME OVER',css('--enemy-red'),cv.height/2-10);
+    if((frame>>4)&1)banner('PRESS ANY KEY',css('--phosphor'),cv.height/2+30,16);
+  }else if(state==='clear'){
+    banner('MAZE CLEAR!',css('--phosphor'),cv.height/2);
+  }else if(state==='pause'){
+    banner('PAUSED',css('--pellet'),cv.height/2);
+  }
+  cx.textAlign='left';
 }
-buildLevel(1); // pre-build so the menu shows the maze
-requestAnimationFrame(frame);
-})();
+function banner(txt,col,y,size=28){
+  cx.font='bold '+size+'px "Courier New",monospace';
+  cx.fillStyle='rgba(0,0,0,.75)';
+  const w=cx.measureText(txt).width;
+  cx.fillRect(cv.width/2-w/2-14,y-size*.8,w+28,size*1.6);
+  cx.fillStyle=col;cx.fillText(txt,cv.width/2,y);
+}
+
+/* ---- input ---- */
+function press(d){
+  initAudio();
+  if(state==='title'||state==='over'){
+    score=0;lives=3;level=0;loadLevel(0);state='play';beep(660,.1);beep(880,.1);
+    return;
+  }
+  if(d&&state==='play'){player.want=d; if(!player.dir&&walk(player.x,player.y,d))player.dir=d;}
+}
+addEventListener('keydown',e=>{
+  const map={ArrowUp:'up',ArrowDown:'down',ArrowLeft:'left',ArrowRight:'right',w:'up',s:'down',a:'left',d:'right',W:'up',S:'down',A:'left',D:'right'};
+  if(e.key==='p'||e.key==='P'){if(state==='play')state='pause';else if(state==='pause')state='play';return}
+  if(map[e.key]){e.preventDefault();press(map[e.key])}
+  else if(state==='title'||state==='over')press(null);
+});
+document.querySelectorAll('#pad button').forEach(b=>{
+  const h=ev=>{ev.preventDefault();press(b.dataset.d)};
+  b.addEventListener('touchstart',h);b.addEventListener('mousedown',h);
+});
+
+/* ---- boot ---- */
+loadLevel(0);
+(function loop(){update();draw();requestAnimationFrame(loop)})();
 </script>
 </template>
 
@@ -1566,7 +1410,7 @@ requestAnimationFrame(frame);
 const GENRES=["Action","Puzzle","Retro","Sports","Strategy"];
 const REGISTRY=[
   {id:"photon-pop",  title:"Photon Pop",  genre:"Retro",  src:"embedded:boilerplate"},
-  {id:"maze-muncher",title:"Maze Muncher",genre:"Retro",  src:"embedded:maze-muncher"},
+  {id:"maze-runner", title:"Maze Runner", genre:"Retro",  src:"embedded:maze-runner"},
   {id:"gridfall",    title:"Gridfall",    genre:"Puzzle", src:"embedded:gridfall"}
 ];
 // Reserve the remaining 49 cabinet slots, spread across genres.
