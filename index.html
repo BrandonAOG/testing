@@ -3442,6 +3442,491 @@ GameBridge.ready();
 </script>
 </template>
 
+<template id="game-word-search">
+<meta charset="UTF-8">
+<style>
+  html,body{margin:0;height:100%;width:100%;background:#05030c;overflow:hidden;position:fixed;inset:0;font-family:ui-monospace,Menlo,Consolas,monospace;overscroll-behavior:none;touch-action:none}
+  canvas{display:block;width:100%;height:100%;touch-action:none;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent;cursor:pointer}
+</style>
+<canvas id="c"></canvas>
+<script>
+/* ================= GameBridge CLIENT STUB (v1) ================= */
+(function(){
+  const GAME_ID = "word-search";
+  function send(type, payload){ parent.postMessage({source:"GameBridge",v:1,gameId:GAME_ID,type,payload},"*"); }
+  window.GameBridge = {
+    id: GAME_ID,
+    ready:        ()            => send("ready",{}),
+    reportScore:  (score)       => send("score",{score}),
+    levelUp:      (level)       => send("level",{level}),
+    achievement:  (achievementId)=> send("achievement",{achievementId}),
+    gameOver:     (finalScore)  => send("gameOver",{finalScore})
+  };
+})();
+/* ---- mobile gesture guards ---- */
+(function(){
+  let last=0;
+  document.addEventListener("touchend",e=>{
+    const now=Date.now();
+    if(now-last<400) e.preventDefault();
+    last=now;
+  },{passive:false,capture:true});
+  document.addEventListener("dblclick",e=>e.preventDefault(),{passive:false,capture:true});
+  document.addEventListener("selectstart",e=>e.preventDefault(),{capture:true});
+  for(const g of ["gesturestart","gesturechange","gestureend"])
+    document.addEventListener(g,e=>e.preventDefault(),{passive:false});
+})();
+
+/* ================= WORD GRID — 10,000 seeded word searches =================
+   Deterministic puzzles: same puzzle number + difficulty = same grid, always.
+   Easy 8x8 / across+down. Medium 12x12 / +diagonals. Hard 15x15 / all 8
+   directions incl. reversed. 3 hints per puzzle. Letter-storm win animation. */
+(function(){
+"use strict";
+const cvs=document.getElementById("c"), ctx=cvs.getContext("2d");
+let W=0,H=0,DPR=Math.min(2,window.devicePixelRatio||1);
+function resize(){const nw=document.documentElement.clientWidth||innerWidth,nh=document.documentElement.clientHeight||innerHeight;if(nw===W&&nh===H)return;W=nw;H=nh;cvs.width=W*DPR;cvs.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);layout();}
+addEventListener("resize",resize);addEventListener("orientationchange",()=>setTimeout(resize,120));
+
+/* ---------- Seeded RNG (mulberry32) ---------- */
+function rng(seed){let a=seed>>>0;return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+
+/* ---------- Audio ---------- */
+const AudioFX=(function(){
+  let ac=null;
+  function actx(){ if(!ac) ac=new (window.AudioContext||window.webkitAudioContext)(); if(ac.state==="suspended") ac.resume(); return ac; }
+  function blip(f0,f1,dur,type,vol){
+    try{
+      const a=actx(),t=a.currentTime,o=a.createOscillator(),g=a.createGain();
+      o.type=type;o.frequency.setValueAtTime(f0,t);o.frequency.exponentialRampToValueAtTime(Math.max(1,f1),t+dur);
+      g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+      o.connect(g).connect(a.destination);o.start(t);o.stop(t+dur);
+    }catch(e){}
+  }
+  return {
+    tick:()=>blip(600,760,.03,"square",.025),
+    found:()=>{blip(660,990,.1,"triangle",.06);setTimeout(()=>blip(990,1320,.12,"triangle",.05),70);},
+    bad:()=>blip(200,120,.1,"sawtooth",.05),
+    hint:()=>blip(880,1180,.12,"sine",.05),
+    winNote:i=>blip(523*Math.pow(1.122,i%14),523*Math.pow(1.122,i%14)*1.5,.18,"triangle",.055)
+  };
+})();
+
+/* ---------- Word bank (common English words, grouped by length) ---------- */
+const BANK={
+ 4:["MOON","STAR","FIRE","WAVE","LEAF","BIRD","FROG","GOLD","IRON","SNOW","RAIN","WIND","LAKE","ROCK","TREE","FISH","WOLF","BEAR","LION","CAKE","MILK","CORN","RICE","SALT","MINT","PEAR","PLUM","LIME","KIWI","TUNA","CRAB","DUCK","GOAT","HAWK","DEER","MOTH","WASP","CLAM","KELP","REEF","DUNE","PEAK","GLEN","COVE","PATH","GATE","BELL","DRUM","HARP","SONG","POEM","BOOK","SHIP","SAIL","MAST","DOCK","PORT","ROAD","CITY","FARM","BARN","WELL","POND","MOSS","FERN","VINE","SEED","ROOT","STEM","NEST","WING","BEAK","CLAW","MANE","HOOF","TAIL","HORN","LAMP","VASE","DESK","SOFA","RUGS","OVEN","FORK","BOWL","MAPS"],
+ 5:["OCEAN","RIVER","STORM","CLOUD","FROST","EMBER","FLAME","STONE","CORAL","PEARL","AMBER","TOPAZ","MAPLE","CEDAR","BIRCH","ASPEN","TULIP","DAISY","LOTUS","PEONY","WHEAT","OLIVE","LEMON","MANGO","GRAPE","MELON","PEACH","BERRY","APPLE","ONION","BASIL","THYME","EAGLE","HERON","CRANE","ROBIN","FINCH","RAVEN","OTTER","MOOSE","BISON","ZEBRA","TIGER","PANDA","KOALA","LEMUR","GECKO","COBRA","VIPER","SHARK","WHALE","SQUID","SNAIL","MOUSE","HORSE","SHEEP","CAMEL","LLAMA","QUAIL","GOOSE","SWAMP","MARSH","FJORD","ATOLL","BLUFF","RIDGE","CLIFF","GORGE","OASIS","DELTA","PLAIN","HOUSE","CABIN","LODGE","TOWER","ARENA","PLAZA","QUILT","FLUTE","PIANO","CELLO","OPERA","DANCE","CHESS","CARDS","KITES","YACHT","CANOE","KAYAK","WAGON","TRAIN","PLANE","ORBIT","COMET","VENUS","PLUTO","EARTH","LUNAR","SOLAR","PRISM","QUARK","LASER","ROBOT","GEARS","BROOK","CREEK","FIELD","GROVE","HEDGE","SPICE","HONEY","SUGAR","BREAD","TOAST","JUICE","CANDY"],
+ 6:["FOREST","MEADOW","CANYON","VALLEY","LAGOON","ISLAND","HARBOR","BEACON","CASTLE","BRIDGE","TUNNEL","GARDEN","ORCHID","VIOLET","CLOVER","WILLOW","SPRUCE","ACACIA","BAMBOO","CACTUS","BANANA","CHERRY","ORANGE","PAPAYA","TOMATO","CARROT","POTATO","RADISH","TURNIP","PEPPER","GINGER","NUTMEG","FALCON","PARROT","TOUCAN","OSPREY","CONDOR","JAGUAR","OCELOT","BOBCAT","BADGER","BEAVER","RABBIT","WALRUS","MARLIN","SALMON","MINNOW","URCHIN","OYSTER","MUSSEL","SHRIMP","LIZARD","IGUANA","TURTLE","PYTHON","DRAGON","KRAKEN","SPHINX","WIZARD","KNIGHT","ARCHER","LEGEND","TEMPLE","SHRINE","PALACE","MARKET","POTTER","WEAVER","SMITHY","ANVILS","FORGES","HAMMER","CHISEL","MALLET","SICKLE","PLOUGH","BASKET","BARREL","BOTTLE","KETTLE","SAUCER","GOBLET","CANDLE","MIRROR","CARPET","VELVET","COTTON","LINENS","BUTTON","THREAD","NEEDLE","RIBBON","SEQUIN","POCKET","JACKET","MITTEN","HELMET","SHIELD","QUIVER","SADDLE","BRIDLE","GALAXY","NEBULA","METEOR","PLANET","SATURN","COSMIC","ROCKET","ENGINE","PISTON","DYNAMO","MAGNET","SENSOR","SIGNAL","CIPHER","PUZZLE","RIDDLE","MARBLE","QUARTZ","COPPER","SILVER","BRONZE","NICKEL","COBALT","CARBON","OXYGEN","HELIUM","PLASMA","PEBBLE","CANVAS","EASELS","CRAYON","PASTEL","MOSAIC","STATUE"],
+ 7:["VOLCANO","GLACIER","CASCADE","MONSOON","TYPHOON","CYCLONE","AURORAS","RAINBOW","HORIZON","ECLIPSE","EQUINOX","JOURNEY","VOYAGER","EXPLORE","COMPASS","LANTERN","HARVEST","ORCHARD","PASTURE","PRAIRIE","SAVANNA","JUNGLES","THICKET","REDWOOD","SEQUOIA","JASMINE","AVOCADO","APRICOT","COCONUT","PUMPKIN","CABBAGE","LETTUCE","SPINACH","PARSLEY","OREGANO","PANTHER","CHEETAH","LEOPARD","GAZELLE","GIRAFFE","GORILLA","RACCOON","OPOSSUM","HAMSTER","DOLPHIN","NARWHAL","OCTOPUS","LOBSTER","PELICAN","PENGUIN","OSTRICH","PEACOCK","SPARROW","WARBLER","KESTREL","BUZZARD","VULTURE","GRIFFIN","UNICORN","CENTAUR","MERMAID","PHANTOM","SPECTER","VILLAGE","COTTAGE","MANSION","CITADEL","BASTION","RAMPART","GALLERY","LIBRARY","ARCHIVE","THEATER","CONCERT","MAESTRO","TRUMPET","BAGPIPE","OCARINA","WHISTLE","PAINTER","ARTISAN","POTTERY","EMERALD","DIAMOND","PERIDOT","MINERAL","URANIUM","MERCURY","JUPITER","NEPTUNE","GRAVITY","QUANTUM","NEUTRON","PHOTONS","MACHINE","TURBINE","REACTOR","ANTENNA","BEACONS","NETWORK","PROGRAM","BALLOON","CARAVAN","EXPRESS","FREIGHT","STATION","AIRSHIP","BLOSSOM","MEADOWS","PEBBLES","LAGOONS","HABITAT"],
+ 8:["MOUNTAIN","SEASHORE","TIDEPOOL","SANDBANK","MAGNOLIA","LAVENDER","MARIGOLD","FOXGLOVE","SNOWDROP","BLUEBELL","HONEYDEW","MULBERRY","HAZELNUT","CHESTNUT","CINNAMON","CARDAMOM","TARRAGON","ROSEMARY","ELEPHANT","ANTELOPE","KANGAROO","PLATYPUS","HEDGEHOG","PANGOLIN","AARDVARK","CAPYBARA","MONGOOSE","REINDEER","SEAHORSE","STINGRAY","BARNACLE","PLANKTON","FLAMINGO","CARDINAL","PHEASANT","BASILISK","MINOTAUR","COLOSSUS","OBELISKS","AQUEDUCT","MONOLITH","PYRAMIDS","ZIGGURAT","PAVILION","WINDMILL","SAWMILLS","WORKSHOP","SCAFFOLD","ORNAMENT","AMETHYST","PLATINUM","TITANIUM","TUNGSTEN","GRAPHITE","ASTEROID","MOONBEAM","COMPUTER","KEYBOARD","JOYSTICK","PINWHEEL","CAROUSEL","TREASURE","SUNSHINE","STARGAZE","DAYBREAK","HYACINTH","DAFFODIL","DEWDROPS","SNOWFALL","RAINFALL","THUNDERS","LIGHTING","CAMPFIRE","FOOTPATH","GATEWAYS","DOORWAYS","ARCHWAYS","STAIRWAY","BALLROOM","HANDRAIL","FOUNTAIN"]
+};
+// scrub any malformed entries from the quick length-trim tricks above
+for(const k in BANK){BANK[k]=[...new Set(BANK[k].filter(w=>/^[A-Z]+$/.test(w)&&w.length===+k))];}
+
+/* ---------- Difficulty ---------- */
+const DIFFS=[
+  {name:"EASY",  size:10,words:10,dirs:[[1,0],[0,1]], mult:1},
+  {name:"MEDIUM",size:14,words:15,dirs:[[1,0],[0,1],[1,1],[1,-1]], mult:2},
+  {name:"HARD",  size:20,words:25,dirs:[[1,0],[0,1],[1,1],[1,-1],[-1,0],[0,-1],[-1,-1],[-1,1]], mult:4}
+];
+const MAXPUZZLE=10000;
+
+/* ---------- Puzzle generation (deterministic per number+difficulty) ---------- */
+function generate(num,diffIdx){
+  const D=DIFFS[diffIdx];
+  const R=rng(num*7919+diffIdx*104729+12345);
+  const N=D.size;
+  for(let attempt=0;attempt<40;attempt++){
+    const grid=Array.from({length:N},()=>Array(N).fill(""));
+    const placed=[];
+    // choose words: mix of lengths that fit
+    const lens=Object.keys(BANK).map(Number).filter(l=>l<=N);
+    const pool=[];
+    for(const l of lens)for(const w of BANK[l])pool.push(w);
+    // seeded shuffle
+    for(let i=pool.length-1;i>0;i--){const j=(R()*(i+1))|0;[pool[i],pool[j]]=[pool[j],pool[i]];}
+    let pi=0;
+    while(placed.length<D.words&&pi<pool.length){
+      const w=pool[pi++];
+      if(placed.some(p=>p.word===w))continue;
+      // try placements
+      let done=false;
+      for(let tries=0;tries<60&&!done;tries++){
+        const d=D.dirs[(R()*D.dirs.length)|0];
+        const maxX=d[0]>0?N-w.length:d[0]<0?w.length-1:N-1;
+        const minX=d[0]<0?w.length-1:0;
+        const maxY=d[1]>0?N-w.length:d[1]<0?w.length-1:N-1;
+        const minY=d[1]<0?w.length-1:0;
+        if(maxX<minX||maxY<minY)continue;
+        const x0=minX+((R()*(maxX-minX+1))|0), y0=minY+((R()*(maxY-minY+1))|0);
+        let ok=true;
+        for(let k=0;k<w.length;k++){
+          const cx=x0+d[0]*k,cy=y0+d[1]*k;
+          if(grid[cy][cx]&&grid[cy][cx]!==w[k]){ok=false;break;}
+        }
+        if(!ok)continue;
+        for(let k=0;k<w.length;k++){grid[y0+d[1]*k][x0+d[0]*k]=w[k];}
+        placed.push({word:w,x:x0,y:y0,dx:d[0],dy:d[1],found:false});
+        done=true;
+      }
+    }
+    if(placed.length===D.words){
+      placed.sort((a,b)=>a.word<b.word?-1:1); // word list shown alphabetically
+      // fill blanks with weighted random letters
+      const AB="EEEAAAIIOONNRRTTLSUDGBCMPFHVWYKJXQZ";
+      for(let y=0;y<N;y++)for(let x=0;x<N;x++)
+        if(!grid[y][x])grid[y][x]=AB[(R()*AB.length)|0];
+      return {grid,placed,N};
+    }
+  }
+  // fallback: fewer words (extremely unlikely)
+  return generate((num%MAXPUZZLE)+1,diffIdx);
+}
+
+/* ---------- Game state ---------- */
+const G={num:1,diff:0,grid:null,words:[],N:8,found:0,hints:3,score:0,
+  sel:null,win:null,foundBands:[],hintCell:null,hintT:0,startT:0,time:0,started:false};
+function newPuzzle(num,diffIdx){
+  G.num=((num-1)%MAXPUZZLE)+1;G.diff=diffIdx;
+  const p=generate(G.num,diffIdx);
+  G.grid=p.grid;G.words=p.placed;G.N=p.N;
+  G.found=0;G.hints=3;G.sel=null;G.win=null;G.foundBands=[];
+  G.hintCell=null;G.hintT=0;G.time=0;G.started=false;
+  layout();
+}
+function randomPuzzle(){newPuzzle(1+((Math.random()*MAXPUZZLE)|0),G.diff);}
+
+/* ---------- Layout ---------- */
+let CELL=30,GX=0,GY=0,LISTY=0,BTNS=[];
+function layout(){
+  if(!G.grid)return;
+  const topH=52,listH=Math.max(70,H*0.16);
+  const avail=Math.min(W-16,H-topH-listH-16);
+  CELL=Math.floor(avail/G.N);
+  GX=(W-CELL*G.N)/2;
+  GY=topH+((H-topH-listH)-CELL*G.N)/2;
+  LISTY=H-listH+8;
+}
+function cellAt(px,py){
+  const x=Math.floor((px-GX)/CELL),y=Math.floor((py-GY)/CELL);
+  if(x<0||y<0||x>=G.N||y>=G.N)return null;
+  return {x,y};
+}
+
+/* ---------- Header buttons ---------- */
+function headerBtns(){
+  ctx.font="bold 12px ui-monospace,Menlo,monospace";
+  const PAD=10,HGT=26,Y=13-HGT/2;
+  function box(label,ax,align,fn){
+    const w=ctx.measureText(label).width+PAD*2;
+    let x=ax-w/2;
+    if(align==="left")x=ax-PAD;
+    if(align==="right")x=ax-w+PAD;
+    return {x,y:Y,w,h:HGT,fn,label};
+  }
+  return [
+    box("[ NEW ]",10,"left",()=>{randomPuzzle();AudioFX.tick();}),
+    box("[ "+DIFFS[G.diff].name+" ]",W*0.3,"center",()=>{G.diff=(G.diff+1)%3;newPuzzle(1+((Math.random()*MAXPUZZLE)|0),G.diff);AudioFX.tick();}),
+    box("[ HINT \u00D7"+G.hints+" ]",W*0.58,"center",()=>doHint()),
+    box("[ #"+G.num+" ]",W-10,"right",()=>{newPuzzle(G.num+1,G.diff);AudioFX.tick();})
+  ];
+}
+function doHint(){
+  if(G.win||G.hints<=0){AudioFX.bad();return;}
+  const un=G.words.filter(w=>!w.found);
+  if(!un.length)return;
+  const w=un[(Math.random()*un.length)|0];
+  G.hintCell={x:w.x,y:w.y,word:w.word};
+  G.hintT=3;
+  G.hints--;
+  AudioFX.hint();
+}
+
+/* ---------- Selection & matching ---------- */
+function lineCells(a,b){
+  const dx=Math.sign(b.x-a.x),dy=Math.sign(b.y-a.y);
+  const len=Math.max(Math.abs(b.x-a.x),Math.abs(b.y-a.y));
+  // must be straight: horizontal, vertical, or 45deg
+  if(!(a.x===b.x||a.y===b.y||Math.abs(b.x-a.x)===Math.abs(b.y-a.y)))return null;
+  const cells=[];
+  for(let k=0;k<=len;k++)cells.push({x:a.x+dx*k,y:a.y+dy*k});
+  return cells;
+}
+function trySelection(cells){
+  if(!cells||cells.length<2)return false;
+  const s=cells.map(c=>G.grid[c.y][c.x]).join("");
+  const r=[...s].reverse().join("");
+  for(const w of G.words){
+    if(w.found)continue;
+    if(w.word===s||w.word===r){
+      // verify it's the same placement or an identical-word overlap — accept any exact match
+      w.found=true;G.found++;
+      G.foundBands.push({cells:[...cells],hue:(G.foundBands.length*47+300)%360,t:0});
+      G.score+=w.word.length*10*DIFFS[G.diff].mult;
+      GameBridge.reportScore(G.score);
+      AudioFX.found();
+      if(G.found===G.words.length)startWin();
+      return true;
+    }
+  }
+  return false;
+}
+
+/* ---------- Win animation: letter storm ----------
+   Grid letters lift off in a ripple wave, spin, and swirl into a glowing
+   vortex while found-word bands pulse; then "SOLVED" assembles from letters. */
+function startWin(){
+  const bonus=Math.max(0,(600-G.time|0))*DIFFS[G.diff].mult;
+  G.score+=bonus;
+  GameBridge.reportScore(G.score);
+  GameBridge.levelUp(G.diff+1);
+  GameBridge.achievement("word-search:solve-"+DIFFS[G.diff].name.toLowerCase());
+  GameBridge.gameOver(G.score);
+  const letters=[];
+  for(let y=0;y<G.N;y++)for(let x=0;x<G.N;x++){
+    letters.push({
+      ch:G.grid[y][x],
+      x:GX+x*CELL+CELL/2,y:GY+y*CELL+CELL/2,
+      hx:GX+x*CELL+CELL/2,hy:GY+y*CELL+CELL/2,
+      delay:(x+y)*0.045,          // ripple from top-left
+      t:0,ang:Math.random()*Math.PI*2,spin:(Math.random()-0.5)*6,
+      hue:(x*23+y*31)%360,phase:Math.random()*Math.PI*2
+    });
+  }
+  // target positions spelling SOLVED
+  const word="SOLVED";
+  const targets=[];
+  ctx.font="700 "+Math.min(64,W*0.12)+"px ui-monospace,monospace";
+  const tw=ctx.measureText(word).width;
+  for(let i=0;i<word.length;i++){
+    targets.push({ch:word[i],x:W/2-tw/2+ctx.measureText(word.slice(0,i)).width+ctx.measureText(word[i]).width/2,y:H*0.4});
+  }
+  // assign closest letters (by matching char when possible) to targets
+  for(const tg of targets){
+    let best=null,bd=1e9;
+    for(const L of letters){
+      if(L.target)continue;
+      const pref=L.ch===tg.ch?0:5000;
+      const d=Math.hypot(L.hx-tg.x,L.hy-tg.y)+pref;
+      if(d<bd){bd=d;best=L;}
+    }
+    if(best){best.target=tg;best.ch=tg.ch;}
+  }
+  G.win={letters,t:0,noteI:0,noteT:0};
+}
+function stepWin(dt){
+  const w=G.win;w.t+=dt;
+  w.noteT-=dt;
+  if(w.noteT<=0&&w.noteI<14){AudioFX.winNote(w.noteI++);w.noteT=0.09;}
+  for(const L of w.letters){
+    if(w.t<L.delay)continue;
+    L.t+=dt;
+    if(L.target){
+      // fly to SOLVED position
+      const k=Math.min(1,L.t/1.6);
+      const e=1-Math.pow(1-k,3);
+      L.x=L.hx+(L.target.x-L.hx)*e;
+      L.y=L.hy+(L.target.y-L.hy)*e-Math.sin(e*Math.PI)*60;
+      L.ang*= (1-e);
+    }else{
+      // swirl into vortex around center then drift out
+      const cx=W/2,cy=H*0.62;
+      const t=L.t;
+      const r0=Math.hypot(L.hx-cx,L.hy-cy);
+      const a0=Math.atan2(L.hy-cy,L.hx-cx);
+      const r=r0+t*30*Math.sin(L.phase+t*1.2)+t*t*40;
+      const a=a0+t*1.8;
+      L.x=cx+Math.cos(a)*r;
+      L.y=cy+Math.sin(a)*r*0.6;
+      L.ang+=L.spin*dt;
+    }
+  }
+}
+function drawWin(t){
+  const w=G.win;
+  // found bands still glow underneath
+  for(const b of G.foundBands)drawBand(b,t,true);
+  ctx.save();
+  ctx.textAlign="center";ctx.textBaseline="middle";
+  for(const L of w.letters){
+    if(w.t<L.delay){ // not lifted yet: draw in place
+      ctx.fillStyle="#9a8fc7";
+      ctx.font="700 "+(CELL*0.55)+"px ui-monospace,monospace";
+      ctx.fillText(L.ch,L.hx,L.hy);
+      continue;
+    }
+    const alive=L.target?1:Math.max(0,1-L.t/3.2);
+    if(alive<=0)continue;
+    ctx.save();
+    ctx.translate(L.x,L.y);ctx.rotate(L.ang);
+    ctx.globalAlpha=alive;
+    const big=L.target&&L.t>0.2;
+    ctx.font="700 "+(big?Math.min(64,W*0.12):CELL*0.55)+"px ui-monospace,monospace";
+    ctx.shadowBlur=big?18:8;
+    ctx.shadowColor="hsl("+((L.hue+t*90)%360)+" 100% 60%)";
+    ctx.fillStyle="hsl("+((L.hue+t*90)%360)+" 100% 72%)";
+    ctx.fillText(L.ch,0,0);
+    ctx.restore();
+  }
+  ctx.restore();
+  if(w.t>1.9){
+    const a=Math.min(1,(w.t-1.9)/0.6);
+    ctx.globalAlpha=a;
+    ctx.fillStyle="#e8e4ff";ctx.font="bold 14px ui-monospace,monospace";
+    ctx.textAlign="center";ctx.textBaseline="middle";
+    ctx.fillText("PUZZLE #"+G.num+" \u2022 SCORE "+G.score,W/2,H*0.4+52);
+    // next button
+    const b=nextBtnRect(),pulse=0.6+0.4*Math.sin(t*4);
+    ctx.fillStyle="rgba(20,10,43,.88)";ctx.fillRect(b.x,b.y,b.w,b.h);
+    ctx.strokeStyle="rgba(34,230,255,"+(pulse*a).toFixed(2)+")";ctx.lineWidth=3;
+    ctx.shadowBlur=16;ctx.shadowColor="#22e6ff";ctx.strokeRect(b.x,b.y,b.w,b.h);ctx.shadowBlur=0;
+    ctx.fillStyle="#22e6ff";ctx.font="700 "+Math.min(18,W*0.04)+"px ui-monospace,monospace";
+    ctx.fillText("\u25B6 NEXT PUZZLE",b.x+b.w/2,b.y+b.h/2);
+    ctx.globalAlpha=1;
+  }
+}
+function nextBtnRect(){
+  const w=Math.min(280,W*0.7),hgt=54;
+  return {x:(W-w)/2,y:H*0.4+84,w,h:hgt};
+}
+
+/* ---------- Input ---------- */
+let dragSel=null;
+cvs.addEventListener("pointerdown",e=>{
+  const x=e.clientX,y=e.clientY;
+  if(G.win){
+    if(G.win.t>1.9){
+      const b=nextBtnRect();
+      if(x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h){randomPuzzle();return;}
+    }
+    return;
+  }
+  const hb=headerBtns();
+  for(const b of hb)if(x>=b.x&&x<=b.x+b.w&&y>=b.y&&y<=b.y+b.h){b.fn();return;}
+  const c=cellAt(x,y);
+  if(c){G.started=true;dragSel={a:c,b:c};AudioFX.tick();}
+},{passive:false});
+cvs.addEventListener("pointermove",e=>{
+  if(!dragSel)return;
+  const c=cellAt(e.clientX,e.clientY);
+  if(c&&(c.x!==dragSel.b.x||c.y!==dragSel.b.y)){dragSel.b=c;AudioFX.tick();}
+},{passive:false});
+cvs.addEventListener("pointerup",()=>{
+  if(!dragSel)return;
+  const cells=lineCells(dragSel.a,dragSel.b);
+  if(cells&&cells.length>1){ if(!trySelection(cells))AudioFX.bad(); }
+  dragSel=null;
+},{passive:false});
+cvs.addEventListener("pointercancel",()=>{dragSel=null;});
+
+/* ---------- Rendering ---------- */
+function drawBand(b,t,winMode){
+  const cells=b.cells;
+  const a=cells[0],z=cells[cells.length-1];
+  const x1=GX+a.x*CELL+CELL/2,y1=GY+a.y*CELL+CELL/2;
+  const x2=GX+z.x*CELL+CELL/2,y2=GY+z.y*CELL+CELL/2;
+  ctx.save();
+  ctx.lineCap="round";ctx.lineWidth=CELL*0.8;
+  const glow=winMode?0.35+0.25*Math.sin(t*5+b.hue):0.28;
+  ctx.strokeStyle="hsl("+b.hue+" 90% 55% / "+glow.toFixed(2)+")";
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+  ctx.restore();
+}
+function render(tNow){
+  ctx.clearRect(0,0,W,H);
+  const bg=ctx.createRadialGradient(W/2,-H*0.2,0,W/2,H*0.4,H*1.1);
+  bg.addColorStop(0,"#160a33");bg.addColorStop(1,"#05030c");
+  ctx.fillStyle=bg;ctx.fillRect(0,0,W,H);
+
+  // header
+  const hb=headerBtns();
+  const cols=["#22e6ff","#ff2ea6","#7CFF6B","#ffc857"];
+  hb.forEach((b,i)=>{
+    ctx.fillStyle=cols[i];ctx.font="bold 12px ui-monospace,Menlo,monospace";
+    ctx.textAlign="left";ctx.textBaseline="middle";
+    ctx.fillText(b.label,b.x+10,13);
+  });
+  ctx.fillStyle="#e8e4ff";ctx.textAlign="center";ctx.font="bold 12px ui-monospace,monospace";
+  const mm=String((G.time/60)|0).padStart(2,"0"),ss=String((G.time|0)%60).padStart(2,"0");
+  ctx.fillText("SCORE "+G.score+"  \u2022  "+mm+":"+ss+"  \u2022  "+G.found+"/"+G.words.length+" FOUND",W/2,36);
+
+  if(G.win){drawWin(tNow);return;}
+
+  // found bands
+  for(const b of G.foundBands)drawBand(b,tNow,false);
+
+  // active drag band
+  if(dragSel){
+    const cells=lineCells(dragSel.a,dragSel.b);
+    if(cells){
+      const a=cells[0],z=cells[cells.length-1];
+      ctx.save();ctx.lineCap="round";ctx.lineWidth=CELL*0.8;
+      ctx.strokeStyle="rgba(34,230,255,.25)";
+      ctx.beginPath();
+      ctx.moveTo(GX+a.x*CELL+CELL/2,GY+a.y*CELL+CELL/2);
+      ctx.lineTo(GX+z.x*CELL+CELL/2,GY+z.y*CELL+CELL/2);
+      ctx.stroke();ctx.restore();
+    }
+  }
+
+  // grid letters
+  ctx.textAlign="center";ctx.textBaseline="middle";
+  ctx.font="700 "+(CELL*0.55)+"px ui-monospace,monospace";
+  for(let y=0;y<G.N;y++)for(let x=0;x<G.N;x++){
+    let col="#c9c2ea";
+    if(G.hintT>0&&G.hintCell&&G.hintCell.x===x&&G.hintCell.y===y){
+      const pulse=0.5+0.5*Math.sin(tNow*10);
+      ctx.save();
+      ctx.shadowBlur=16;ctx.shadowColor="#7CFF6B";
+      ctx.fillStyle="hsl(115 100% "+(55+pulse*25)+"%)";
+      ctx.fillText(G.grid[y][x],GX+x*CELL+CELL/2,GY+y*CELL+CELL/2);
+      ctx.restore();
+      continue;
+    }
+    ctx.fillStyle=col;
+    ctx.fillText(G.grid[y][x],GX+x*CELL+CELL/2,GY+y*CELL+CELL/2);
+  }
+  // grid frame
+  ctx.strokeStyle="rgba(139,92,246,.35)";ctx.lineWidth=1.5;
+  ctx.strokeRect(GX-6,GY-6,CELL*G.N+12,CELL*G.N+12);
+
+  // word list
+  ctx.font="bold "+Math.max(11,Math.min(14,W*0.026))+"px ui-monospace,monospace";
+  ctx.textAlign="left";ctx.textBaseline="middle";
+  let lx=12,ly=LISTY+10;
+  for(const w of G.words){
+    const txt=w.word;
+    const tw=ctx.measureText(txt).width+18;
+    if(lx+tw>W-12){lx=12;ly+=22;}
+    ctx.fillStyle=w.found?"#5a5480":"#e8e4ff";
+    ctx.fillText(txt,lx,ly);
+    if(w.found){
+      ctx.strokeStyle="#ff2ea6";ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(lx-2,ly);ctx.lineTo(lx+tw-16,ly);ctx.stroke();
+    }
+    lx+=tw;
+  }
+}
+
+/* ---------- Main loop ---------- */
+let lastT=performance.now();
+function frame(now){
+  const dt=Math.min(.05,(now-lastT)/1000);lastT=now;
+  const t=now/1000;
+  if(G.started&&!G.win)G.time+=dt;
+  if(G.hintT>0)G.hintT-=dt;
+  if(G.win)stepWin(dt);
+  render(t);
+  requestAnimationFrame(frame);
+}
+resize();
+newPuzzle(1+((Math.random()*MAXPUZZLE)|0),0);
+GameBridge.ready();
+requestAnimationFrame(frame);
+})();
+</script>
+</template>
+
 
 <script>
 /* ============================================================
@@ -3463,7 +3948,8 @@ const REGISTRY=[
   {id:"gridfall",    title:"Gridfall",    genre:"Puzzle", src:"embedded:gridfall"},
   {id:"neon-mahjong",title:"Neon Mahjong",genre:"Puzzle", src:"embedded:neon-mahjong"},
   {id:"neon-solitaire",title:"Neon Solitaire",genre:"Strategy",src:"embedded:neon-solitaire"},
-  {id:"mine-sweeper",title:"Mine Sweeper",genre:"Puzzle",src:"embedded:mine-sweeper"}
+  {id:"mine-sweeper",title:"Mine Sweeper",genre:"Puzzle",src:"embedded:mine-sweeper"},
+  {id:"word-search",title:"Word Grid 10K",genre:"Puzzle",src:"embedded:word-search"}
 ];
 // Reserve the remaining 49 cabinet slots, spread across genres.
 (function reserveSlots(){
