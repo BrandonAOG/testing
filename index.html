@@ -3600,7 +3600,7 @@ function randomPuzzle(){newPuzzle(1+((Math.random()*MAXPUZZLE)|0),G.diff);}
 let CELL=30,GX=0,GY=0,LISTY=0,BTNS=[];
 function layout(){
   if(!G.grid)return;
-  const topH=52,listH=Math.max(70,H*0.16);
+  const topH=52,listH=Math.max(96,H*0.2);
   const avail=Math.min(W-16,H-topH-listH-16);
   CELL=Math.floor(avail/G.N);
   GX=(W-CELL*G.N)/2;
@@ -3891,18 +3891,18 @@ function render(tNow){
   ctx.strokeRect(GX-6,GY-6,CELL*G.N+12,CELL*G.N+12);
 
   // word list
-  ctx.font="bold "+Math.max(11,Math.min(14,W*0.026))+"px ui-monospace,monospace";
+  ctx.font="bold "+Math.max(15,Math.min(19,W*0.036))+"px ui-monospace,monospace";
   ctx.textAlign="left";ctx.textBaseline="middle";
-  let lx=12,ly=LISTY+10;
+  let lx=12,ly=LISTY+12;
   for(const w of G.words){
     const txt=w.word;
-    const tw=ctx.measureText(txt).width+18;
-    if(lx+tw>W-12){lx=12;ly+=22;}
+    const tw=ctx.measureText(txt).width+22;
+    if(lx+tw>W-12){lx=12;ly+=27;}
     ctx.fillStyle=w.found?"#5a5480":"#e8e4ff";
     ctx.fillText(txt,lx,ly);
     if(w.found){
       ctx.strokeStyle="#ff2ea6";ctx.lineWidth=2;
-      ctx.beginPath();ctx.moveTo(lx-2,ly);ctx.lineTo(lx+tw-16,ly);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(lx-2,ly);ctx.lineTo(lx+tw-20,ly);ctx.stroke();
     }
     lx+=tw;
   }
