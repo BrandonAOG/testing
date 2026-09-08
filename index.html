@@ -446,6 +446,18 @@ window.GEN_SIZER_CONFIG = {
      taking turns. */
   keepOneHvac: false,
 
+  /* A load management module does not delete a load, it stops it running at
+     the same moment as other big loads. For most appliances treating a
+     managed load as zero is fine — a dryer really can just wait.
+     Heating and cooling is different: if every system is managed, Step 2
+     falls to zero and the generator is sized with no capacity reserved to
+     run the air conditioning at all, which no load calculation would
+     accept. With this true, Step 2 never drops below what a single system
+     needs, so managing the A/C removes the SIMULTANEITY of two systems but
+     still reserves enough to run one.
+     Set false to go back to treating a managed system as zero. */
+  alwaysRunOneHvac: true,
+
   /* ── NEC 220.82 constants ──────────────────────────────────────────── */
   nec: {
     vaPerSqFt: 3,
@@ -678,6 +690,10 @@ window.GEN_SIZER_CONFIG = {
        factor, so shedding it saves full VA, while anything in the pool saves
        only 40%. Shedding an air handler takes its condenser with it — no
        thermostat, no call for cooling. */
+    var hvacCount = input.systems.filter(function (s) {
+      return (s.cool || 0) > 0 || (s.heat || 0) > 0;
+    }).length;
+    var hvacSeen = 0;
     input.systems.forEach(function (s, i) {
       var coolVa = s.cool || 0, heatVa = s.heat || 0;
       if (!coolVa && !heatVa) return;
@@ -686,9 +702,11 @@ window.GEN_SIZER_CONFIG = {
         key: "hvac:" + i,
         kind: "hvac",
         index: i,
-        name: row && coolVa ? row[1] + " system" : "Electric heat system",
+        name: (row && coolVa ? row[1] + " system" : "Electric heat system") +
+              (hvacCount > 1 ? " (" + (hvacSeen + 1) + " of " + hvacCount + ")" : ""),
         va: coolVa + blowerFor(coolVa) + heatVa
       });
+      hvacSeen++;
     });
 
     /* Kitchen, laundry and water heating. Slots the customer left unticked
@@ -789,6 +807,21 @@ window.GEN_SIZER_CONFIG = {
       }
     });
 
+    /* What a single system needs on its own, across every system including
+       managed ones. This is the floor below which Step 2 must not fall. */
+    var singleFloor = 0;
+    if (C.alwaysRunOneHvac) {
+      input.systems.forEach(function (s) {
+        var cv = s.cool || 0, hv = s.heat || 0;
+        if (!cv && !hv) return;
+        var bl = blowerFor(cv);
+        var own = s.isHeatPump && cv > 0
+          ? cv + hv * n.hpSupplementFactor + bl
+          : Math.max(cv + bl, hv * n.heatFactorUnder4 + bl);
+        if (own > singleFloor) singleFloor = own;
+      });
+    }
+
     var heatFactor = heatUnits >= 4 ? n.heatFactor4Plus : n.heatFactorUnder4;
     var coolLoad = totalCool + totalBlower;
     var heatLoad = resistiveElement * heatFactor +
@@ -796,6 +829,7 @@ window.GEN_SIZER_CONFIG = {
                    hpSupplement * n.hpSupplementFactor +
                    totalBlower;
     var step2 = Math.max(coolLoad, heatLoad);
+    if (hvacShed > 0 && step2 < singleFloor) step2 = singleFloor;
 
     /* ── Demand factor: first 10,000 VA at 100%, the rest at 40% ── */
     var baseLoads = step1 + appliances;
