@@ -152,6 +152,8 @@
           <div class="gs-field">
             <label for="gq-heat">How do you heat your home?</label>
             <select id="gq-heat"></select>
+            <span class="gs-hint">Not sure? If the outdoor unit runs on cold days it's a heat pump.
+            If something burns fuel indoors it's a furnace.</span>
           </div>
           <div class="gs-field">
             <label for="gq-brand">Which generator would you like?</label>
@@ -365,10 +367,10 @@ window.GEN_SIZER_CONFIG = {
        "elec" electric furnace or baseboard — strips at the demand factor
        "boil" boiler or radiators — circulator pumps only */
   heatTypes: [
-    ["hp",   "Heat pump (the outdoor unit heats too)", "hp"],
-    ["gas",  "Gas, propane or oil furnace",            "gas"],
-    ["elec", "Electric furnace or baseboard",          "elec"],
-    ["boil", "Boiler, radiators or steam",             "boil"]
+    ["hp",   "Heat pump \u2014 outdoor unit runs in winter too",     "hp"],
+    ["gas",  "Gas, propane or oil furnace",                          "gas"],
+    ["elec", "Electric heat strips in the air handler, or baseboard", "elec"],
+    ["boil", "Boiler, radiators or steam",                           "boil"]
   ],
   boilerVa: 1500,
 
