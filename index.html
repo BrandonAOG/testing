@@ -417,6 +417,7 @@ window.GEN_SIZER_CONFIG = {
     "ev48", "ev40", "ev30",     /* car charging — the classic deferrable load */
     "htub", "pool", "poolh", "irr", "lift",
     "melt", "deice",            /* snow melt and de-icing: big, slow, deferrable */
+    "golf",                     /* golf cart charging, same as a car */
     "floor", "shop", "sauna",   /* comfort heat, not life safety */
     "weld", "compr"             /* workshop */
   ],
@@ -489,6 +490,13 @@ window.GEN_SIZER_CONFIG = {
   /* Quick mode tick list. Each entry either fills a slot in C.kitchen (by
      index) or sets a counter item to 1. Ticking is the whole interface —
      if it is not ticked, we assume gas or absent.
+     "free" is how many of an item the base calculation already covers. The
+     washer is the only one: NEC includes a 1,500 VA laundry circuit in the
+     general load specifically for it, so the first washer must not be
+     counted again. Unticked and ticked-at-1 therefore both come to nothing;
+     a second or third washer adds a washer's worth each. Without this the
+     first one would be double counted.
+
      "on" pre-ticks an entry. Everything currently starts unticked, so an
      untouched form assumes gas for the water heater, stove and dryer and
      returns a small number — the homeowner is expected to tick what they
@@ -498,13 +506,17 @@ window.GEN_SIZER_CONFIG = {
      the larger wins. */
   quickTicks: [
     { g: "Kitchen and laundry", id: "ref",    label: "Refrigerator",                   on: false, c: "ref" },
+    { g: "Kitchen and laundry", id: "minif",  label: "Mini or undercounter fridge",    on: false, c: "minif" },
     { g: "Kitchen and laundry", id: "dw",     label: "Dishwasher",                     on: false, c: "dw" },
     { g: "Kitchen and laundry", id: "mw",     label: "Microwave",                      on: false, c: "mw" },
     { g: "Kitchen and laundry", id: "rh",     label: "Range hood or vent fan",         on: false, c: "rh" },
     { g: "Kitchen and laundry", id: "disp",   label: "Garbage disposal",               on: false, c: "disp" },
+    { g: "Kitchen and laundry", id: "tcomp",  label: "Trash compactor",                on: false, c: "tcomp" },
     { g: "Kitchen and laundry", id: "range",  label: "Electric stove or range",        on: false, k: 1, va: 10000 },
     { g: "Kitchen and laundry", id: "ctop",   label: "Separate electric cooktop",      on: false, k: 2, va: 7500 },
     { g: "Kitchen and laundry", id: "oven",   label: "Separate electric wall oven",    on: false, k: 3, va: 5000 },
+    { g: "Kitchen and laundry", id: "warm",   label: "Warming drawer",                 on: false, c: "warm" },
+    { g: "Kitchen and laundry", id: "wash",   label: "Clothes washer",                 on: false, c: "wash", free: 1 },
     { g: "Kitchen and laundry", id: "dryer",  label: "Electric clothes dryer",         on: false, k: 4, va: 5000 },
     { g: "Kitchen and laundry", id: "wh",     label: "Electric water heater (tank)",   on: false, k: 0, va: 4500 },
     { g: "Kitchen and laundry", id: "whtl",   label: "Tankless electric water heater", on: false, k: 0, va: 27000 },
@@ -519,6 +531,7 @@ window.GEN_SIZER_CONFIG = {
     { g: "Outside",             id: "irr",    label: "Irrigation booster pump",        on: false, c: "irr" },
     { g: "Outside",             id: "melt",   label: "Driveway or walkway snow melt",  on: false, c: "melt" },
     { g: "Outside",             id: "deice",  label: "Roof or gutter de-icing cable",  on: false, c: "deice" },
+    { g: "Outside",             id: "golf",   label: "Golf cart charger",              on: false, c: "golf" },
     { g: "Outside",             id: "lift",   label: "Boat lift",                      on: false, c: "lift" },
     { g: "Around the house",    id: "gdo",    label: "Garage door opener",             on: false, c: "gdo" },
     { g: "Around the house",    id: "floor",  label: "Electric radiant floor heat",    on: false, c: "floor" },
@@ -616,7 +629,12 @@ window.GEN_SIZER_CONFIG = {
     ["compr", "Air compressor",                      2400, 60, 0],
     ["weld",  "Welder",                              7200,  0, 0],
     ["med",   "Medical equipment",                    600,  0, 0],
-    ["radon", "Radon fan",                            150,  0, 0]
+    ["radon", "Radon fan",                            150,  0, 0],
+    ["wash",  "Clothes washer",                     1200,  0, 0],
+    ["tcomp", "Trash compactor",                     600,  0, 0],
+    ["minif", "Mini or undercounter fridge",         250,  0, 0],
+    ["warm",  "Warming drawer",                     1500,  0, 0],
+    ["golf",  "Golf cart charger",                  1000,  0, 0]
   ]
 };
 /* =============== END CONFIG — no edits needed below this line =============== */
@@ -1089,6 +1107,9 @@ window.GEN_SIZER_CONFIG = {
       var box = $("gq-t-" + t.id);
       if (!box || !box.checked) return;
       var qty = tickQty[t.id] || 1;
+      /* Anything the base load already covers comes off the top. */
+      qty = Math.max(0, qty - (t.free || 0));
+      if (!qty) return;
       if (typeof t.k === "number") {
         /* Two water heaters is twice the load; a tank and a tankless sharing
            the slot takes the larger, not the sum. */
