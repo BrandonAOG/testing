@@ -178,9 +178,9 @@
       <div class="gs-step-body">
         <div class="gs-checks" id="gq-ticks"></div>
         <div class="gs-note" style="margin:16px 0 0;">
-          Anything you don't tick, we treat as gas or as something you don't have. Everyday items —
-          fridge, dishwasher, microwave, range hood, garage door — are counted automatically, and we
-          size your air conditioning from the square footage.
+          Tick everything you have, and set a quantity if you have more than one. Anything left
+          unticked counts as nothing, so it is worth running down the whole list. Your air
+          conditioning is sized from the square footage, so there is nothing to tick for that.
         </div>
       </div>
     </div>
@@ -497,6 +497,11 @@ window.GEN_SIZER_CONFIG = {
      Where two entries share a kitchen slot (tank vs tankless water heater)
      the larger wins. */
   quickTicks: [
+    { g: "Kitchen and laundry", id: "ref",    label: "Refrigerator",                   on: false, c: "ref" },
+    { g: "Kitchen and laundry", id: "dw",     label: "Dishwasher",                     on: false, c: "dw" },
+    { g: "Kitchen and laundry", id: "mw",     label: "Microwave",                      on: false, c: "mw" },
+    { g: "Kitchen and laundry", id: "rh",     label: "Range hood or vent fan",         on: false, c: "rh" },
+    { g: "Kitchen and laundry", id: "disp",   label: "Garbage disposal",               on: false, c: "disp" },
     { g: "Kitchen and laundry", id: "range",  label: "Electric stove or range",        on: false, k: 1, va: 10000 },
     { g: "Kitchen and laundry", id: "ctop",   label: "Separate electric cooktop",      on: false, k: 2, va: 7500 },
     { g: "Kitchen and laundry", id: "oven",   label: "Separate electric wall oven",    on: false, k: 3, va: 5000 },
@@ -515,6 +520,7 @@ window.GEN_SIZER_CONFIG = {
     { g: "Outside",             id: "melt",   label: "Driveway or walkway snow melt",  on: false, c: "melt" },
     { g: "Outside",             id: "deice",  label: "Roof or gutter de-icing cable",  on: false, c: "deice" },
     { g: "Outside",             id: "lift",   label: "Boat lift",                      on: false, c: "lift" },
+    { g: "Around the house",    id: "gdo",    label: "Garage door opener",             on: false, c: "gdo" },
     { g: "Around the house",    id: "floor",  label: "Electric radiant floor heat",    on: false, c: "floor" },
     { g: "Around the house",    id: "shop",   label: "Electric garage or shop heater", on: false, c: "shop" },
     { g: "Around the house",    id: "sauna",  label: "Electric sauna",                 on: false, c: "sauna" },
@@ -571,15 +577,15 @@ window.GEN_SIZER_CONFIG = {
   /* ── Counter items: [id, label, VA each, locked-rotor amps, starting qty]
      VA values are nameplate figures ported from the internal calculator. */
   everyday: [
-    ["ref",   "Refrigerator",                        780,   0, 1],
+    ["ref",   "Refrigerator",                        780,   0, 0],
     ["frz",   "Standalone freezer",                  600,   0, 0],
-    ["dw",    "Dishwasher",                         1030,   0, 1],
-    ["mw",    "Microwave",                          1400,   0, 1],
-    ["disp",  "Garbage disposal",                    828,  15, 1],
-    ["rh",    "Range hood or vent fan",              540,   0, 1],
+    ["dw",    "Dishwasher",                         1030,   0, 0],
+    ["mw",    "Microwave",                          1400,   0, 0],
+    ["disp",  "Garbage disposal",                    828,  15, 0],
+    ["rh",    "Range hood or vent fan",              540,   0, 0],
     ["ice",   "Ice maker",                           600,   0, 0],
     ["wine",  "Wine fridge",                         230,   0, 0],
-    ["gdo",   "Garage door opener",                  720,   0, 1],
+    ["gdo",   "Garage door opener",                  720,   0, 0],
     ["shut",  "Motorized storm shutters",             828,   0, 0],
     ["soft",  "Water softener",                      150,   0, 0],
     ["dehum", "Whole-house dehumidifier",            960,   0, 0],
@@ -1074,7 +1080,9 @@ window.GEN_SIZER_CONFIG = {
 
     var counts = {};
     C.everyday.concat(C.extras).forEach(function (it) { counts[it[0]] = 0; });
-    /* Ordinary items nobody thinks to mention. */
+    /* Starting quantities from the catalogue. All zero now that every
+       appliance is a tick — nothing is assumed. Set the 5th value on a
+       C.everyday row back to 1 to auto-include it again. */
     C.everyday.forEach(function (it) { counts[it[0]] = it[4]; });
 
     C.quickTicks.forEach(function (t) {
@@ -1181,10 +1189,9 @@ window.GEN_SIZER_CONFIG = {
     /* ---- top-line note: only things they must see without clicking ---- */
     var top = [];
     if (current.input.quick) {
-      top.push("<strong>This is an estimate.</strong> We sized your air conditioning from the square " +
-        "footage and counted the everyday items \u2014 fridge, dishwasher, microwave, lights \u2014 " +
-        "for you. Your exact size gets confirmed with a full load calculation at your free in-home " +
-        "assessment.");
+      top.push("<strong>This is an estimate.</strong> It covers your air conditioning, sized from the " +
+        "square footage, plus everything you ticked. Your exact size gets confirmed with a full load " +
+        "calculation at your free in-home assessment.");
     }
     if (top.length) {
       $("gs-flag").innerHTML = top.join("");
