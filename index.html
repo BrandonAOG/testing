@@ -55,7 +55,6 @@
     .gs-step { border: 1px solid var(--gs-border); border-radius: 10px; margin: 0 0 14px; overflow: hidden; background: #fff; }
     .gs-step-head { background: var(--gs-dark); color: #fff; padding: 11px 16px; font-weight: 700; font-size: 15px; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .gs-step-num { background: var(--gs-accent); color: var(--gs-accent-text); border-radius: 50%; width: 24px; height: 24px; display: inline-flex; align-items: center; justify-content: center; font-size: 13px; flex: 0 0 auto; font-weight: 800; }
-    .gs-step-sub { font-weight: 400; font-size: 12px; opacity: .65; margin-left: auto; text-align: right; }
     /* Its own class, not gs-step-sub: that one is hidden on narrow screens and
        a warning should never be the thing that disappears on a phone. */
     .gs-step-warn { margin-left: auto; font-size: 16px; font-weight: 700; color: #FF5A5A; }
@@ -127,8 +126,7 @@
       .gs-result-head { gap: 12px; padding: 18px 14px; }
       .gs-result-img { max-width: 78vw; }
       .gs-stats div { min-width: 100%; }
-      .gs-step-sub { display: none; }
-      .gs-step-warn { margin-left: 0; width: 100%; font-size: 15px; }
+        .gs-step-warn { margin-left: 0; width: 100%; font-size: 15px; }
     }
     @media (prefers-reduced-motion: reduce) { #gen-sizer { scroll-behavior: auto; } }
   </style>
@@ -352,41 +350,81 @@ window.GEN_SIZER_CONFIG = {
     }
   },
 
-  /* ── Climate regions ─────────────────────────────────────────────────
-     Square feet per ton of cooling, and typical electric backup heat.
-     These are rules of thumb, not Manual J — the point is to be roughly
-     right nationally instead of exactly right in one state.
+  /* ── Climate zones ──────────────────────────────────────────────────
+     Zones and the A/C sizing table below are taken from a published
+     air-conditioning sizing reference, not invented here. That matters:
+     an earlier version of this file used a single "square feet per ton"
+     divisor per region that ran from 550 in hot climates to 1,000 in cold.
+     This table shows the real spread is much narrower — roughly 600 sq ft
+     per ton in Zone 1 against 660-700 in Zone 5 — because summer design
+     temperatures do not differ nearly as much as winter ones. The old
+     model was undersizing cooling in the north by about a third.
 
-     stripKw for "hot" is 7,500 on installer observation in South Florida,
-     where strips run 5 to 10 kW; 7.5 is the middle of that range. The other
-     three are still estimates and WANT A SECOND OPINION from someone who
-     installs in those regions. Since the heat side governs for every heat
-     pump, these are the most load-bearing numbers in the file. */
-  regions: {
-    hot:      { label: "Hot",      sqFtPerTon: 550,  stripKw: 7500,  bbKwPerRoom: 1000 },
-    warm:     { label: "Warm",     sqFtPerTon: 700,  stripKw: 10000, bbKwPerRoom: 1250 },
-    moderate: { label: "Moderate", sqFtPerTon: 850,  stripKw: 15000, bbKwPerRoom: 1500 },
-    cold:     { label: "Cold",     sqFtPerTon: 1000, stripKw: 20000, bbKwPerRoom: 2000 }
+     acBands: for each zone, [max square feet, tons] in ascending order.
+     Find the first band whose square footage covers the space and take its
+     tonnage. Applied PER SYSTEM, so a house is divided by its A/C count
+     before the lookup.
+
+     heatBtuPerSqFt is the TOP of the same reference's heating range per
+     zone. The reference gives a range (Zone 1 30-35 BTU/sq ft up to Zone 5
+     50-60) and says to use the lower figure for a well-insulated house,
+     the higher for one that is older or poorly insulated, and the higher
+     if you are unsure. This form does not ask about insulation, so it is
+     unsure by definition and takes the top of the range:
+       Zone 1  35    Zone 2  40    Zone 3  45    Zone 4  50    Zone 5  60
+     Using midpoints instead would run about 10% light. Adding an
+     insulation question would let this drop to the low end for newer
+     homes — worth roughly 12 to 17% on the heat side.
+
+     Multiplied by floor area and converted at 3,412 BTU/hr per kW this
+     gives the FULL heating load, which is what an electric furnace or
+     whole-house baseboard actually has to supply.
+
+     Note this figure is BTU of OUTPUT. That matters for gas furnaces,
+     where input rating times efficiency gives output — but not here,
+     because a gas furnace contributes only its blower to an electrical
+     load calculation. Electric resistance heat is output = input.
+
+     hpAuxKw is a different quantity: supplemental strips behind a heat
+     pump, which only cover the shortfall below the balance point rather
+     than the whole load. Zone 1's 7,500 W is installer observation in
+     South Florida (5 to 10 kW there), against a full load of about 25 kW
+     for the same house — roughly a third, which is why these two numbers
+     must not be conflated. An earlier version used hpAuxKw for electric
+     furnaces too, understating them by two to three times. */
+  zones: {
+    z1: { label: "Zone 1", heatBtuPerSqFt: 35, hpAuxKw: 7500,
+          acBands: [[900,1.5],[1200,2],[1500,2.5],[1800,3],[2100,3.5],[2400,4],[3000,5]] },
+    z2: { label: "Zone 2", heatBtuPerSqFt: 40, hpAuxKw: 10000,
+          acBands: [[950,1.5],[1250,2],[1550,2.5],[1850,3],[2150,3.5],[2500,4],[3100,5]] },
+    z3: { label: "Zone 3", heatBtuPerSqFt: 45, hpAuxKw: 13000,
+          acBands: [[1000,1.5],[1300,2],[1600,2.5],[1900,3],[2200,3.5],[2600,4],[3200,5]] },
+    z4: { label: "Zone 4", heatBtuPerSqFt: 50, hpAuxKw: 16000,
+          acBands: [[1050,1.5],[1350,2],[1600,2.5],[2000,3],[2250,3.5],[2700,4],[3300,5]] },
+    z5: { label: "Zone 5", heatBtuPerSqFt: 60,   hpAuxKw: 20000,
+          acBands: [[1100,1.5],[1400,2],[1650,2.5],[2100,3],[2300,3.5],[2700,4],[3300,5]] }
   },
 
-  /* State to region. Where a state spans regions, this follows where most
-     of the population lives, per the "majority of the state" rule.
-     The judgement calls worth reviewing: NV (nearly all of the state is
-     high desert, but almost everyone lives in Las Vegas), CA (Southern
-     California dominates by population), GA and OK (both sit on the
-     hot/warm line), OR and WA (coastal valleys, not the dry east). */
+  wattsPerBtuHr: 1 / 3.412,     /* 1 kW = 3,412 BTU/hr */
+
+  /* State to zone, per the reference map.
+
+     Three I would question, left as the source has them so this matches the
+     reference rather than being half-overridden: UT sits in Zone 2 beside
+     California and South Carolina, though Salt Lake City has real winters,
+     and ID and WY sit in Zone 3 though both are genuinely cold. Move them
+     to z4/z5 if you disagree with the source.
+
+     The source map omits AK, HI and DC. Assigned here: AK to the coldest
+     zone, HI to the hottest, DC with the surrounding mid-Atlantic. */
   states: {
-    AL:"hot", AZ:"hot", FL:"hot", GA:"hot", HI:"hot", LA:"hot",
-    MS:"hot", NV:"hot", SC:"hot", TX:"hot",
-    AR:"warm", CA:"warm", DC:"warm", DE:"warm", KS:"warm", KY:"warm",
-    MD:"warm", MO:"warm", NC:"warm", NM:"warm", OK:"warm", TN:"warm",
-    VA:"warm", WV:"warm",
-    CO:"moderate", CT:"moderate", IA:"moderate", IL:"moderate",
-    IN:"moderate", MA:"moderate", NE:"moderate", NJ:"moderate",
-    NY:"moderate", OH:"moderate", OR:"moderate", PA:"moderate",
-    RI:"moderate", UT:"moderate", WA:"moderate",
-    AK:"cold", ID:"cold", ME:"cold", MI:"cold", MN:"cold", MT:"cold",
-    ND:"cold", NH:"cold", SD:"cold", VT:"cold", WI:"cold", WY:"cold"
+    FL:"z1", TX:"z1", LA:"z1", MS:"z1", AL:"z1", GA:"z1", AZ:"z1", NM:"z1", HI:"z1",
+    CA:"z2", SC:"z2", NC:"z2", AR:"z2", TN:"z2", NV:"z2", OK:"z2", UT:"z2",
+    VA:"z3", KY:"z3", MO:"z3", KS:"z3", NE:"z3", CO:"z3", OR:"z3", WA:"z3",
+    WY:"z3", WV:"z3", ID:"z3",
+    IL:"z4", IN:"z4", OH:"z4", PA:"z4", NJ:"z4", MD:"z4", DE:"z4", IA:"z4", DC:"z4",
+    MI:"z5", WI:"z5", MN:"z5", NY:"z5", CT:"z5", MA:"z5", RI:"z5", VT:"z5",
+    NH:"z5", ME:"z5", MT:"z5", ND:"z5", SD:"z5", AK:"z5"
   },
 
   /* How the home is heated. Nationally this matters more than anything
@@ -507,8 +545,15 @@ window.GEN_SIZER_CONFIG = {
      accept. With this true, Step 2 never drops below what a single system
      needs, so managing the A/C removes the SIMULTANEITY of two systems but
      still reserves enough to run one.
-     Set false to go back to treating a managed system as zero. */
-  alwaysRunOneHvac: true,
+     TURNED OFF at the contractor's direction. With it false a managed A/C
+     counts as zero, so a single-system home can be quoted a size with no
+     capacity reserved to run its air conditioning — the management system
+     will simply shed it whenever the generator is loaded. That is a real
+     service level (cooling when little else is running) and arguably what
+     702.4(B)(2)(b) permits, but the customer has to understand it, which
+     is why the note on those sizes says so outright.
+     Set true to reserve one system's worth again. */
+  alwaysRunOneHvac: false,
 
   /* ── NEC 220.82 constants ──────────────────────────────────────────── */
   nec: {
@@ -520,7 +565,35 @@ window.GEN_SIZER_CONFIG = {
     tier2Factor: 0.40,           /* remainder at 40% */
     heatFactorUnder4: 0.65,      /* 220.82(C)(4) — fewer than four heat units */
     heatFactor4Plus: 0.40,       /* 220.82(C)(5) — four or more */
-    hpSupplementFactor: 0.65     /* 220.82(C)(3) — heat pump supplemental strips */
+    /* 220.82(C)(3) — heat pump compressor at 100% PLUS supplemental strips
+       at 65%, added together. This is the NON-INTERLOCKED case, which is
+       the default.
+
+       The code distinguishes two control arrangements:
+         INTERLOCKED     compressor and strips physically cannot be
+                         energised together. Take the LARGEST single load.
+         NOT INTERLOCKED they can run together — routinely do during a
+                         defrost cycle, where the strips temper the supply
+                         air while the compressor runs in reverse.
+                         Compressor at 100% plus strips at 65%.
+
+       Not to be confused with a strip lockout, which is a different thing:
+       that disables the strips ABOVE a balance point so they do not run
+       unnecessarily. Below that point they still engage while the
+       compressor runs, so a strip lockout is NOT an interlock and does not
+       earn the larger-of treatment.
+
+       Set nec.hpInterlocked true to switch to largest-of. Worth about 5 kW
+       off Step 2, which is close to a full generator size since Step 2
+       takes no demand factor — so only turn it on if the equipment really
+       is interlocked.
+
+       Note also that (C)(2) — a heat pump with NO supplemental heat, at
+       100% of nameplate — is unreachable from this form, because every
+       heat pump is given its zone's auxiliary strips. Conservative, but a
+       ductless system with no strips would be overstated. */
+    hpInterlocked: false,
+    hpSupplementFactor: 0.65
   },
 
   /* ── Cooling: [VA, homeowner label, locked-rotor amps] ───────────────
@@ -617,13 +690,6 @@ window.GEN_SIZER_CONFIG = {
   ],
   maxTickQty: 4,
 
-  /* Quick mode assumptions. Deliberately typical-to-conservative for
-     the country. Cooling and backup heat come from the state picker, so
-     these are the values that do NOT vary by region. */
-  quick: {
-    maxTonsPerUnit: 5,
-    minTonsPerUnit: 1.5,
-  },
 
   /* Air-handler blower VA, keyed to the cooling VA above. The blower belongs
      to the air handler, so it is derived from system size rather than picked
@@ -893,10 +959,12 @@ window.GEN_SIZER_CONFIG = {
     /* A blower only belongs on the heat side if the heat actually runs
        through an air handler. Baseboard and radiators have no fan. */
     var heatBlower = (hpCompressor > 0 || ahuResistive > 0) ? totalBlower : 0;
-    var heatLoad = resistiveElement * heatFactor +
-                   hpCompressor +
-                   hpSupplement * n.hpSupplementFactor +
-                   heatBlower;
+    /* Interlocked equipment takes the largest single load instead of the
+       sum — see nec.hpInterlocked. */
+    var hpHeat = n.hpInterlocked
+      ? Math.max(hpCompressor, hpSupplement * n.hpSupplementFactor)
+      : hpCompressor + hpSupplement * n.hpSupplementFactor;
+    var heatLoad = resistiveElement * heatFactor + hpHeat + heatBlower;
     var step2 = Math.max(coolLoad, heatLoad);
     if (hvacShed > 0 && step2 < singleFloor) step2 = singleFloor;
 
@@ -1177,7 +1245,17 @@ window.GEN_SIZER_CONFIG = {
     $("gq-n-" + id).textContent = tickQty[id];
   });
 
-  /* Snap a tonnage  /* Snap a tonnage to the nearest size the cooling table actually has. */
+  /* Snap a tonnage  /* First band that covers the area; the largest band if it is bigger than
+     anything in the table, since 5 tons is the largest residential unit. */
+  function tonsForArea(zone, sqft) {
+    var bands = zone.acBands;
+    for (var i = 0; i < bands.length; i++) {
+      if (sqft <= bands[i][0]) return bands[i][1];
+    }
+    return bands[bands.length - 1][1];
+  }
+
+  /* Snap a tonnage to the nearest size the cooling table actually has. */
   function vaForTons(tons) {
     var keys = Object.keys(C.tonsToVa).map(parseFloat).sort(function (a, b) { return a - b; });
     var best = keys[0];
@@ -1190,14 +1268,13 @@ window.GEN_SIZER_CONFIG = {
   /* Turn five answers into the same input object the detailed form produces,
      so everything downstream is identical. */
   function readInput() {
-    var q = C.quick;
     var sqft = parseInt($("gq-sqft").value, 10) || 0;
     var nAc = parseInt($("gq-ac").value, 10);
 
     /* Climate drives how much cooling a given floor area needs, and how much
        backup heat sits behind a heat pump. The state is required before the
        form will calculate, so the "warm" fallback is only a safety net. */
-    var region = C.regions[C.states[$("gq-state").value] || "warm"];
+    var region = C.zones[C.states[$("gq-state").value] || "z3"];
 
     /* How they heat decides whether Step 2 of the calculation is a blower
        or tens of kilowatts of resistance heat, and where that load hangs. */
@@ -1206,14 +1283,25 @@ window.GEN_SIZER_CONFIG = {
       if (h[0] === $("gq-heat").value) { hMode = h[2]; hSrc = h[3]; }
     });
 
-    var totalTons = Math.max(q.minTonsPerUnit, sqft / region.sqFtPerTon);
+    /* Full heating load for this zone and floor area — what electric heat
+       has to supply on its own. Heat pump strips are a different figure. */
+    var fullHeatW = Math.round(sqft * region.heatBtuPerSqFt * C.wattsPerBtuHr);
+
+    /* Divide the house between its systems first, then look each one up in
+       the zone's band table. That is how the table is meant to be read. */
+    var sqftPerSystem = nAc > 0 ? sqft / nAc : 0;
     var systems = [];
     for (var i = 0; i < C.maxSystems; i++) {
       if (i < nAc) {
-        var tons = Math.min(q.maxTonsPerUnit, Math.max(q.minTonsPerUnit, totalTons / nAc));
-        /* Only air-handler heat rides on the A/C rows. Baseboard and boilers
-           are counted separately, so their systems are cooling only. */
-        var heatVa = hSrc === "ahu" && (hMode === "hp" || hMode === "elec") ? region.stripKw : 0;
+        var tons = tonsForArea(region, sqftPerSystem);
+        /* Only air-handler heat rides on the A/C rows. An electric furnace
+           supplies the whole load, split between the air handlers; a heat
+           pump adds its auxiliary strips on top of the compressor. */
+        var heatVa = 0;
+        if (hSrc === "ahu") {
+          if (hMode === "hp") heatVa = region.hpAuxKw;
+          else if (hMode === "elec") heatVa = Math.round(fullHeatW / nAc);
+        }
         systems.push({
           cool: vaForTons(tons),
           heat: heatVa,
@@ -1224,18 +1312,25 @@ window.GEN_SIZER_CONFIG = {
       }
     }
 
-    /* Heat that exists whether or not the house has central air. Baseboard is
-       per room, and each room is its own separately controlled heat unit —
-       which is what earns the lower demand factor once there are four or
-       more of them. A boiler is just its circulator pumps. */
+    /* Heat that exists whether or not the house has central air. Baseboard
+       supplies the full load, and the room count is used only to decide how
+       many separately controlled units it is — which sets the demand factor.
+       Splitting it this way means the wattage comes from floor area, which a
+       homeowner can state accurately, rather than from counting heaters.
+       A boiler is just its circulator pumps. */
     var extraHeat = { va: 0, units: 0 };
     if (hSrc === "standalone") {
       if (hMode === "base") {
         var rooms = parseInt($("gq-rooms").value, 10) || 0;
-        extraHeat = { va: rooms * region.bbKwPerRoom, units: rooms };
+        extraHeat = { va: rooms > 0 ? fullHeatW : 0, units: rooms };
       } else if (hMode === "boil") {
         extraHeat = { va: C.boilerVa, units: 1 };
       }
+    } else if (nAc === 0 && (hMode === "hp" || hMode === "elec")) {
+      /* Air-handler heat with no air handler entered. Rather than lose the
+         load entirely, count it as standalone — the same trap baseboard
+         used to fall into. */
+      extraHeat = { va: fullHeatW, units: 1 };
     }
 
     /* Every kitchen slot starts at zero. An unticked appliance is not assumed
@@ -1392,7 +1487,21 @@ window.GEN_SIZER_CONFIG = {
           lighter = current.options[li]; break;
         }
       }
-      if (o.detail.filter(function (x) { return x.kind === "hvac"; }).length && lighter) {
+      var hvacManaged = o.detail.filter(function (x) { return x.kind === "hvac"; }).length;
+      var hvacTotal = current.input.systems.filter(function (sy) {
+        return (sy.cool || 0) > 0 || (sy.heat || 0) > 0;
+      }).length;
+      if (hvacManaged && hvacTotal && hvacManaged >= hvacTotal) {
+        /* Every system managed, so this size sets aside nothing to run the
+           air conditioning. Say it plainly rather than leaving it buried in
+           the arithmetic. */
+        lm += "<p><strong>Worth being clear about this size:</strong> it does not set aside capacity " +
+          "to run your air conditioning. The system stays connected and will run when little else is " +
+          "drawing power, but on a hot afternoon with the oven or dryer going, the management system " +
+          "will drop it. If you want cooling to keep priority during an outage, choose a larger size " +
+          "above.</p>";
+      }
+      if (hvacManaged && lighter) {
         lm += "<p>If you would rather nothing touched your air conditioning, the <strong>" +
           esc(lighter.model.name) + "</strong> option leaves it alone.</p>";
       }
