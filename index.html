@@ -136,12 +136,7 @@
           </div>
           <div class="gs-field">
             <label for="gq-ac">How many outdoor A/C units do you have?</label>
-            <select id="gq-ac">
-              <option value="1">One</option>
-              <option value="2">Two</option>
-              <option value="3">Three</option>
-              <option value="0">None</option>
-            </select>
+            <select id="gq-ac"></select>
             <span class="gs-hint">The boxes outside that hum in the summer.</span>
           </div>
 
@@ -255,7 +250,7 @@ window.GEN_SIZER_CONFIG = {
   phone: "(239) 839-3553",
   estimateUrl: "/free-estimate/",            /* CTA destination */
   prefill: true,                             /* pass answers to the estimate page as URL params */
-  maxSystems: 3,                             /* how many A/C + air handler rows to offer */
+  maxSystems: 7,                             /* how many A/C + air handler rows to offer */
   optionCount: 3,                            /* how many generator choices to show. They step up
                                                 the load-management ladder one module at a time
                                                 from wherever this house starts. */
@@ -329,10 +324,14 @@ window.GEN_SIZER_CONFIG = {
      Square feet per ton of cooling, and typical electric backup heat.
      These are rules of thumb, not Manual J — the point is to be roughly
      right nationally instead of exactly right in one state.
-     THESE NUMBERS WANT A SECOND OPINION from someone who installs in
-     each region. */
+
+     stripKw for "hot" is 7,500 on installer observation in South Florida,
+     where strips run 5 to 10 kW; 7.5 is the middle of that range. The other
+     three are still estimates and WANT A SECOND OPINION from someone who
+     installs in those regions. Since the heat side governs for every heat
+     pump, these are the most load-bearing numbers in the file. */
   regions: {
-    hot:      { label: "Hot",           sqFtPerTon: 550,  stripKw: 5000 },
+    hot:      { label: "Hot",           sqFtPerTon: 550,  stripKw: 7500 },
     warm:     { label: "Warm",          sqFtPerTon: 700,  stripKw: 10000 },
     moderate: { label: "Moderate",      sqFtPerTon: 850,  stripKw: 15000 },
     cold:     { label: "Cold",          sqFtPerTon: 1000, stripKw: 20000 }
@@ -1022,6 +1021,15 @@ window.GEN_SIZER_CONFIG = {
 
   /* ---------- read the form ---------- */  /* Populate the pickers that come from config. */
   (function buildPickers() {
+    /* Built from maxSystems so the picker and the calculation cannot drift
+       apart. Seven is enough to reach the four-or-more heat unit rule. */
+    var words = ["None","One","Two","Three","Four","Five","Six","Seven","Eight","Nine","Ten"];
+    var acOpts = "";
+    for (var n = 1; n <= C.maxSystems; n++) {
+      acOpts += '<option value="' + n + '">' + (words[n] || n) + "</option>";
+    }
+    $("gq-ac").innerHTML = acOpts + '<option value="0">None</option>';
+
     var st = Object.keys(C.states).sort();
     $("gq-state").innerHTML = '<option value="">Select your state</option>' +
       st.map(function (k) { return '<option value="' + k + '">' + k + "</option>"; }).join("");
@@ -1098,9 +1106,9 @@ window.GEN_SIZER_CONFIG = {
     var sqft = parseInt($("gq-sqft").value, 10) || 0;
     var nAc = parseInt($("gq-ac").value, 10);
 
-    /* Climate drives how much cooling a given floor area needs, and how
-       much backup heat sits behind a heat pump. Falls back to the warm
-       region if no state is chosen. */
+    /* Climate drives how much cooling a given floor area needs, and how much
+       backup heat sits behind a heat pump. The state is required before the
+       form will calculate, so the "warm" fallback is only a safety net. */
     var region = C.regions[C.states[$("gq-state").value] || "warm"];
 
     /* How they heat decides whether Step 2 of the calculation is a blower
@@ -1405,10 +1413,22 @@ window.GEN_SIZER_CONFIG = {
     var input = readInput();
     var err = $("gs-err");
 
-    if (!input.sqft) {
-      err.textContent = "Enter your home's square footage to get a size \u2014 it drives the base load.";
+    /* Both of these change the answer too much to guess at: square footage
+       drives the base load, and the state sets the cooling and backup-heat
+       assumptions. Collect whatever is missing rather than reporting one at
+       a time. */
+    var missing = [];
+    if (!input.sqft) missing.push(["gq-sqft", "how big your home is"]);
+    if (!input.state) missing.push(["gq-state", "what state you're in"]);
+
+    if (missing.length) {
+      err.textContent = "We need " +
+        (missing.length === 1
+          ? missing[0][1]
+          : missing.map(function (m) { return m[1]; }).join(" and ")) +
+        " before we can size a generator.";
       err.classList.add("gs-show");
-      $("gq-sqft").focus();
+      $(missing[0][0]).focus();
       return;
     }
     err.classList.remove("gs-show");
