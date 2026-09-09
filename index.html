@@ -150,6 +150,12 @@
             <span class="gs-hint">Not sure? If the outdoor unit runs on cold days it's a heat pump.
             If something burns fuel indoors it's a furnace.</span>
           </div>
+          <div class="gs-field" id="gq-rooms-field" style="display:none;">
+            <label for="gq-rooms">How many rooms have baseboard heaters?</label>
+            <input type="number" id="gq-rooms" min="0" max="40" step="1" placeholder="e.g. 8" inputmode="numeric">
+            <span class="gs-hint">Walk the house and count them. Include hallways and bathrooms
+            if they have their own heater.</span>
+          </div>
           <div class="gs-field">
             <label for="gq-brand">Which generator would you like?</label>
             <select id="gq-brand"></select>
@@ -331,10 +337,10 @@ window.GEN_SIZER_CONFIG = {
      installs in those regions. Since the heat side governs for every heat
      pump, these are the most load-bearing numbers in the file. */
   regions: {
-    hot:      { label: "Hot",           sqFtPerTon: 550,  stripKw: 7500 },
-    warm:     { label: "Warm",          sqFtPerTon: 700,  stripKw: 10000 },
-    moderate: { label: "Moderate",      sqFtPerTon: 850,  stripKw: 15000 },
-    cold:     { label: "Cold",          sqFtPerTon: 1000, stripKw: 20000 }
+    hot:      { label: "Hot",      sqFtPerTon: 550,  stripKw: 7500,  bbKwPerRoom: 1000 },
+    warm:     { label: "Warm",     sqFtPerTon: 700,  stripKw: 10000, bbKwPerRoom: 1250 },
+    moderate: { label: "Moderate", sqFtPerTon: 850,  stripKw: 15000, bbKwPerRoom: 1500 },
+    cold:     { label: "Cold",     sqFtPerTon: 1000, stripKw: 20000, bbKwPerRoom: 2000 }
   },
 
   /* State to region. Where a state spans regions, this follows where most
@@ -365,11 +371,30 @@ window.GEN_SIZER_CONFIG = {
        "hp"   heat pump — compressor at 100% plus strips at 65%
        "elec" electric furnace or baseboard — strips at the demand factor
        "boil" boiler or radiators — circulator pumps only */
+  /* How the home is heated. Nationally this matters more than anything else
+     on the form: a gas furnace is a blower, while electric resistance heat
+     is tens of kilowatts and usually governs the whole calculation.
+
+     [value, label, mode, source] where mode is:
+       "gas"   no electric heat beyond the blower
+       "hp"    heat pump — compressor at 100% plus strips at 65%
+       "elec"  strips in the air handler — at the heat demand factor
+       "base"  electric baseboard — at the heat demand factor
+       "boil"  boiler or radiators — circulator pumps only
+     and source is where the load comes from:
+       "ahu"        per air handler, so it scales with the A/C count
+       "standalone" independent of the A/C count
+
+     The source field exists because baseboard and boilers have nothing to
+     do with an air handler. Hanging their load off the A/C rows meant a
+     house with baseboard and no central air had NO heating load at all —
+     a Vermont house heated entirely by resistance came out at 22 kW. */
   heatTypes: [
-    ["hp",   "Heat pump \u2014 outdoor unit runs in winter too",     "hp"],
-    ["gas",  "Gas, propane or oil furnace",                          "gas"],
-    ["elec", "Electric heat strips in the air handler, or baseboard", "elec"],
-    ["boil", "Boiler, radiators or steam",                           "boil"]
+    ["hp",   "Heat pump \u2014 outdoor unit runs in winter too", "hp",   "ahu"],
+    ["gas",  "Gas, propane or oil furnace",                      "gas",  "ahu"],
+    ["elec", "Electric heat strips in the air handler",          "elec", "ahu"],
+    ["base", "Electric baseboard heaters",                       "base", "standalone"],
+    ["boil", "Boiler, radiators or steam",                       "boil", "standalone"]
   ],
   boilerVa: 1500,
 
@@ -518,47 +543,51 @@ window.GEN_SIZER_CONFIG = {
      Where two entries share a kitchen slot (tank vs tankless water heater)
      the larger wins. */
   quickTicks: [
-    { g: "Kitchen and laundry", id: "ref",    label: "Refrigerator",                   on: false, c: "ref" },
-    { g: "Kitchen and laundry", id: "minif",  label: "Mini or undercounter fridge",    on: false, c: "minif" },
-    { g: "Kitchen and laundry", id: "dw",     label: "Dishwasher",                     on: false, c: "dw" },
-    { g: "Kitchen and laundry", id: "mw",     label: "Microwave",                      on: false, c: "mw" },
-    { g: "Kitchen and laundry", id: "rh",     label: "Range hood or vent fan",         on: false, c: "rh" },
-    { g: "Kitchen and laundry", id: "disp",   label: "Garbage disposal",               on: false, c: "disp" },
-    { g: "Kitchen and laundry", id: "tcomp",  label: "Trash compactor",                on: false, c: "tcomp" },
-    { g: "Kitchen and laundry", id: "range",  label: "Electric stove or range",        on: false, k: 1, va: 10000 },
-    { g: "Kitchen and laundry", id: "ctop",   label: "Separate electric cooktop",      on: false, k: 2, va: 7500 },
-    { g: "Kitchen and laundry", id: "oven",   label: "Separate electric wall oven",    on: false, k: 3, va: 5000 },
-    { g: "Kitchen and laundry", id: "warm",   label: "Warming drawer",                 on: false, c: "warm" },
-    { g: "Kitchen and laundry", id: "wash",   label: "Clothes washer",                 on: false, c: "wash", free: 1 },
-    { g: "Kitchen and laundry", id: "dryer",  label: "Electric clothes dryer",         on: false, k: 4, va: 5000 },
-    { g: "Kitchen and laundry", id: "wh",     label: "Electric water heater (tank)",   on: false, k: 0, va: 4500 },
-    { g: "Kitchen and laundry", id: "whtl",   label: "Tankless electric water heater", on: false, k: 0, va: 27000 },
-    { g: "Kitchen and laundry", id: "frz",    label: "Standalone freezer",             on: false, c: "frz" },
-    { g: "Outside",             id: "ev",     label: "Electric car charger",           on: false, c: "ev48" },
-    { g: "Outside",             id: "pool",   label: "Pool pump",                      on: false, c: "pool" },
-    { g: "Outside",             id: "poolh",  label: "Electric pool heater",           on: false, c: "poolh" },
-    { g: "Outside",             id: "htub",   label: "Hot tub or spa",                 on: false, c: "htub" },
-    { g: "Outside",             id: "well",   label: "Well pump",                      on: false, c: "well" },
-    { g: "Outside",             id: "sump",   label: "Sump pump",                      on: false, c: "sump" },
-    { g: "Outside",             id: "sept",   label: "Septic or sewage pump",          on: false, c: "sept" },
-    { g: "Outside",             id: "irr",    label: "Irrigation booster pump",        on: false, c: "irr" },
-    { g: "Outside",             id: "melt",   label: "Driveway or walkway snow melt",  on: false, c: "melt" },
-    { g: "Outside",             id: "deice",  label: "Roof or gutter de-icing cable",  on: false, c: "deice" },
-    { g: "Outside",             id: "golf",   label: "Golf cart charger",              on: false, c: "golf" },
-    { g: "Outside",             id: "lift",   label: "Boat lift",                      on: false, c: "lift" },
-    { g: "Around the house",    id: "gdo",    label: "Garage door opener",             on: false, c: "gdo" },
-    { g: "Around the house",    id: "floor",  label: "Electric radiant floor heat",    on: false, c: "floor" },
-    { g: "Around the house",    id: "shop",   label: "Electric garage or shop heater", on: false, c: "shop" },
-    { g: "Around the house",    id: "sauna",  label: "Electric sauna",                 on: false, c: "sauna" },
-    { g: "Around the house",    id: "humid",  label: "Whole-house humidifier",         on: false, c: "humid" },
-    { g: "Around the house",    id: "dehum",  label: "Whole-house dehumidifier",       on: false, c: "dehum" },
-    { g: "Around the house",    id: "shut",   label: "Motorized storm shutters",       on: false, c: "shut" },
-    { g: "Around the house",    id: "cvac",   label: "Central vacuum",                 on: false, c: "cvac" },
-    { g: "Around the house",    id: "compr",  label: "Air compressor",                 on: false, c: "compr" },
-    { g: "Around the house",    id: "weld",   label: "Welder",                         on: false, c: "weld" },
-    { g: "Around the house",    id: "med",    label: "Medical equipment",              on: false, c: "med" },
-    { g: "Around the house",    id: "radon",  label: "Radon fan",                      on: false, c: "radon" },
-    { g: "Around the house",    id: "elev",   label: "Elevator",                       on: false, c: "elev" }
+    { g: "Kitchen",          id: "ref",    label: "Refrigerator",                   on: false, c: "ref" },
+    { g: "Kitchen",          id: "minif",  label: "Mini or undercounter fridge",    on: false, c: "minif" },
+    { g: "Kitchen",          id: "frz",    label: "Standalone freezer",             on: false, c: "frz" },
+    { g: "Kitchen",          id: "dw",     label: "Dishwasher",                     on: false, c: "dw" },
+    { g: "Kitchen",          id: "disp",   label: "Garbage disposal",               on: false, c: "disp" },
+    { g: "Kitchen",          id: "tcomp",  label: "Trash compactor",                on: false, c: "tcomp" },
+    { g: "Kitchen",          id: "mw",     label: "Microwave",                      on: false, c: "mw" },
+    { g: "Kitchen",          id: "rh",     label: "Range hood or vent fan",         on: false, c: "rh" },
+    { g: "Kitchen",          id: "range",  label: "Electric stove or range",        on: false, k: 1, va: 10000 },
+    { g: "Kitchen",          id: "ctop",   label: "Separate electric cooktop",      on: false, k: 2, va: 7500 },
+    { g: "Kitchen",          id: "oven",   label: "Separate electric wall oven",    on: false, k: 3, va: 5000 },
+    { g: "Kitchen",          id: "warm",   label: "Warming drawer",                 on: false, c: "warm" },
+
+    { g: "Laundry",          id: "wash",   label: "Clothes washer",                 on: false, c: "wash", free: 1 },
+    { g: "Laundry",          id: "dryer",  label: "Electric clothes dryer",         on: false, k: 4, va: 5000 },
+
+    { g: "Water heating",    id: "wh",     label: "Electric water heater (tank)",   on: false, k: 0, va: 4500 },
+    { g: "Water heating",    id: "whtl",   label: "Tankless electric water heater", on: false, k: 0, va: 27000 },
+
+    { g: "Outside",          id: "ev",     label: "Electric car charger",           on: false, c: "ev48" },
+    { g: "Outside",          id: "pool",   label: "Pool pump",                      on: false, c: "pool" },
+    { g: "Outside",          id: "poolh",  label: "Electric pool heater",           on: false, c: "poolh" },
+    { g: "Outside",          id: "htub",   label: "Hot tub or spa",                 on: false, c: "htub" },
+    { g: "Outside",          id: "well",   label: "Well pump",                      on: false, c: "well" },
+    { g: "Outside",          id: "sump",   label: "Sump pump",                      on: false, c: "sump" },
+    { g: "Outside",          id: "sept",   label: "Septic or sewage pump",          on: false, c: "sept" },
+    { g: "Outside",          id: "irr",    label: "Irrigation booster pump",        on: false, c: "irr" },
+    { g: "Outside",          id: "melt",   label: "Driveway or walkway snow melt",  on: false, c: "melt" },
+    { g: "Outside",          id: "deice",  label: "Roof or gutter de-icing cable",  on: false, c: "deice" },
+    { g: "Outside",          id: "golf",   label: "Golf cart charger",              on: false, c: "golf" },
+    { g: "Outside",          id: "lift",   label: "Boat lift",                      on: false, c: "lift" },
+
+    { g: "Around the house", id: "gdo",    label: "Garage door opener",             on: false, c: "gdo" },
+    { g: "Around the house", id: "floor",  label: "Electric radiant floor heat",    on: false, c: "floor" },
+    { g: "Around the house", id: "shop",   label: "Electric garage or shop heater", on: false, c: "shop" },
+    { g: "Around the house", id: "sauna",  label: "Electric sauna",                 on: false, c: "sauna" },
+    { g: "Around the house", id: "humid",  label: "Whole-house humidifier",         on: false, c: "humid" },
+    { g: "Around the house", id: "dehum",  label: "Whole-house dehumidifier",       on: false, c: "dehum" },
+    { g: "Around the house", id: "shut",   label: "Motorized storm shutters",       on: false, c: "shut" },
+    { g: "Around the house", id: "cvac",   label: "Central vacuum",                 on: false, c: "cvac" },
+    { g: "Around the house", id: "compr",  label: "Air compressor",                 on: false, c: "compr" },
+    { g: "Around the house", id: "weld",   label: "Welder",                         on: false, c: "weld" },
+    { g: "Around the house", id: "med",    label: "Medical equipment",              on: false, c: "med" },
+    { g: "Around the house", id: "radon",  label: "Radon fan",                      on: false, c: "radon" },
+    { g: "Around the house", id: "elev",   label: "Elevator",                       on: false, c: "elev" }
   ],
   maxTickQty: 4,
 
@@ -781,6 +810,7 @@ window.GEN_SIZER_CONFIG = {
        Step 2 = the larger of the two, added AFTER the demand factor. */
     var totalCool = 0, totalBlower = 0, resistiveElement = 0;
     var hpCompressor = 0, hpSupplement = 0, heatUnits = 0, hvacShed = 0;
+    var ahuResistive = 0;   /* strips that do sit in an air handler */
 
     input.systems.forEach(function (s, i) {
       var coolVa = s.cool || 0, heatVa = s.heat || 0;
@@ -805,6 +835,7 @@ window.GEN_SIZER_CONFIG = {
       } else if (heatVa > 0) {
         heatUnits++;
         resistiveElement += heatVa;
+        ahuResistive += heatVa;
       }
     });
 
@@ -823,12 +854,23 @@ window.GEN_SIZER_CONFIG = {
       });
     }
 
+    /* Baseboard and boiler heat, which does not ride on an air handler.
+       Each baseboard room counts as its own heat unit, so a house with four
+       or more rooms of baseboard earns the lower demand factor even with no
+       central air at all. */
+    var extra = input.extraHeat || { va: 0, units: 0 };
+    resistiveElement += extra.va;
+    heatUnits += extra.units;
+
     var heatFactor = heatUnits >= 4 ? n.heatFactor4Plus : n.heatFactorUnder4;
     var coolLoad = totalCool + totalBlower;
+    /* A blower only belongs on the heat side if the heat actually runs
+       through an air handler. Baseboard and radiators have no fan. */
+    var heatBlower = (hpCompressor > 0 || ahuResistive > 0) ? totalBlower : 0;
     var heatLoad = resistiveElement * heatFactor +
                    hpCompressor +
                    hpSupplement * n.hpSupplementFactor +
-                   totalBlower;
+                   heatBlower;
     var step2 = Math.max(coolLoad, heatLoad);
     if (hvacShed > 0 && step2 < singleFloor) step2 = singleFloor;
 
@@ -845,6 +887,7 @@ window.GEN_SIZER_CONFIG = {
       evVa: evVa, shedPoolVa: shedPoolVa,
       baseLoads: baseLoads, baseDemand: baseDemand, step2: step2,
       coolGoverns: coolLoad >= heatLoad, heatUnits: heatUnits, hvacShed: hvacShed,
+      extraHeatVa: extra.va, heatMode: input.heatMode || "hp",
       totalVa: totalVa, runningKw: totalVa / 1000, amps: totalVa / 240,
       allLra: allLra
     };
@@ -1041,6 +1084,16 @@ window.GEN_SIZER_CONFIG = {
         esc(C.brands[b].label) + "</option>";
     }).join("");
   })();
+  syncHeatFields();
+
+  /* The room count is only meaningful for baseboard, so it stays hidden
+     otherwise rather than adding a field everyone has to skip past. */
+  function syncHeatFields() {
+    var mode = "hp";
+    C.heatTypes.forEach(function (h) { if (h[0] === $("gq-heat").value) mode = h[2]; });
+    $("gq-rooms-field").style.display = mode === "base" ? "" : "none";
+  }
+  $("gq-heat").addEventListener("change", syncHeatFields);
 
   /* Build the tick list from C.quickTicks, grouped by heading. */
   var tickQty = {};
@@ -1112,25 +1165,41 @@ window.GEN_SIZER_CONFIG = {
     var region = C.regions[C.states[$("gq-state").value] || "warm"];
 
     /* How they heat decides whether Step 2 of the calculation is a blower
-       or tens of kilowatts of resistance heat. */
-    var hMode = "hp";
-    C.heatTypes.forEach(function (h) { if (h[0] === $("gq-heat").value) hMode = h[2]; });
+       or tens of kilowatts of resistance heat, and where that load hangs. */
+    var hMode = "hp", hSrc = "ahu";
+    C.heatTypes.forEach(function (h) {
+      if (h[0] === $("gq-heat").value) { hMode = h[2]; hSrc = h[3]; }
+    });
 
     var totalTons = Math.max(q.minTonsPerUnit, sqft / region.sqFtPerTon);
     var systems = [];
     for (var i = 0; i < C.maxSystems; i++) {
       if (i < nAc) {
         var tons = Math.min(q.maxTonsPerUnit, Math.max(q.minTonsPerUnit, totalTons / nAc));
-        var heatVa = hMode === "hp" || hMode === "elec" ? region.stripKw
-                   : hMode === "boil" ? C.boilerVa
-                   : 0;                                   /* gas furnace: blower only */
+        /* Only air-handler heat rides on the A/C rows. Baseboard and boilers
+           are counted separately, so their systems are cooling only. */
+        var heatVa = hSrc === "ahu" && (hMode === "hp" || hMode === "elec") ? region.stripKw : 0;
         systems.push({
           cool: vaForTons(tons),
           heat: heatVa,
-          isHeatPump: hMode === "hp"
+          isHeatPump: hSrc === "ahu" && hMode === "hp"
         });
       } else {
         systems.push({ cool: 0, heat: 0, isHeatPump: false });
+      }
+    }
+
+    /* Heat that exists whether or not the house has central air. Baseboard is
+       per room, and each room is its own separately controlled heat unit —
+       which is what earns the lower demand factor once there are four or
+       more of them. A boiler is just its circulator pumps. */
+    var extraHeat = { va: 0, units: 0 };
+    if (hSrc === "standalone") {
+      if (hMode === "base") {
+        var rooms = parseInt($("gq-rooms").value, 10) || 0;
+        extraHeat = { va: rooms * region.bbKwPerRoom, units: rooms };
+      } else if (hMode === "boil") {
+        extraHeat = { va: C.boilerVa, units: 1 };
       }
     }
 
@@ -1168,7 +1237,9 @@ window.GEN_SIZER_CONFIG = {
       fuel: resolveFuel($("gq-fuel").value),
       brand: $("gq-brand").value,
       state: $("gq-state").value,
-      systems: systems, kitchen: kitchen, counts: counts, quick: true
+      systems: systems, kitchen: kitchen, counts: counts,
+      extraHeat: extraHeat, heatMode: hMode,
+      quick: true
     };
   }
 
@@ -1348,7 +1419,7 @@ window.GEN_SIZER_CONFIG = {
       "<tr><td>Kitchen, laundry and water heating" +
         "<small>" + (t.kitchenGross > 0
           ? "Only what you ticked \u2014 gas appliances and anything you don't have count as nothing"
-          : "Nothing ticked here, so nothing counted") + "</small></td>" +
+          : "Nothing ticked in those groups, so nothing counted") + "</small></td>" +
         "<td>" + (t.kitchenGross > 0 ? kw(t.kitchenGross) : "\u2014") + "</td></tr>" +
       "<tr><td>Everything else you selected" +
         "<small>" + (t.evVa ? "Includes " + kw(t.evVa) + " of EV charging. " : "") +
@@ -1367,7 +1438,12 @@ window.GEN_SIZER_CONFIG = {
         ? "<tr><td>Plus " + (t.coolGoverns ? "air conditioning" : "heating") +
           "<small>" + (t.coolGoverns
             ? "Compressors plus air handler fans, counted in full"
-            : "Heat strips, reduced for how they actually run, plus air handler fans in full") +
+            : t.heatMode === "base"
+            ? "Baseboard heaters, reduced for how they actually run \u2014 with four or more rooms " +
+              "a smaller share counts, because they never all call at once"
+            : t.heatMode === "boil"
+              ? "Circulator pumps and controls for the boiler"
+              : "Heat strips, reduced for how they actually run, plus air handler fans in full") +
           " \u2014 heating and cooling never run together, so only the larger one counts" +
           (t.hvacShed ? ". Your other system is managed and not counted here" : "") + "</small></td>" +
           "<td>" + kw(t.step2) + "</td></tr>"
@@ -1420,6 +1496,9 @@ window.GEN_SIZER_CONFIG = {
     var missing = [];
     if (!input.sqft) missing.push(["gq-sqft", "how big your home is"]);
     if (!input.state) missing.push(["gq-state", "what state you're in"]);
+    if (input.heatMode === "base" && !input.extraHeat.va) {
+      missing.push(["gq-rooms", "how many rooms have baseboard heaters"]);
+    }
 
     if (missing.length) {
       err.textContent = "We need " +
