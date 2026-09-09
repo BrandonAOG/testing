@@ -112,7 +112,10 @@
     .gs-cta { display: block; text-align: center; padding: 16px; background: var(--gs-accent); color: var(--gs-accent-text) !important; font-size: 17px; font-weight: 800; border-radius: 10px; text-decoration: none !important; text-transform: uppercase; letter-spacing: .03em; }
     .gs-cta:hover { filter: brightness(.93); }
     .gs-cta-call { display: block; text-align: center; margin-top: 10px; font-size: 15px; }
-    .gs-disclaimer { font-size: 12px; color: var(--gs-muted); margin-top: 14px; line-height: 1.55; }
+    /* Deliberately a darker red than .gs-step-warn: that one sits on the navy
+       header where a bright red reads well, this one sits on white where the
+       same colour goes washy and hard to read. */
+    .gs-disclaimer { font-size: 13px; color: #B42318; margin-top: 14px; line-height: 1.55; }
     .gs-badge { text-align: center; font-size: 13px; font-weight: 700; margin-top: 10px; }
     @media (max-width: 560px) {
       .gs-result-size { font-size: 32px; }
@@ -218,9 +221,9 @@
       <a class="gs-cta" id="gs-cta" href="#">Get my free estimate</a>
       <div class="gs-cta-call" id="gs-call"></div>
       <div class="gs-badge" id="gs-badge"></div>
-      <p class="gs-disclaimer">This is a planning estimate, not a quote. It uses typical equipment
-      ratings rather than your exact nameplates. We confirm the final size with an exact load
-      calculation during your free in-home assessment.</p>
+      <p class="gs-disclaimer"><strong>This is a planning estimate, not a quote.</strong> It uses
+      typical equipment ratings rather than your exact nameplates. We confirm the final size with an
+      exact load calculation during your free in-home assessment.</p>
     </div>
   </div>
 </div>
