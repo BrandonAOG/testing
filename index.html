@@ -385,23 +385,36 @@ window.GEN_SIZER_CONFIG = {
      because a gas furnace contributes only its blower to an electrical
      load calculation. Electric resistance heat is output = input.
 
-     hpAuxKw is a different quantity: supplemental strips behind a heat
-     pump, which only cover the shortfall below the balance point rather
-     than the whole load. Zone 1's 7,500 W is installer observation in
-     South Florida (5 to 10 kW there), against a full load of about 25 kW
-     for the same house — roughly a third, which is why these two numbers
-     must not be conflated. An earlier version used hpAuxKw for electric
-     furnaces too, understating them by two to three times. */
+     stripKw is the ELEMENTS INSTALLED IN THE AIR HANDLER, and it is the
+     same figure whether the outdoor unit is a heat pump or a straight A/C.
+     Physically they are the same elements in the same box. Zone 1's
+     7,500 W is installer observation in South Florida, where air handlers
+     carry 5 to 10 kW; the reference load calculator this tool is derived
+     from offers 5 to 29 kW with an 8 kW default, entered from the
+     nameplate.
+
+     This must NOT be confused with the design heating load above. An
+     earlier version used the BTU table to size electric-furnace strips,
+     which produced 24.6 kW of elements for a 2,400 sq ft Florida house and
+     made a heat pump come out SMALLER than a straight A/C on the same
+     house. That is backwards: for the same strips a heat pump is always
+     larger, because (C)(3) adds the compressor while straight A/C only
+     compares. Florida installs undersized strips against design load on
+     purpose, because there are so few heating hours.
+
+     The BTU design load is still used for baseboard, which genuinely is
+     sized to carry the house because it is the only heat there is. */
+
   zones: {
-    z1: { label: "Zone 1", heatBtuPerSqFt: 35, hpAuxKw: 7500,
+    z1: { label: "Zone 1", heatBtuPerSqFt: 35, stripKw: 7500,
           acBands: [[900,1.5],[1200,2],[1500,2.5],[1800,3],[2100,3.5],[2400,4],[3000,5]] },
-    z2: { label: "Zone 2", heatBtuPerSqFt: 40, hpAuxKw: 10000,
+    z2: { label: "Zone 2", heatBtuPerSqFt: 40, stripKw: 10000,
           acBands: [[950,1.5],[1250,2],[1550,2.5],[1850,3],[2150,3.5],[2500,4],[3100,5]] },
-    z3: { label: "Zone 3", heatBtuPerSqFt: 45, hpAuxKw: 13000,
+    z3: { label: "Zone 3", heatBtuPerSqFt: 45, stripKw: 13000,
           acBands: [[1000,1.5],[1300,2],[1600,2.5],[1900,3],[2200,3.5],[2600,4],[3200,5]] },
-    z4: { label: "Zone 4", heatBtuPerSqFt: 50, hpAuxKw: 16000,
+    z4: { label: "Zone 4", heatBtuPerSqFt: 50, stripKw: 16000,
           acBands: [[1050,1.5],[1350,2],[1600,2.5],[2000,3],[2250,3.5],[2700,4],[3300,5]] },
-    z5: { label: "Zone 5", heatBtuPerSqFt: 60,   hpAuxKw: 20000,
+    z5: { label: "Zone 5", heatBtuPerSqFt: 60, stripKw: 20000,
           acBands: [[1100,1.5],[1400,2],[1650,2.5],[2100,3],[2300,3.5],[2700,4],[3300,5]] }
   },
 
@@ -894,12 +907,33 @@ window.GEN_SIZER_CONFIG = {
     });
 
     /* ── Step 2: heating and cooling — 220.82(C) ──
-       Cooling  = compressors + blowers, all at 100%.
-       Heat     = strip elements x demand factor + blowers at 100%.
-       Heat pump per (C)(3): compressor at 100% + its strips at 65%, added on
-       the heat side, because both run together on a cold morning. Heat pump
-       strips do not count toward the (C)(4)/(C)(5) unit tally.
-       Step 2 = the larger of the two, added AFTER the demand factor. */
+       Why this is a largest-of comparison and not a sum, on a straight A/C
+       system with strip heat:
+
+         cooling:  condenser + blower      (summer, strips dead)
+         heating:  strips x 0.65 + blower  (winter, condenser dead)
+
+       Those are different seasons. The condenser sits idle from November to
+       March while the blower and strips carry the house, so the two can
+       never both happen and you take the bigger one. The blower appears on
+       both sides because it is the one thing running in either season,
+       which is why it is derived from tonnage and counted at 100% twice.
+
+       The asymmetry is physical: an air handler runs alone all winter, and
+       in fan-only mode, and in a heat pump's emergency heat. An outdoor
+       unit never runs alone — no airflow across the indoor coil, and the
+       thermostat calling the condenser lives on the air handler's control
+       circuit. Kill the air handler and the condenser has nothing telling
+       it to start. That is also why shedding an air handler drops the whole
+       system rather than half of it.
+
+       A heat pump breaks the pattern, and that is the whole reason (C)(3)
+       exists: the compressor IS the heat source, so it and the strips
+       genuinely do run together. That is the one case where you add rather
+       than compare. Heat pump strips do not count toward the (C)(4)/(C)(5)
+       separately-controlled-unit tally.
+
+       Step 2 is added AFTER the demand factor, at 100%. */
     var totalCool = 0, totalBlower = 0, resistiveElement = 0;
     var hpCompressor = 0, hpSupplement = 0, heatUnits = 0, hvacShed = 0;
     var ahuResistive = 0;   /* strips that do sit in an air handler */
@@ -1297,11 +1331,10 @@ window.GEN_SIZER_CONFIG = {
         /* Only air-handler heat rides on the A/C rows. An electric furnace
            supplies the whole load, split between the air handlers; a heat
            pump adds its auxiliary strips on top of the compressor. */
-        var heatVa = 0;
-        if (hSrc === "ahu") {
-          if (hMode === "hp") heatVa = region.hpAuxKw;
-          else if (hMode === "elec") heatVa = Math.round(fullHeatW / nAc);
-        }
+        /* Same elements either way. The heat pump difference is that its
+           compressor is added on the heat side, not that its strips differ. */
+        var heatVa = (hSrc === "ahu" && (hMode === "hp" || hMode === "elec"))
+          ? region.stripKw : 0;
         systems.push({
           cool: vaForTons(tons),
           heat: heatVa,
@@ -1327,6 +1360,8 @@ window.GEN_SIZER_CONFIG = {
         extraHeat = { va: C.boilerVa, units: 1 };
       }
     } else if (nAc === 0 && (hMode === "hp" || hMode === "elec")) {
+      /* Air-handler heat with no air handler entered: fall back to the design
+         load, since there is no system count to hang strips off. */
       /* Air-handler heat with no air handler entered. Rather than lose the
          load entirely, count it as standalone — the same trap baseboard
          used to fall into. */
@@ -1411,6 +1446,36 @@ window.GEN_SIZER_CONFIG = {
             : o.count + " managed load" + (o.count === 1 ? "" : "s")) +
         "</span></button>";
     }).join("");
+  }
+
+  /* The heating row has to describe what it actually did. A heat pump ADDS
+     its compressor to its strips, because both run at once — so the usual
+     "only the larger one counts" line is wrong there. Everything else is a
+     largest-of comparison and that line is right. */
+  function hvacRowNote(t, hasCooling) {
+    /* Only claim a largest-of comparison when there is actually cooling to
+       compare against. A baseboard house with no central air has nothing on
+       the other side of that comparison. */
+    var larger = hasCooling
+      ? " \u2014 heating and cooling never run together, so only the larger one counts"
+      : "";
+    if (t.coolGoverns) {
+      return "Compressors plus air handler fans, counted in full" + larger;
+    }
+    if (t.heatMode === "hp") {
+      return "Your heat pump's compressor counted in full, plus its heat strips reduced for how they " +
+        "actually run, plus the air handler fan. On a cold morning the compressor and the strips run " +
+        "at the same time, so these add together rather than one replacing the other";
+    }
+    if (t.heatMode === "base") {
+      return "Baseboard heaters, reduced for how they actually run \u2014 with four or more rooms a " +
+        "smaller share counts, because they never all call at once" + larger;
+    }
+    if (t.heatMode === "boil") {
+      return "Circulator pumps and controls for the boiler" + larger;
+    }
+    return "Heat strips, reduced for how they actually run, plus the air handler fan in full. Your " +
+      "outdoor unit does not heat, so it is not counted here" + larger;
   }
 
   function renderSelected() {
@@ -1580,15 +1645,9 @@ window.GEN_SIZER_CONFIG = {
         "<td>\u2212" + kw(t.baseLoads - t.baseDemand) + "</td></tr>" +
       (t.step2 > 0
         ? "<tr><td>Plus " + (t.coolGoverns ? "air conditioning" : "heating") +
-          "<small>" + (t.coolGoverns
-            ? "Compressors plus air handler fans, counted in full"
-            : t.heatMode === "base"
-            ? "Baseboard heaters, reduced for how they actually run \u2014 with four or more rooms " +
-              "a smaller share counts, because they never all call at once"
-            : t.heatMode === "boil"
-              ? "Circulator pumps and controls for the boiler"
-              : "Heat strips, reduced for how they actually run, plus air handler fans in full") +
-          " \u2014 heating and cooling never run together, so only the larger one counts" +
+          "<small>" + hvacRowNote(t, current.input.systems.filter(function (sy) {
+            return (sy.cool || 0) > 0;
+          }).length > 0) +
           (t.hvacShed ? ". Your other system is managed and not counted here" : "") + "</small></td>" +
           "<td>" + kw(t.step2) + "</td></tr>"
         : "<tr><td>Heating and cooling" +
