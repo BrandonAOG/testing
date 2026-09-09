@@ -111,6 +111,7 @@
     .gs-breakdown td { padding: 7px 4px; border-bottom: 1px dashed var(--gs-border); vertical-align: top; }
     .gs-breakdown td:last-child { text-align: right; font-weight: 600; white-space: nowrap; }
     .gs-breakdown small { display: block; color: var(--gs-muted); font-size: 12px; font-weight: 400; }
+    .gs-breakdown tr.gs-sub td { border-top: 1px solid var(--gs-border); font-weight: 700; }
     .gs-breakdown tr.gs-total td { border-top: 2px solid var(--gs-dark); border-bottom: 0; font-weight: 800; font-size: 15px; }
     .gs-flag { background: #FFFBEB; border: 1px solid #F0C271; border-left: 4px solid var(--gs-accent); border-radius: 0 6px 6px 0; padding: 10px 12px; font-size: 13px; color: #6B4A08; margin: 0 0 14px; line-height: 1.55; }
     .gs-cta { display: block; text-align: center; padding: 16px; background: var(--gs-accent); color: var(--gs-accent-text) !important; font-size: 17px; font-weight: 800; border-radius: 10px; text-decoration: none !important; text-transform: uppercase; letter-spacing: .03em; }
@@ -1381,6 +1382,9 @@ window.GEN_SIZER_CONFIG = {
        C.everyday row back to 1 to auto-include it again. */
     C.everyday.forEach(function (it) { counts[it[0]] = it[4]; });
 
+    /* Also totalled per tick group, so the breakdown can mirror the sections
+       the customer just filled in rather than lumping them together. */
+    var groups = {};
     C.quickTicks.forEach(function (t) {
       var box = $("gq-t-" + t.id);
       if (!box || !box.checked) return;
@@ -1388,13 +1392,20 @@ window.GEN_SIZER_CONFIG = {
       /* Anything the base load already covers comes off the top. */
       qty = Math.max(0, qty - (t.free || 0));
       if (!qty) return;
+      var added = 0;
       if (typeof t.k === "number") {
         /* Two water heaters is twice the load; a tank and a tankless sharing
-           the slot takes the larger, not the sum. */
-        kitchen[t.k] = Math.max(kitchen[t.k], t.va * qty);
+           the slot takes the larger, not the sum. Credit the group only with
+           what the slot actually went up by. */
+        var before = kitchen[t.k];
+        kitchen[t.k] = Math.max(before, t.va * qty);
+        added = kitchen[t.k] - before;
       } else if (t.c) {
         counts[t.c] = qty;
+        var it = counterItem(t.c);
+        added = it ? it[2] * qty : 0;
       }
+      groups[t.g] = (groups[t.g] || 0) + added;
     });
 
     return {
@@ -1402,7 +1413,7 @@ window.GEN_SIZER_CONFIG = {
       fuel: resolveFuel($("gq-fuel").value),
       brand: $("gq-brand").value,
       state: $("gq-state").value,
-      systems: systems, kitchen: kitchen, counts: counts,
+      systems: systems, kitchen: kitchen, counts: counts, groups: groups,
       extraHeat: extraHeat, heatMode: hMode,
       quick: true
     };
@@ -1560,11 +1571,11 @@ window.GEN_SIZER_CONFIG = {
         /* Every system managed, so this size sets aside nothing to run the
            air conditioning. Say it plainly rather than leaving it buried in
            the arithmetic. */
-        lm += "<p><strong>Worth being clear about this size:</strong> it does not set aside capacity " +
-          "to run your air conditioning. The system stays connected and will run when little else is " +
-          "drawing power, but on a hot afternoon with the oven or dryer going, the management system " +
-          "will drop it. If you want cooling to keep priority during an outage, choose a larger size " +
-          "above.</p>";
+        lm += "<p><strong>About this size:</strong> your air conditioning is connected and runs " +
+          "normally, but it does not get priority. When something big kicks on \u2014 the oven, the " +
+          "dryer \u2014 the module switches the A/C off until that finishes. Most of the time you " +
+          "will not notice. On a hot afternoon with the kitchen going, you will. If you would rather " +
+          "cooling always came first, pick a larger size above.</p>";
       }
       if (hvacManaged && lighter) {
         lm += "<p>If you would rather nothing touched your air conditioning, the <strong>" +
@@ -1620,41 +1631,62 @@ window.GEN_SIZER_CONFIG = {
       return '<p style="font-size:13px;color:var(--gs-muted);margin:10px 0 0;">' + n + "</p>";
     }).join("");
 
-    $("gs-breakdown").innerHTML =
-      "<tr><td>Lights, outlets and small appliance circuits" +
-        "<small>A flat allowance of 3 watts per square foot plus the required kitchen and " +
-        "laundry circuits \u2014 not a measurement of your actual lighting</small></td>" +
-        "<td>" + kw(t.step1) + "</td></tr>" +
-      "<tr><td>Kitchen, laundry and water heating" +
-        "<small>" + (t.kitchenGross > 0
-          ? "Only what you ticked \u2014 gas appliances and anything you don't have count as nothing"
-          : "Nothing ticked in those groups, so nothing counted") + "</small></td>" +
-        "<td>" + (t.kitchenGross > 0 ? kw(t.kitchenGross) : "\u2014") + "</td></tr>" +
-      "<tr><td>Everything else you selected" +
-        "<small>" + (t.evVa ? "Includes " + kw(t.evVa) + " of EV charging. " : "") +
-        "Nameplate ratings \u2014 what each item draws when it is actually running</small></td>" +
-        "<td>" + kw(t.otherGross) + "</td></tr>" +
-      (t.shedPoolVa > 0
-        ? "<tr><td>Less the items load management takes turns with" +
-          "<small>Listed above \u2014 still usable, just not all at the same moment</small></td>" +
-          "<td>\u2212" + kw(t.shedPoolVa) + "</td></tr>"
-        : "") +
-      "<tr><td>Less the allowance for not running it all at once" +
-        "<small>The first 10 kW counts in full and the rest counts at 40%, because no house runs " +
-        "every appliance at the same moment</small></td>" +
-        "<td>\u2212" + kw(t.baseLoads - t.baseDemand) + "</td></tr>" +
-      (t.step2 > 0
-        ? "<tr><td>Plus " + (t.coolGoverns ? "air conditioning" : "heating") +
-          "<small>" + hvacRowNote(t, current.input.systems.filter(function (sy) {
-            return (sy.cool || 0) > 0;
-          }).length > 0) +
-          (t.hvacShed ? ". Your other system is managed and not counted here" : "") + "</small></td>" +
-          "<td>" + kw(t.step2) + "</td></tr>"
-        : "<tr><td>Heating and cooling" +
-          "<small>Managed on this size, so none of it counts toward the generator \u2014 your system " +
-          "cycles with the other large loads instead</small></td>" +
-          "<td>\u2014</td></tr>") +
-      "<tr class='gs-total'><td>Running load on this size</td><td>" + t.runningKw.toFixed(1) + " kW</td></tr>";
+    /* ---- breakdown ----
+       Rows mirror the sections of the form so someone can check their own
+       answers against it, then the deductions, then heating and cooling.
+       Everything above the first deduction adds up to the pool. */
+    var rows = "<tr><td>Lights, outlets and small appliance circuits" +
+      "<small>A flat allowance of 3 watts per square foot plus the required kitchen and laundry " +
+      "circuits \u2014 not a measurement of your actual lighting</small></td>" +
+      "<td>" + kw(t.step1) + "</td></tr>";
+
+    /* One row per group that has anything in it, in the order they appear on
+       the form. Groups the customer left empty are skipped rather than shown
+       as a dash, which would just be noise. */
+    var seen = {}, order = [];
+    C.quickTicks.forEach(function (tk) {
+      if (!seen[tk.g]) { seen[tk.g] = 1; order.push(tk.g); }
+    });
+    var groups = current.input.groups || {};
+    var anyGroup = false;
+    order.forEach(function (g) {
+      if (!groups[g]) return;
+      anyGroup = true;
+      rows += "<tr><td>" + esc(g) + "</td><td>" + kw(groups[g]) + "</td></tr>";
+    });
+    if (!anyGroup) {
+      rows += "<tr><td>Appliances<small>Nothing ticked, so nothing counted</small></td>" +
+        "<td>\u2014</td></tr>";
+    }
+
+    rows += "<tr class='gs-sub'><td>Everything in your home, added up</td><td>" +
+      kw(t.step1 + t.kitchenGross + t.otherGross) + "</td></tr>";
+
+    if (t.shedPoolVa > 0) {
+      rows += "<tr><td>Less the items load management takes turns with" +
+        "<small>Listed above \u2014 still usable, just not all at the same moment</small></td>" +
+        "<td>\u2212" + kw(t.shedPoolVa) + "</td></tr>";
+    }
+    rows += "<tr><td>Less the allowance for not running it all at once" +
+      "<small>The first 10 kW counts in full and the rest counts at 40%, because no house runs " +
+      "every appliance at the same moment</small></td>" +
+      "<td>\u2212" + kw(t.baseLoads - t.baseDemand) + "</td></tr>";
+
+    rows += (t.step2 > 0
+      ? "<tr><td>Plus " + (t.coolGoverns ? "air conditioning" : "heating") +
+        "<small>" + hvacRowNote(t, current.input.systems.filter(function (sy) {
+          return (sy.cool || 0) > 0;
+        }).length > 0) +
+        (t.hvacShed ? ". Your other system is managed and not counted here" : "") + "</small></td>" +
+        "<td>" + kw(t.step2) + "</td></tr>"
+      : "<tr><td>Heating and cooling" +
+        "<small>Managed on this size, so none of it counts toward the generator \u2014 your system " +
+        "cycles with the other large loads instead</small></td>" +
+        "<td>\u2014</td></tr>");
+
+    rows += "<tr class='gs-total'><td>Running load on this size</td><td>" +
+      t.runningKw.toFixed(1) + " kW</td></tr>";
+    $("gs-breakdown").innerHTML = rows;
 
     /* ---- CTA ---- */
     var url = C.estimateUrl;
