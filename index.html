@@ -578,6 +578,19 @@ body.modal-open { overflow: hidden; }
   .stat-val { font-size: 14px; }
 }
 
+
+.check-detail {
+  margin-top: -9px;
+  padding: 12px 10px 10px;
+  background: var(--bg3);
+  border: 1px solid var(--accent);
+  border-top: 1px dashed var(--border);
+  border-radius: 0 0 8px 8px;
+}
+.check-row:has(input:checked) { border-color: var(--accent); }
+.check-row:has(+ .check-detail[style*="display: none"]), .check-row:has(+ .check-detail[style*="display:none"]) { border-radius: 8px; }
+.check-row:has(input:checked):has(+ .check-detail:not([style*="none"])) { border-radius: 8px 8px 0 0; border-bottom-color: transparent; }
+
 /* PRINT */
 @media print {
   .header, .add-btn, .remove-btn, .calc-btn,
@@ -854,37 +867,37 @@ body.modal-open { overflow: hidden; }
         <span class="check-box"></span>
         <span class="check-text"><b>Equipment grounding conductors</b> — one or more enter box<br><em>314.16(B)(5) · up to 4 = 1× largest EGC · each additional = ¼×</em></span>
       </label>
-    </div>
-    <div class="check-list" style="margin-top:8px;">
+      <div id="egcWrap" class="check-detail" style="display:none;">
+        <div class="grid-2">
+          <div>
+            <label>Largest EGC Entering Box</label>
+            <select id="egcSize" onchange="calculate(true)"></select>
+          </div>
+          <div>
+            <label>EGCs Entering Box (Qty)</label>
+            <input type="number" id="egcQty" min="1" max="99" value="1" oninput="calculate(true)">
+          </div>
+        </div>
+        <div class="info-row"><div class="info-dot"></div>
+          <span>Up to 4 EGCs = 1 allowance. Each EGC beyond 4 adds ¼ allowance — 314.16(B)(5).</span>
+        </div>
+      </div>
       <label class="check-row">
         <input type="checkbox" id="chkTb" onchange="toggleTb()">
         <span class="check-box"></span>
         <span class="check-text"><b>Terminal block(s)</b> — present in box<br><em>314.16(B)(6) · 1× largest conductor terminated, per assembly</em></span>
       </label>
-    </div>
-    <div id="tbWrap" class="grid-2" style="display:none;margin-top:10px;">
-      <div>
-        <label>Terminal Block Assemblies (Qty)</label>
-        <input type="number" id="tbQty" min="1" max="20" value="1" oninput="calculate(true)">
-      </div>
-      <div>
-        <label>Largest Conductor Terminated</label>
-        <select id="tbSize" onchange="calculate(true)"></select>
-      </div>
-    </div>
-    <div id="egcWrap" style="display:none;margin-top:10px;">
-      <div class="grid-2">
-        <div>
-          <label>Largest EGC Entering Box</label>
-          <select id="egcSize" onchange="calculate(true)"></select>
+      <div id="tbWrap" class="check-detail" style="display:none;">
+        <div class="grid-2">
+          <div>
+            <label>Terminal Block Assemblies (Qty)</label>
+            <input type="number" id="tbQty" min="1" max="20" value="1" oninput="calculate(true)">
+          </div>
+          <div>
+            <label>Largest Conductor Terminated</label>
+            <select id="tbSize" onchange="calculate(true)"></select>
+          </div>
         </div>
-        <div>
-          <label>EGCs Entering Box (Qty)</label>
-          <input type="number" id="egcQty" min="1" max="99" value="1" oninput="calculate(true)">
-        </div>
-      </div>
-      <div class="info-row"><div class="info-dot"></div>
-        <span>Up to 4 EGCs = 1 allowance. Each EGC beyond 4 adds ¼ allowance — 314.16(B)(5).</span>
       </div>
     </div>
   </div>
@@ -1201,7 +1214,7 @@ function addWire(size, qty, type) {
     `<option value="${k}"${k === (type || 'term') ? ' selected' : ''}>${v.label}</option>`).join('');
   row.innerHTML = `
     <div><label>Size</label><select class="w-size" onchange="calculate(true)">${sizeOptions(size || '12')}</select></div>
-    <div><label>Qty</label><input type="number" class="w-qty" min="0" max="99" value="${qty != null ? qty : 2}" oninput="calculate(true)"></div>
+    <div><label>Qty</label><input type="number" class="w-qty" min="0" max="99" value="${qty != null ? qty : ''}" placeholder="0" oninput="calculate(true)"></div>
     <div class="span-m"><label>How It's Counted</label><select class="w-type" onchange="calculate(true)">${typeOpts}</select></div>
     <button class="remove-btn" onclick="removeRow('wire-${id}')" title="Remove">×</button>`;
   $('wireList').appendChild(row);
@@ -1480,9 +1493,7 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape') closeRef(); 
 
 // ── INIT ───────────────────────────────────────────────────
 buildBoxSelect();
-addWire('12', 4, 'term');
-addWire('12', 2, 'pass');
-addDevice('Receptacle', '12', 1);
+addWire('12', '', 'term');
 calculate(true);
 </script>
 <!-- SERVICE WORKER — single registration pointing to ../sw.js -->
