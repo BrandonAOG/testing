@@ -84,6 +84,7 @@
     <button data-sys="v208">208Y/120 V</button>
     <button data-sys="v480">480Y/277 V</button>
     <button data-sys="highleg">High-leg Δ</button>
+    <button data-sys="cgd">Corner-gnd Δ</button>
   </div>
   <span class="lbl">Panel</span>
   <div class="grp" id="mainGrp">
@@ -91,6 +92,15 @@
     <button data-mlo="1">Main lugs</button>
   </div>
   <button class="toggle on" id="detailBtn">Show neutral / ground</button>
+</div>
+<div class="bar">
+  <span class="lbl">Current flow</span>
+  <div class="grp" id="flowGrp">
+    <button data-flow="conv" class="on">Conventional</button>
+    <button data-flow="elec">Electron</button>
+    <button data-flow="ac">60 Hz AC</button>
+  </div>
+  <span class="lbl" id="flowNote" style="text-transform:none;letter-spacing:0;font-family:inherit;font-size:10.5px">Conventional: + to − (how the code and one-lines show it).</span>
 </div>
 <div class="bar">
   <span class="lbl">Fault</span>
@@ -126,13 +136,14 @@ function nodeVph(id){
   if(id==='N'||id==='EGC') return {re:0,im:0};
   if(svcOff||lcMainOff) return {re:0,im:0};           // de-energized bus
   var sys=SYS[MODE];
+  if(MODE==='cgd'){ if(id==='A')return cP(240,0); if(id==='B')return {re:0,im:0}; if(id==='C')return cP(240,60); }
   if(MODE==='highleg'){ if(id==='A')return cP(120,0); if(id==='C')return cP(120,180); if(id==='B')return cP(208,90); }
   var idx=-1; sys.ph.forEach(function(a,i){ if(a[0]===id)idx=i; }); if(idx<0)return {re:0,im:0};
   var ang=(sys.ph.length===2?idx*180:idx*-120);
   return cP(sys.vln,ang);
 }
 function voltBetween(a,b){ return Math.round(cMag(cSub(nodeVph(a),nodeVph(b)))); }
-function nodeLabel(id){ return id==='N'?'Neutral':(id==='EGC'?'Ground (EGC)':'Phase '+id); }
+function nodeLabel(id){ return id==='N'?'Neutral':(id==='EGC'?'Ground (EGC)':('Phase '+id+((MODE==='cgd'&&id==='B')?' (grounded)':''))); }
 function onProbe(id){ var i=probePick.indexOf(id); if(i>=0)probePick.splice(i,1); else { probePick.push(id); if(probePick.length>2)probePick.shift(); } render(); }
 function probeText(){ var a=probePick[0],b=probePick[1],v=voltBetween(a,b);
   var pk=Math.round(v*Math.SQRT2), pp=Math.round(v*2*Math.SQRT2);
@@ -157,7 +168,9 @@ var SYS={
   single:{ ph:[['L1',WIRE.black],['L2',WIRE.red]], title:'120/240 V · 1Ø · 3-wire (split-phase)', demo:'single', wires:'L1 black · L2 red · N white · EGC green', vln:120, vll:240 },
   v208:  { ph:[['A',WIRE.black],['B',WIRE.red],['C',WIRE.blue]], title:'208Y/120 V · 3Ø · 4-wire', demo:'three', wires:'A black · B red · C blue · N white · EGC green', vln:120, vll:208 },
   v480:  { ph:[['A',WIRE.brown],['B',WIRE.purple],['C',WIRE.yellow]], title:'480Y/277 V · 3Ø · 4-wire', demo:'three', wires:'A brown · B purple · C yellow · N gray · EGC green', vln:277, vll:480 },
-  highleg:{ ph:[['A',WIRE.black],['B',WIRE.orange],['C',WIRE.blue]], title:'120/240 V · 3Ø · high-leg delta', demo:'highleg', wires:'B phase = HIGH LEG → orange (NEC 110.15)', vln:120, vll:240 }
+  highleg:{ ph:[['A',WIRE.black],['B',WIRE.orange],['C',WIRE.blue]], title:'120/240 V · 3Ø · high-leg delta', demo:'highleg', wires:'B phase = HIGH LEG → orange (NEC 110.15)', vln:120, vll:240 },
+  // corner-grounded delta: NO neutral. Phase B is intentionally grounded at the service and IS the grounded conductor (white/gray, 200.6).
+  cgd:{ ph:[['A',WIRE.black],['B',WIRE.white],['C',WIRE.red]], title:'240 V · 3Ø · 3-wire corner-grounded delta', demo:'cgd', wires:'B = GROUNDED phase → white/gray (200.6) · no neutral · EGC green', vln:240, vll:240, noNeutral:true }
 };
 var DEMO={
   single:{
@@ -179,6 +192,10 @@ var DEMO={
     19:{p:2,n:'Water heater 240 V'}, 20:{p:1,n:'Exterior A',nt:1}, 24:{p:1,n:'Recept C',nt:1},
     25:{p:3,n:'AHU-1'}, 26:{p:1,n:'IT closet A',nt:1}
   },
+  cgd:{
+    1:{p:3,n:'Air compressor'}, 2:{p:3,n:'Exhaust fan'}, 7:{p:3,n:'Pump 1'}, 8:{p:2,n:'Heater 240 V'},
+    13:{p:3,n:'Conveyor'}, 14:{p:2,n:'Welder 240 V'}, 19:{p:3,n:'RTU'}, 20:{p:2,n:'Water heater 240 V'}
+  },
   three:{
     1:{p:3,n:'RTU-1'}, 2:{p:1,n:'Lighting A',nt:1}, 4:{p:1,n:'Lighting B',nt:1}, 6:{p:1,n:'Lighting C',nt:1},
     7:{p:3,n:'RTU-2'}, 8:{p:1,n:'Recept A',nt:1}, 10:{p:1,n:'Recept B',nt:1}, 12:{p:1,n:'Recept C',nt:1},
@@ -190,13 +207,14 @@ var DEMO={
 var SVGNS='http://www.w3.org/2000/svg', dotPool=[], anim=null;
 function el(t,a){var e=document.createElementNS(SVGNS,t);for(var k in a)e.setAttribute(k,a[k]);return e;}
 function txt(x,y,s,o){o=o||{};var e=el('text',{x:x,y:y,'font-size':o.size||10,fill:o.fill||COL.txt,'text-anchor':o.anchor||'start','font-weight':o.w||400});e.textContent=s;return e;}
-function addDots(svg,d,dir,sp,col){var mp=el('path',{d:d,fill:'none',stroke:'none'});svg.appendChild(mp);var len=mp.getTotalLength();var n=Math.max(2,Math.round(len/(sp||22)));for(var i=0;i<n;i++){var c=el('circle',{r:2.5,fill:col||COL.dot,opacity:0.95});svg.appendChild(c);dotPool.push({c:c,mp:mp,len:len,off:(i/n)*len,dir:dir,speed:42});}}
-function frame(now){var dt=(now-(frame._t||now))/1000;frame._t=now;if(dt>0.1)dt=0.1;dotPool.forEach(function(dp){dp.off=(dp.off+dp.dir*dp.speed*dt+dp.len)%dp.len;var pt=dp.mp.getPointAtLength(dp.off);dp.c.setAttribute('cx',pt.x);dp.c.setAttribute('cy',pt.y);});anim=requestAnimationFrame(frame);}
+function addDots(svg,d,dir,sp,col,ph){var mp=el('path',{d:d,fill:'none',stroke:'none'});svg.appendChild(mp);var len=mp.getTotalLength();var n=Math.max(2,Math.round(len/(sp||22)));for(var i=0;i<n;i++){var c=el('circle',{r:2.5,fill:col||COL.dot,opacity:0.95});svg.appendChild(c);dotPool.push({c:c,mp:mp,len:len,off:(i/n)*len,dir:dir,speed:42,ph:(ph==null?null:ph)});}}
+var flowMode='conv', acT=0;
+function frame(now){var dt=(now-(frame._t||now))/1000;frame._t=now;if(dt>0.1)dt=0.1;acT+=dt;var w=2*Math.PI*0.45;dotPool.forEach(function(dp){var v;if(flowMode==='ac'){ v=(dp.ph!=null)? dp.speed*Math.cos(w*acT+dp.ph*Math.PI/180) : dp.dir*dp.speed*Math.cos(w*acT); }else { v=dp.dir*dp.speed*(flowMode==='elec'?-1:1); }dp.off=(dp.off+v*dt+dp.len)%dp.len;var pt=dp.mp.getPointAtLength(dp.off);dp.c.setAttribute('cx',pt.x);dp.c.setAttribute('cy',pt.y);});anim=requestAnimationFrame(frame);}
 function startAnim(){if(!anim){frame._t=0;anim=requestAnimationFrame(frame);}}
 function tri(t){var f=t-Math.floor(t);return f<0.5?(-1+4*f):(3-4*f);}
 function isOn(num){ return !offCkts[MODE+':'+num]; }
 function toggleCkt(num){ if(faultCkt===num){clearFault();return;} var k=MODE+':'+num; if(offCkts[k])delete offCkts[k]; else offCkts[k]=1; render(); }
-var faultZone='branch', faultPhase=null;   // 'branch' | 'feeder' | 'service'
+var faultZone='branch', faultPhase=null, noNeutralMsg=false;   // 'branch' | 'feeder' | 'service'
 function faultActive(){ return (faultCkt!=null||faultZone!=='branch') && !tripped; }
 function faultFeeder(ph){ if(svcOff)return; clearActiveFaultState(); faultZone='feeder'; faultPhase=ph; var sys=SYS[MODE]; FAULT_A=Math.max(1,Math.round(sys.vln/0.08)); tripSec=ocpdOn?0.02:Infinity;
   if(tripTimer){clearTimeout(tripTimer);tripTimer=null;}
@@ -209,8 +227,9 @@ function applyFault(num){
   if(tripTimer){clearTimeout(tripTimer);tripTimer=null;}
   if(faultCkt!=null) delete offCkts[MODE+':'+faultCkt];   // re-arm the previously faulted circuit
   delete offCkts[MODE+':'+num];                            // faulting energizes the circuit
-  faultCkt=num; faultZone='branch'; faultPhase=null; tripped=false; FAULT_A=0; tripSec=Infinity;
+  noNeutralMsg=false; faultCkt=num; faultZone='branch'; faultPhase=null; tripped=false; FAULT_A=0; tripSec=Infinity;
   var V,Z;
+  if(sys.noNeutral&&(faultType==='LN'||faultType==='NG')){ faultCkt=null; noNeutralMsg=true; render(); return; }
   if(faultType==='NG'){ FAULT_A=Math.max(1,Math.round((sys.vln/120)*8)); tripSec=Infinity; render(); return; }  // objectionable current, no OCPD trip
   if(faultType==='LL'){ V=sys.vll; Z=0.18; }
   else if(faultType==='LN'){ V=sys.vln; Z=0.22; }
@@ -221,11 +240,12 @@ function applyFault(num){
   if(isFinite(tripSec)){ tripTimer=setTimeout(function(){ tripped=true; offCkts[MODE+':'+num]=1; render(); }, Math.min(2200, 400+tripSec*120)); }
   render();
 }
-function clearFault(){ if(tripTimer){clearTimeout(tripTimer);tripTimer=null;} if(faultCkt!=null){delete offCkts[MODE+':'+faultCkt];} faultCkt=null; faultZone='branch'; faultPhase=null; tripped=false; FAULT_A=0; tripSec=Infinity; render(); }
+function clearFault(){ noNeutralMsg=false; if(tripTimer){clearTimeout(tripTimer);tripTimer=null;} if(faultCkt!=null){delete offCkts[MODE+':'+faultCkt];} faultCkt=null; faultZone='branch'; faultPhase=null; tripped=false; FAULT_A=0; tripSec=Infinity; render(); }
 function clearActiveFaultState(){ if(tripTimer){clearTimeout(tripTimer);tripTimer=null;} if(faultCkt!=null){delete offCkts[MODE+':'+faultCkt];} faultCkt=null; faultZone='branch'; faultPhase=null; tripped=false; FAULT_A=0; tripSec=Infinity; }
 function toggleSvc(){ svcOff=!svcOff; if(svcOff)clearActiveFaultState(); render(); }
 function toggleLcMain(){ lcMainOff=!lcMainOff; if(lcMainOff)clearActiveFaultState(); render(); }
 function faultWhy(){
+  if(noNeutralMsg) return '<b style="color:#ffd27a">NO NEUTRAL</b> — a corner-grounded delta is 3-wire. There is no neutral to fault; phase B is the grounded conductor. Try a Line–Ground or Line–Line fault.';
   if(faultZone==='service') return '<b style="color:#ff8a8a">LINE-SIDE SERVICE FAULT · '+FAULT_A+' A</b> — ahead of the service disconnect there\'s no overcurrent device in the building, so <b>nothing here trips</b>; only the utility transformer fuse can clear it. This is why line-side conductors are kept short and in conduit.';
   if(faultZone==='feeder') return tripped?'<b style="color:#8fd6a3">CLEARED</b> — the <b>service disconnect</b> opened to clear the feeder fault ('+FAULT_A+' A).':'<b style="color:#ff8a8a">FEEDER FAULT · '+FAULT_A+' A</b> — on the feeder between the service disconnect and the panel. It\'s cleared by the <b>service disconnect</b> (the upstream OCPD), not the branch breakers.';
   if(faultCkt==null) return 'Tap a breaker to switch a circuit on/off. Tap any <b>conductor</b> or piece of <b>equipment</b> to fault it — branch, feeder, or line-side service.';
@@ -249,7 +269,7 @@ function render(){
   var sys=SYS[MODE], phases=sys.ph.map(function(a){return {id:a[0],c:a[1]};}), N=phases.length, demo=DEMO[sys.demo];
   var FRED='#ff3b30', fA=faultActive(), fGnd=fA&&(faultType==='LG'||faultType==='NG'), fNeu=fA&&(faultType==='LN'||faultType==='NG');
   var feederLive=!svcOff, busLive=!svcOff&&!lcMainOff, DEAD='#3a4b6b';
-  var OBJ='#f5c542', bondActive=downstreamBond&&busLive&&!fGnd;   // illegal N-G bond: objectionable current rides the grounding system
+  var OBJ='#f5c542', bondActive=downstreamBond&&busLive&&!fGnd&&!sys.noNeutral;   // illegal N-G bond: objectionable current rides the grounding system
   document.getElementById('sub').textContent=sys.title+' · '+sys.wires;
 
   var W=1020,rows=21,rowH=25,svcH=150,top=svcH+70,rowTop=top,H=top+rows*rowH+56;
@@ -263,6 +283,7 @@ function render(){
   function barXat(p,y){ return busC + (p-(N-1)/2)*22 + 6*tri((y-busTopZ)/(2*rowH) + p/N); }   // each phase bar zigzags in its OWN lane (L1|L2 or A|B|C) — bars never cross
   // per-phase flow direction from the phase angle, so phases read as phase-correct (A opposite B, etc.)
   function dirPh(i){ var a=(N===2?i*180:i*-120); return (Math.cos(a*Math.PI/180)>=0)?1:-1; }
+  function angPh(i){ return (N===2?i*180:i*-120); }
   function barPath(p){ var d='M '+barXat(p,busTopZ).toFixed(1)+' '+busTopZ; for(var y=busTopZ+4;y<=busBotZ;y+=4){ d+=' L '+barXat(p,y).toFixed(1)+' '+y; } return d; }
 
   // ===== LOAD CENTER enclosure (separate from the service) =====
@@ -275,7 +296,7 @@ function render(){
   // ===== utility transformer =====
   svg.appendChild(el('rect',{x:34,y:40,width:86,height:tyG-40+16,rx:8,fill:COL.box,stroke:'#6f80a8','stroke-width':1.3}));
   svg.appendChild(txt(77,34,'UTILITY XFMR',{anchor:'middle',size:9,fill:COL.txt2}));
-  (function(){ var parts=sys.title.split(' · '), vV=parts[0], vT=(parts.slice(1).join(' ')).replace(/\s*\(.*\)/,'');
+  (function(){ var parts=sys.title.split(' · '), vV=parts[0], vT=(parts.slice(1).join(' ')).replace(/\s*\(.*\)/,'').replace('3-wire corner-grounded delta','corner-gnd Δ').replace('high-leg delta','high-leg Δ');
     var xb=40, yb=tyG+16;
     svg.appendChild(txt(77,xb+14,vV,{anchor:'middle',size:8.5,fill:COL.txt}));
     var d='M 77 '+(xb+22); for(var k=0;k<4;k++) d+=' a 4.5 4.5 0 0 1 0 9';
@@ -313,23 +334,24 @@ function render(){
     // high-leg delta: in the METER ONLY the high leg sits on C (ANSI C12 meter wiring — on B it would destroy the meter electronics);
     // it rolls back to B right after the meter, so it lands on B at the disconnect and the panel (NEC 408.3(E)(1)).
     var yM=(MODE==='highleg')?tyH[[0,2,1][i]]:y, xr=mcx+mr+6;
-    var dL=(yM===y)?('M 120 '+y+' L '+swX0+' '+y):('M 120 '+yM+' L '+xr+' '+yM+' L '+(xr+12)+' '+y+' L '+swX0+' '+y); svg.appendChild(el('path',{d:dL,stroke:svcF?FRED:p.c,'stroke-width':svcF?3.2:2.6,fill:'none'})); addDots(svg,dL,svcF?1:dirPh(i),24,svcF?FRED:null);
+    var dL=(yM===y)?('M 120 '+y+' L '+swX0+' '+y):('M 120 '+yM+' L '+xr+' '+yM+' L '+(xr+12)+' '+y+' L '+swX0+' '+y); svg.appendChild(el('path',{d:dL,stroke:svcF?FRED:p.c,'stroke-width':svcF?3.2:2.6,fill:'none'})); addDots(svg,dL,svcF?1:dirPh(i),24,svcF?FRED:null,svcF?null:angPh(i));
     var hl=el('path',{d:dL,stroke:'transparent','stroke-width':13,fill:'none'}); hl.style.cursor='pointer'; (function(pid){hl.addEventListener('click',function(e){e.stopPropagation();faultService(pid);});})(p.id); svg.appendChild(hl);
     // service disconnect BREAKER pole: closed = contact through; open = contacts parted (gap)
     if(svcOff){ svg.appendChild(el('line',{x1:swX0,y1:y,x2:swX0+7,y2:y,stroke:p.c,'stroke-width':2.6})); svg.appendChild(el('line',{x1:swX1-7,y1:y,x2:swX1,y2:y,stroke:DEAD,'stroke-width':2.6})); svg.appendChild(el('line',{x1:swX0+11,y1:y-3,x2:swX1-11,y2:y+3,stroke:COL.off,'stroke-width':1.6})); }
     else { svg.appendChild(el('line',{x1:swX0,y1:y,x2:swX1,y2:y,stroke:p.c,'stroke-width':2.6})); }
     // feeder side (switch-out -> panel): live only if the disconnect is closed
-    var dF='M '+swX1+' '+y+' L '+dx+' '+y+' L '+dx+' '+hotLandY; svg.appendChild(el('path',{d:dF,stroke:fdrF?FRED:(feederLive?p.c:DEAD),'stroke-width':fdrF?3.2:2.6,fill:'none'})); if(fdrF)addDots(svg,dF,1,20,FRED); else if(feederLive)addDots(svg,dF,dirPh(i),24);
+    var dF='M '+swX1+' '+y+' L '+dx+' '+y+' L '+dx+' '+hotLandY; svg.appendChild(el('path',{d:dF,stroke:fdrF?FRED:(feederLive?p.c:DEAD),'stroke-width':fdrF?3.2:2.6,fill:'none'})); if(fdrF)addDots(svg,dF,1,20,FRED); else if(feederLive)addDots(svg,dF,dirPh(i),24,null,angPh(i));
     var hf=el('path',{d:dF,stroke:'transparent','stroke-width':13,fill:'none'}); hf.style.cursor='pointer'; (function(pid){hf.addEventListener('click',function(e){e.stopPropagation();faultFeeder(pid);});})(p.id); svg.appendChild(hf);
   });
   if(DETAIL){
-    var dN='M 120 '+tyN+' L '+xNR+' '+tyN+' L '+xNR+' '+busTopZ;svg.appendChild(el('path',{d:dN,stroke:fNeu?FRED:(feederLive?COL.neu:DEAD),'stroke-width':fNeu?3:2.2,fill:'none'}));if(feederLive)addDots(svg,dN,-1,24,fNeu?FRED:null);
+    if(!sys.noNeutral){ var dN='M 120 '+tyN+' L '+xNR+' '+tyN+' L '+xNR+' '+busTopZ;svg.appendChild(el('path',{d:dN,stroke:fNeu?FRED:(feederLive?COL.neu:DEAD),'stroke-width':fNeu?3:2.2,fill:'none'}));if(feederLive)addDots(svg,dN,-1,24,fNeu?FRED:null); }
     var cy=tyG+4, nX=sdX0+22, gX=sdX0+62;
     var dG='M '+(gX+9)+' '+cy+' L '+xGR+' '+cy+' L '+xGR+' '+busTopZ;svg.appendChild(el('path',{d:dG,stroke:fGnd?FRED:(bondActive?OBJ:COL.egc),'stroke-width':(fGnd||bondActive)?3:2.2,fill:'none'}));if(fGnd&&egcPath!=='broken')addDots(svg,dG,-1,22,FRED);else if(bondActive)addDots(svg,dG,-1,22,OBJ);
     // neutral drops into the N terminal; MBJ (250.28) ties N terminal to G terminal — the only N-G bond
-    svg.appendChild(el('line',{x1:nX,y1:tyN,x2:nX,y2:cy-7,stroke:COL.neu,'stroke-width':2.2}));
+    var gcy=sys.noNeutral?tyH[1]:tyN;   // corner-grounded: the grounded phase (B) lands on the grounded-conductor terminal
+    svg.appendChild(el('line',{x1:nX,y1:gcy,x2:nX,y2:cy-7,stroke:COL.neu,'stroke-width':2.2}));
     svg.appendChild(el('line',{x1:nX+9,y1:cy,x2:gX-9,y2:cy,stroke:fGnd?FRED:COL.egc,'stroke-width':3,'stroke-dasharray':'3 3'}));
-    svg.appendChild(el('rect',{x:nX-9,y:cy-7,width:18,height:14,rx:2,fill:'#e6eaf2',stroke:'#aeb6c9','stroke-width':1}));svg.appendChild(txt(nX,cy+4,'N',{anchor:'middle',size:9,w:700,fill:'#0b1020'}));
+    svg.appendChild(el('rect',{x:nX-9,y:cy-7,width:18,height:14,rx:2,fill:'#e6eaf2',stroke:'#aeb6c9','stroke-width':1}));svg.appendChild(txt(nX,cy+4,sys.noNeutral?'B':'N',{anchor:'middle',size:9,w:700,fill:'#0b1020'}));
     svg.appendChild(el('rect',{x:gX-9,y:cy-7,width:18,height:14,rx:2,fill:'#1f7a45',stroke:COL.egc,'stroke-width':1}));svg.appendChild(txt(gX,cy+4,'G',{anchor:'middle',size:9,w:700,fill:'#fff'}));
     svg.appendChild(txt((nX+gX)/2,cy-9,'MBJ',{anchor:'middle',size:7,fill:fGnd?'#ff8a8a':COL.egc}));
     svg.appendChild(txt((nX+gX)/2,cy+16,'NEC 250.28',{anchor:'middle',size:7,fill:COL.txt2}));
@@ -356,18 +378,18 @@ function render(){
 
   // N/G buses
   if(DETAIL){
-    [xNL,xNR].forEach(function(x){svg.appendChild(el('line',{x1:x,y1:busTopZ,x2:x,y2:busBotZ-16,stroke:fNeu?FRED:COL.neu,'stroke-width':2.6}));});
+    if(!sys.noNeutral)[xNL,xNR].forEach(function(x){svg.appendChild(el('line',{x1:x,y1:busTopZ,x2:x,y2:busBotZ-16,stroke:fNeu?FRED:COL.neu,'stroke-width':2.6}));});
     var gCol=(fGnd&&egcPath!=='broken')?FRED:(bondActive?OBJ:COL.egc);
     [xGL,xGR].forEach(function(x){svg.appendChild(el('line',{x1:x,y1:busTopZ,x2:x,y2:busBotZ-4,stroke:gCol,'stroke-width':bondActive?3:2.6}));if(bondActive)addDots(svg,'M '+x+' '+busTopZ+' L '+x+' '+(busBotZ-4),-1,22,OBJ);});
-    svg.appendChild(el('path',{d:'M '+xNL+' '+(busBotZ-16)+' L '+xNR+' '+(busBotZ-16),stroke:fNeu?FRED:COL.neu,'stroke-width':2.2,fill:'none'}));if(busLive||fNeu)addDots(svg,'M '+xNL+' '+(busBotZ-16)+' L '+xNR+' '+(busBotZ-16),1,24,fNeu?FRED:null);
+    if(!sys.noNeutral){ svg.appendChild(el('path',{d:'M '+xNL+' '+(busBotZ-16)+' L '+xNR+' '+(busBotZ-16),stroke:fNeu?FRED:COL.neu,'stroke-width':2.2,fill:'none'}));if(busLive||fNeu)addDots(svg,'M '+xNL+' '+(busBotZ-16)+' L '+xNR+' '+(busBotZ-16),1,24,fNeu?FRED:null); }
     svg.appendChild(el('path',{d:'M '+xGL+' '+(busBotZ-4)+' L '+xGR+' '+(busBotZ-4),stroke:gCol,'stroke-width':bondActive?3:2.2,fill:'none'}));if(bondActive)addDots(svg,'M '+xGL+' '+(busBotZ-4)+' L '+xGR+' '+(busBotZ-4),1,22,OBJ);
     // illegal N-G bond jumper (objectionable current: neutral bus -> ground bus)
-    if(downstreamBond){ var jy=busBotZ-10; svg.appendChild(el('path',{d:'M '+xNR+' '+jy+' L '+xGR+' '+jy,stroke:'#ff6b6b','stroke-width':2.4,'stroke-dasharray':'4 3',fill:'none'})); if(bondActive)addDots(svg,'M '+xNR+' '+jy+' L '+xGR+' '+jy,1,14,OBJ); svg.appendChild(txt((xNR+xGR)/2,jy-4,'illegal N-G bond',{anchor:'middle',size:6.5,fill:'#ff8a8a'})); }
-    svg.appendChild(txt(xNL,busTopZ-4,'N',{anchor:'middle',size:7.5,fill:'#d7dbe3'}));svg.appendChild(txt(xGL,busTopZ-4,'G',{anchor:'middle',size:7.5,fill:'#8fd6a3'}));
-    svg.appendChild(txt(xNR,busTopZ-4,'N',{anchor:'middle',size:7.5,fill:'#d7dbe3'}));svg.appendChild(txt(xGR,busTopZ-4,'G',{anchor:'middle',size:7.5,fill:'#8fd6a3'}));
+    if(downstreamBond&&!sys.noNeutral){ var jy=busBotZ-10; svg.appendChild(el('path',{d:'M '+xNR+' '+jy+' L '+xGR+' '+jy,stroke:'#ff6b6b','stroke-width':2.4,'stroke-dasharray':'4 3',fill:'none'})); if(bondActive)addDots(svg,'M '+xNR+' '+jy+' L '+xGR+' '+jy,1,14,OBJ); svg.appendChild(txt((xNR+xGR)/2,jy-4,'illegal N-G bond',{anchor:'middle',size:6.5,fill:'#ff8a8a'})); }
+    if(!sys.noNeutral)svg.appendChild(txt(xNL,busTopZ-4,'N',{anchor:'middle',size:7.5,fill:'#d7dbe3'}));svg.appendChild(txt(xGL,busTopZ-4,'G',{anchor:'middle',size:7.5,fill:'#8fd6a3'}));
+    if(!sys.noNeutral)svg.appendChild(txt(xNR,busTopZ-4,'N',{anchor:'middle',size:7.5,fill:'#d7dbe3'}));svg.appendChild(txt(xGR,busTopZ-4,'G',{anchor:'middle',size:7.5,fill:'#8fd6a3'}));
   }
   // zig-zag hot bus (dead when the service or main is open)
-  phases.forEach(function(p,i){var d=barPath(i);svg.appendChild(el('path',{d:d,stroke:busLive?p.c:DEAD,'stroke-width':3.2,fill:'none',opacity:0.95}));if(busLive)addDots(svg,d,dirPh(i),26);});
+  phases.forEach(function(p,i){var d=barPath(i);svg.appendChild(el('path',{d:d,stroke:busLive?p.c:DEAD,'stroke-width':3.2,fill:'none',opacity:0.95}));if(busLive)addDots(svg,d,dirPh(i),26,null,angPh(i));});
 
   // legend
   var lx=W-40-phases.length*42,ly=H-14;phases.forEach(function(p,i){svg.appendChild(el('rect',{x:lx+i*42,y:ly-9,width:11,height:11,rx:2,fill:p.c}));svg.appendChild(txt(lx+i*42+15,ly,p.id,{size:9}));});
@@ -395,12 +417,12 @@ function render(){
         svg.appendChild(el('path',{d:d,fill:'none',stroke:hotRed?FRED:(busLive?pc:DEAD),'stroke-width':hotRed?2.8:2,opacity:on?1:0.4}));
       })();
       svg.appendChild(el('circle',{cx:bxAt,cy:sy,r:2.2,fill:busLive?pc:DEAD}));
-      if(on&&busLive)addDots(svg,'M '+bxAt+' '+sy+' L '+bIn+' '+sy,hotRed?1:dirPh(pk),15,hotRed?FRED:null);
+      if(on&&busLive)addDots(svg,'M '+bxAt+' '+sy+' L '+bIn+' '+sy,hotRed?1:dirPh(pk),15,hotRed?FRED:null,hotRed?null:angPh(pk));
       var chipX=isL?(bIn-13):(bIn+2);
       svg.appendChild(el('rect',{x:chipX,y:sy-6.5,width:11,height:13,rx:2,fill:info?pc:'#2b3a5e',opacity:info?1:0.7}));
-      svg.appendChild(txt(chipX+5.5,sy+3.5,nnum,{anchor:'middle',size:7.5,w:700,fill:'#fff'}));
+      svg.appendChild(txt(chipX+5.5,sy+3.5,nnum,{anchor:'middle',size:7.5,w:700,fill:(info&&pc===WIRE.white)?'#0b1020':'#fff'}));
       // phase badge (A/B/C or L1/L2) in the phase color, on the bus side of the breaker
-      (function(){ var lab=phases[pk].id, bw=(lab.length>1?15:11), bxx=isL?(bIn+3):(bIn-3-bw), lightTxt=(pc===WIRE.yellow||pc===WIRE.orange);
+      (function(){ var lab=phases[pk].id, bw=(lab.length>1?15:11), bxx=isL?(bIn+3):(bIn-3-bw), lightTxt=(pc===WIRE.yellow||pc===WIRE.orange||pc===WIRE.white);
         svg.appendChild(el('rect',{x:bxx,y:sy-13,width:bw,height:10,rx:2,fill:pc,opacity:info?1:0.55}));
         svg.appendChild(txt(bxx+bw/2,sy-5.2,lab,{anchor:'middle',size:7,w:700,fill:lightTxt?'#0b1020':'#fff'})); })();
     }
@@ -411,7 +433,7 @@ function render(){
     for(var h=0;h<poles;h++){var hy=rowTop+(rowIdx+h)*rowH+rowH/2,hc=phases[(rowIdx+h)%N].c, hr=fault&&(faultType==='LG'||faultType==='LN'||(faultType==='LL'&&h===0));
       var hd='M '+bOut+' '+hy+' L '+eqEdge+' '+hy;
       svg.appendChild(el('path',{d:hd,stroke:hr?FRED:(busLive?hc:DEAD),'stroke-width':hr?2.8:1.9,fill:'none',opacity:on?1:0.35}));
-      if(on&&busLive)addDots(svg,hd,hr?1:dirPh((rowIdx+h)%N),15,hr?FRED:null);
+      if(on&&busLive)addDots(svg,hd,hr?1:dirPh((rowIdx+h)%N),15,hr?FRED:null,hr?null:angPh((rowIdx+h)%N));
       // click the conductor itself to fault this circuit (hit-area on top of the dots)
       var hit=el('path',{d:hd,stroke:'transparent','stroke-width':14,fill:'none'}); hit.style.cursor='pointer'; (function(nn){hit.addEventListener('click',function(e){e.stopPropagation();applyFault(nn);});})(num); svg.appendChild(hit);}
     var gy=botY+(usesN?19:9);
@@ -449,7 +471,7 @@ function render(){
     svg.appendChild(g2);
   }
   phases.forEach(function(p,i){ probeDot(p.id, busC+(i-(N-1)/2)*16, p.c); });
-  if(DETAIL){ probeDot('N', xNR, COL.neu); probeDot('EGC', xGR, COL.egc); }
+  if(DETAIL){ if(!sys.noNeutral)probeDot('N', xNR, COL.neu); probeDot('EGC', xGR, COL.egc); }
   svg.appendChild(txt(busC, pny+16, '▲ probe: tap any two to read voltage', {anchor:'middle',size:7,fill:COL.txt2}));
 
   var ro=document.getElementById('readout'); if(ro){ ro.innerHTML = (probePick.length===2)?probeText() : faultWhy(); }
@@ -461,6 +483,8 @@ function bindGrp(id,attr,fn){ var g=document.getElementById(id); g.addEventListe
 bindGrp('sysGrp','data-sys',function(v){ MODE=v; probePick=[]; clearFault(); });
 bindGrp('mainGrp','data-mlo',function(v){ MLO=(v==='1'); render(); });
 bindGrp('ftGrp','data-ft',function(v){ faultType=v; if(faultCkt!=null)applyFault(faultCkt); else render(); });
+var FLOWNOTE={conv:'Conventional: + to − (how the code and one-lines show it).',elec:'Electron flow: − to + — the physical electrons, exactly opposite conventional.',ac:'60 Hz AC (slowed way down): every phase reverses, 120° apart. Watch A, B, C trade being out vs. back — balanced phases are each other\'s return.'};
+bindGrp('flowGrp','data-flow',function(v){ flowMode=v; var n=document.getElementById('flowNote'); if(n)n.textContent=FLOWNOTE[v]; });
 bindGrp('egcGrp','data-egc',function(v){ egcPath=v; if(faultCkt!=null)applyFault(faultCkt); else render(); });
 document.getElementById('detailBtn').addEventListener('click',function(){ DETAIL=!DETAIL; this.classList.toggle('on',DETAIL); this.textContent=DETAIL?'Show neutral / ground':'Hots only'; render(); });
 document.getElementById('bondBtn').addEventListener('click',function(){ downstreamBond=!downstreamBond; this.classList.toggle('on',downstreamBond); if(faultCkt!=null)applyFault(faultCkt); else render(); });
@@ -494,6 +518,7 @@ var REF={
   ['208Y/120 V wye','Three phases 120° apart, 120 V to neutral, 208 V phase-to-phase. Balanced 3Ø ≈ 0 A neutral.'],
   ['480Y/277 V wye','277 V to neutral, 480 V phase-to-phase. Industrial.'],
   ['240/120 V high-leg delta','Center-tap gives 120 V on two legs; the third (wild/high leg) is 208 V to neutral — mark it orange (110.15).'],
+  ['Corner-grounded delta (3-wire)','No neutral. One phase (usually B) is intentionally grounded at the service and becomes the grounded conductor — it must be white or gray (200.6). Every phase is 240 V (or 480 V) to every other, but A and C read full voltage to ground while B reads 0. The MBJ bonds the grounded phase to the EGC and the GEC lands on it. No 120 V circuits — 2- and 3-pole loads only. An OCPD may be in the grounded phase only if it opens all conductors together (240.22).'],
  ],
  tcc:[
   ['Inverse-time breaker','A thermal-magnetic breaker trips faster the higher the current. Small overloads take time (thermal); a big fault hits the magnetic element and trips almost instantly.'],
