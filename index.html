@@ -128,6 +128,8 @@
 
 <script>
 /* ---------------- state ---------------- */
+var STACKED=false;   // stacked-bus (I-Line style) distribution panelboard: right-side breakers mount flipped
+function rowPh(row,isL){ var n=SYS[MODE].ph.length, p=row%n; return (STACKED&&!isL)?(n-1-p):p; }
 var MODE='single', MLO=false, DETAIL=true, offCkts={};
 var faultCkt=null, faultType='LG', egcPath='intact', downstreamBond=false, ocpdOn=true, tripped=false, FAULT_A=0, tripSec=Infinity, tripTimer=null;
 var svcOff=false, lcMainOff=false;   // service disconnect open / load-center main breaker open
@@ -227,7 +229,7 @@ function tri(t){var f=t-Math.floor(t);return f<0.5?(-1+4*f):(3-4*f);}
 function isOn(num){ return !offCkts[MODE+':'+num]; }
 function toggleCkt(num){ if(faultCkt===num){clearFault();return;} var k=MODE+':'+num; if(offCkts[k])delete offCkts[k]; else offCkts[k]=1; render(); }
 var faultZone='branch', faultPhase=null, noNeutralMsg=false, ugGnd=null, ugFirst=false, ug2=false;
-function phaseOfCkt(num){ var n=SYS[MODE].ph.length; return SYS[MODE].ph[Math.floor((num-1)/2)%n][0]; }   // 'branch' | 'feeder' | 'service'
+function phaseOfCkt(num){ return SYS[MODE].ph[rowPh(Math.floor((num-1)/2),num%2===1)][0]; }   // 'branch' | 'feeder' | 'service'
 var ckEgc={}, ckRev={}, ckMsg='';   // per-circuit overrides: EGC condition and reverse polarity
 function egcOf(num){ return (poolOn&&MODE==='single'&&num===2)?poolEgc:(ckEgc[MODE+':'+num]||egcPath); }
 function poolEgcOf(i){ return ckEgc['P:'+i]||poolEgc; }
@@ -460,7 +462,7 @@ function render(){
     if(info){ body.style.cursor='pointer'; (function(nn){ body.addEventListener('click',function(e){e.stopPropagation();toggleCkt(nn);}); })(num); }
     svg.appendChild(body);
     for(var k=0;k<poles;k++){
-      var pk=(rowIdx+k)%N,sy=rowTop+(rowIdx+k)*rowH+rowH/2,nnum=num+k*2;occ[nnum]=true;
+      var pk=rowPh(rowIdx+k,isL),sy=rowTop+(rowIdx+k)*rowH+rowH/2,nnum=num+k*2;occ[nnum]=true;
       var bxAt=barXat(pk,sy), pc=phases[pk].c, hotRed=fault&&(faultType==='LG'||faultType==='LN'||(faultType==='LL'&&k===0));
       // stab: from the breaker to ITS phase bar — hop over any other phase bar it crosses (no connection)
       (function(){ var dir=(bxAt>bIn)?1:-1, xs=[]; for(var q=0;q<N;q++){ if(q===pk)continue; var xq=barXat(q,sy); if((xq-bIn)*dir>3 && (bxAt-xq)*dir>3) xs.push(xq); }
@@ -480,16 +482,16 @@ function render(){
         svg.appendChild(txt(bxx+bw/2,sy-5.2,lab,{anchor:'middle',size:7,w:700,fill:lightTxt?'#0b1020':'#fff'})); })();
     }
     if(poles>1)svg.appendChild(el('rect',{x:isL?(bx+3):(bx+bw-9),y:bodyY+3,width:6,height:bodyH-6,rx:3,fill:on?'#f5c542':COL.off,opacity:0.85}));
-    if(!info){ if(MODE==='highleg' && (rowIdx%N)===1){ svg.appendChild(txt(isL?(bx+5):(bx+bw-5),rowY+3,'208V-N',{anchor:isL?'start':'end',size:6.5,w:700,fill:WIRE.orange})); } return; }
+    if(!info){ if(MODE==='highleg' && rowPh(rowIdx,isL)===1){ svg.appendChild(txt(isL?(bx+5):(bx+bw-5),rowY+3,'208V-N',{anchor:isL?'start':'end',size:6.5,w:700,fill:WIRE.orange})); } return; }
     if(info.pool){ POOL.feedOn=on&&busLive; POOL.on=on; POOL.bOut=bOut; POOL.hy={};
-      for(var hh=0;hh<2;hh++){ POOL.hy[(rowIdx+hh)%N]=rowTop+(rowIdx+hh)*rowH+rowH/2; }
+      for(var hh=0;hh<2;hh++){ POOL.hy[rowPh(rowIdx+hh,isL)]=rowTop+(rowIdx+hh)*rowH+rowH/2; }
       return; }
     var eqX0=isL?eqLx0:eqRx0,eqX1=isL?eqLx1:eqRx1,eqEdge=isL?eqX1:eqX0,nbar=isL?xNL:xNR,gbar=isL?xGL:xGR;
     var topY=rowTop+rowIdx*rowH+rowH/2,botY=rowTop+(rowIdx+poles-1)*rowH+rowH/2,usesN=!!info.nt;
-    for(var h=0;h<poles;h++){var hy=rowTop+(rowIdx+h)*rowH+rowH/2,hc=phases[(rowIdx+h)%N].c, hr=fault&&(faultType==='LG'||faultType==='LN'||(faultType==='LL'&&h===0));
+    for(var h=0;h<poles;h++){var hy=rowTop+(rowIdx+h)*rowH+rowH/2,hc=phases[rowPh(rowIdx+h,isL)].c, hr=fault&&(faultType==='LG'||faultType==='LN'||(faultType==='LL'&&h===0));
       var hd='M '+bOut+' '+hy+' L '+eqEdge+' '+hy;
       svg.appendChild(el('path',{d:hd,stroke:hr?FRED:(busLive?hc:DEAD),'stroke-width':hr?2.8:1.9,fill:'none',opacity:on?1:0.35}));
-      if(on&&busLive)addDots(svg,hd,hr?1:dirPh((rowIdx+h)%N),15,hr?FRED:null,hr?null:angPh((rowIdx+h)%N));
+      if(on&&busLive)addDots(svg,hd,hr?1:dirPh(rowPh(rowIdx+h,isL)),15,hr?FRED:null,hr?null:angPh(rowPh(rowIdx+h,isL)));
       // click the conductor itself to fault this circuit (hit-area on top of the dots)
       var hit=el('path',{d:hd,stroke:'transparent','stroke-width':14,fill:'none'}); hit.style.cursor='pointer'; (function(nn){hit.addEventListener('click',function(e){e.stopPropagation();applyFault(nn);});})(num); svg.appendChild(hit);}
     var gy=botY+(usesN?19:9);
@@ -499,7 +501,7 @@ function render(){
     if(DETAIL){
       if(usesN){var ny=botY+9;var nc=nRed?FRED:(busLive?COL.neu:DEAD);svg.appendChild(el('path',{d:'M '+eqEdge+' '+ny+' L '+nbar+' '+ny,stroke:nc,'stroke-width':nRed?2.6:1.5,fill:'none',opacity:on?1:0.35}));if((on&&busLive)||nRed)addDots(svg,'M '+eqEdge+' '+ny+' L '+nbar+' '+ny,1,18,nRed?FRED:null);}
       if(ckE&&ckE!=='intact') OVR.push([(eqEdge+gbar)/2,gy,ckE]); else if(fault) FEGC={x:(eqEdge+gbar)/2, y:gy, inline:1};
-      if(ckR) REV.push([eqEdge,isL?18:-18,botY,botY+9,phases[(rowIdx+poles-1)%N].c]);   // where the EGC OPEN / HIGH-R marker goes for this faulted circuit
+      if(ckR) REV.push([eqEdge,isL?18:-18,botY,botY+9,phases[rowPh(rowIdx+poles-1,isL)].c]);   // where the EGC OPEN / HIGH-R marker goes for this faulted circuit
       var gc=gRed?FRED:COL.egc;svg.appendChild(el('path',{d:'M '+eqEdge+' '+gy+' L '+gbar+' '+gy,stroke:gc,'stroke-width':gRed?2.4:1.4,fill:'none',opacity:0.95}));if(gRed)addDots(svg,'M '+eqEdge+' '+gy+' L '+gbar+' '+gy,1,16,FRED); /* branch EGC: frame back to the G bar */
     }
     // 2-pole LL fault: the other hot pole carries the return
@@ -508,7 +510,7 @@ function render(){
     var eqbox=el('rect',{x:eqX0,y:ebY,width:(eqX1-eqX0),height:ebH,rx:4,fill:fault?'#3a1620':COL.equip,stroke:fault?FRED:(on?COL.equipStroke:'#3a4b6b'),'stroke-width':fault?1.8:1.1,opacity:on?1:0.55});
     eqbox.style.cursor='pointer';(function(nn){eqbox.addEventListener('click',function(e){e.stopPropagation();openCkMenu('M',nn,e);});})(num);
     svg.appendChild(eqbox);
-    svg.appendChild(txt((eqX0+eqX1)/2,(topY+botY)/2+1,info.n,{anchor:'middle',size:8.5,fill:on?COL.txt:COL.idle}));
+    svg.appendChild(txt((eqX0+eqX1)/2,(topY+botY)/2+1,(poles===1&&/ [ABC]$/.test(info.n))?info.n.replace(/ [ABC]$/,' '+phases[rowPh(rowIdx,isL)].id):info.n,{anchor:'middle',size:8.5,fill:on?COL.txt:COL.idle}));
     var tag=(poles===1?(usesN?'120 V':'1P'):(poles===2?'2P':'3Ø'))+(fault?' · FAULT':(on?(ckR?(poles>1?' · L2↔N SWAPPED':' · REVERSED'):''):' · OFF'));
     svg.appendChild(txt((eqX0+eqX1)/2,(topY+botY)/2+12,tag,{anchor:'middle',size:7,fill:fault?'#ff8a8a':(on?(ckR?'#ffb35c':COL.txt2):'#ff8a8a')}));
     BADGE.push([eqX0,eqX1,ebY,ckE,ckR,isL]);
@@ -544,8 +546,15 @@ function render(){
   // labels drawn LAST with a dark halo so the hot feeder drops behind them don't break up the text
   function haloTxt(x,y,str,o){ var t=txt(x,y,str,o); t.setAttribute('stroke','#0b1020'); t.setAttribute('stroke-width','4'); t.setAttribute('stroke-linejoin','round'); t.setAttribute('paint-order','stroke'); svg.appendChild(t); }
   // ---- the panelboard's own illegal N–G bond toggle (same style as the pool panel's) ----
-  if(DETAIL){ var cw2=eqRx1-eqRx0, cx2=eqRx0, cy2=poolActive?top-4:top-62;   // over the right-side equipment (below the pool feeder runs when the pool is on)
-    (function(){ var by=cy2-24, tg=el('g'); tg.style.cursor='pointer';   // one button: MAIN BREAKER <-> MAIN LUGS
+  if(DETAIL){ var cw2=eqRx1-eqRx0, cx2=eqRx0, cy2=(poolActive?156:110)+48;   // stack: MAIN BKR/MLO · BUS TYPE · BOND PANEL · EGC   // over the right-side equipment (below the pool feeder runs when the pool is on)
+    (function(){ var bw2=cw2, bx2=cx2, by=cy2-24, tg=el('g'); tg.style.cursor='pointer';   // BUS TYPE: branch <-> stacked
+      tg.addEventListener('click',function(e){e.stopPropagation(); busToggle();});
+      tg.appendChild(el('rect',{x:bx2,y:by,width:bw2,height:20,rx:6,fill:'#101a30',stroke:STACKED?'#f5c542':'#5fd4ff','stroke-width':1.4}));
+      tg.appendChild(txt(bx2+bw2/2-6,by+13.5,STACKED?('STACKED · R '+SYS[MODE].ph.map(function(a){return a[0];}).reverse().join('-')):'BRANCH BUS',{anchor:'middle',size:8.5,w:700,fill:STACKED?'#f5c542':'#5fd4ff'}));
+      tg.appendChild(txt(bx2+bw2-12,by+14,'⇄',{anchor:'middle',size:10,w:700,fill:'#8fa0c4'}));
+      svg.appendChild(tg);
+    })();
+    (function(){ var by=cy2-48, tg=el('g'); tg.style.cursor='pointer';   // one button: MAIN BREAKER <-> MAIN LUGS
       tg.addEventListener('click',function(e){e.stopPropagation(); var b=document.querySelector('[data-mlo="'+(MLO?'0':'1')+'"]'); if(b)b.click();});
       tg.appendChild(el('rect',{x:cx2,y:by,width:cw2,height:20,rx:6,fill:'#101a30',stroke:'#5fd4ff','stroke-width':1.4}));
       tg.appendChild(txt(cx2+cw2/2-6,by+13.5,MLO?'MAIN LUGS':'MAIN BREAKER',{anchor:'middle',size:8.5,w:700,fill:'#5fd4ff'}));
@@ -620,6 +629,12 @@ function egcMark(svg,mx,my,mode,inline){   // EGC OPEN / HIGH-R marker
   svg.appendChild(txt(mx,my-15.5,lb,{anchor:'middle',size:8,w:700,fill:mc}));
 }
 function poolEgcSet(v){ poolEgc=v; Object.keys(ckEgc).forEach(function(k){ if(k.indexOf('P:')===0) delete ckEgc[k]; }); if(poolFault!==null) poolFaultAt(poolFault); else if(faultCkt===2&&!tripped) applyFault(2); else { poolMsg=''; render(); } }
+function busToggle(){ STACKED=!STACKED; probePick=[]; clearFault();
+  var ord=SYS[MODE].ph.map(function(a){return a[0];}).join('-'), rev=SYS[MODE].ph.map(function(a){return a[0];}).reverse().join('-');
+  ckMsg = STACKED
+    ? '<b style="color:#f5c542">STACKED BUS (I-Line style distribution panelboard)</b> — the phase bars are stacked front to back and every breaker bolts across all of them. A breaker on the <b>right side mounts flipped</b>, so its poles read <b>'+rev+'</b> top to bottom while the left side reads <b>'+ord+'</b>. Circuits 1 and 2 are now on <b>different</b> phases. Many of these panels can be ordered with the right side in '+ord+' order — check the label. Typical of Square D I-Line, Eaton Pow-R-Line 3/4, Siemens P4/P5 (mostly feeder breakers, not 1-pole branch circuits).'
+    : '<b style="color:#5fd4ff">BRANCH-CIRCUIT BUS (load center / NQ / QO / BR style)</b> — breakers side by side share the same bus fin, so <b>1 and 2 are the same phase</b> and both columns read '+ord+' going down. A 2-pole breaker spans two rows to pick up both legs. (408.3(E)(1))';
+  render(); }
 function ckMenuClose(){ var m=document.getElementById('ckMenu'); if(m) m.remove(); }
 function ckInfo(kind,id){ if(kind==='P'){ var c=POOLCKTS[id]; return {name:c.n, key:'P:'+id, v120:!!c.nt, p:c.p, def:poolEgc}; }
   var d=DEMO[SYS[MODE].demo], c=d[id]; if(poolOn&&MODE==='single'){ if(id===26)c=d[2]; else if(id===28)c=d[4]; }
@@ -699,15 +714,16 @@ function drawPool(svg,P,g){
   var eL1=xGL-72, eL0=eL1-112, eR0=xGR+72, eR1=eR0+112;
   var pOVR=[], pREV=[], pBADGE=[], pObj=poolBond&&on, anyF=(poolFault!==null)&&on, fC=anyF?POOLCKTS[poolFault]:null, gRed=anyF&&!fC.gf&&poolEgcOf(poolFault)!=='broken', fdrHot=g.fdrF&&(faultType==='LG')&&poolEgc!=='intact', gridHot=(anyF&&!fC.gf&&poolEgcOf(poolFault)!=='intact')||fdrHot; poolLive=on; poolGPh=fdrHot?poolFdrK:(gridHot?(Math.floor((fC.slot-1)/2)%2):-1); poolGFrac=((fdrHot?poolEgc:(anyF?poolEgcOf(poolFault):poolEgc))==='broken')?1:0.5; var pMark=null;
   var gCol=gRed?FRED:(pObj?OBJ:COL.egc);
-  function bxAt(p,y){ return PC+(0.5-p)*22+6*tri((y-busTop)/(2*rowH)+p/2); }
+  var kT=(P.hy[0]<P.hy[1])?0:1, kB=1-kT;
+  function bxAt(p,y){ return PC+((p===kT)?11:-11)+6*tri((y-busTop)/(2*rowH)+p/2); }
   function bPath(p){ var d='M '+bxAt(p,busTop).toFixed(1)+' '+busTop; for(var y=busTop+4;y<=busBot;y+=4) d+=' L '+bxAt(p,y).toFixed(1)+' '+y; return d; }
   // ---- enclosure ----
   svg.appendChild(el('rect',{x:bOL-14,y:pTop-20,width:(bOR+14)-(bOL-14),height:(busBot+50)-(pTop-20),rx:10,fill:'#0e1526',stroke:'#5fd4ff','stroke-width':1.5}));
   // ---- 4-wire feeder from the main panel: out, UP, over, and DOWN into the top of the pool panel (no crossings) ----
   // exits top→bottom L1, L2, N, G; risers step outward; top runs stack; drops land right→left L1, L2, N, G
-  var yL1=P.hy[0], yL2=P.hy[1], RX=[650,662,674,686], TY=[150,162,174,186];
-  var F=[ {d:'M '+P.bOut+' '+yL1+' L '+RX[0]+' '+yL1+' L '+RX[0]+' '+TY[0]+' L '+(PC+12)+' '+TY[0]+' L '+(PC+12)+' '+busTop, c:ph[0].c, k:0},
-          {d:'M '+P.bOut+' '+yL2+' L '+RX[1]+' '+yL2+' L '+RX[1]+' '+TY[1]+' L '+(PC-12)+' '+TY[1]+' L '+(PC-12)+' '+busTop, c:ph[1].c, k:1} ];
+  var yT1=P.hy[kT], yT2=P.hy[kB], RX=[650,662,674,686], TY=[110,122,134,146];   // pool feeder runs high, above the panel controls
+  var F=[ {d:'M '+P.bOut+' '+yT1+' L '+RX[0]+' '+yT1+' L '+RX[0]+' '+TY[0]+' L '+(PC+12)+' '+TY[0]+' L '+(PC+12)+' '+busTop, c:ph[kT].c, k:kT},
+          {d:'M '+P.bOut+' '+yT2+' L '+RX[1]+' '+yT2+' L '+RX[1]+' '+TY[1]+' L '+(PC-12)+' '+TY[1]+' L '+(PC-12)+' '+busTop, c:ph[kB].c, k:kB} ];
   var fF=g.fdrF, ft=faultType;
   F.forEach(function(f){ var red=fF&&(f.k===poolFdrK||ft==='LL');
     svg.appendChild(el('path',{d:f.d,stroke:red?FRED:(on?f.c:DEAD),'stroke-width':red?3.2:2.4,fill:'none',opacity:P.on?1:0.4}));
@@ -719,9 +735,9 @@ function drawPool(svg,P,g){
   var anyN=on&&POOLCKTS.some(function(c,i){return c.nt&&!poolOff[i];}); if(nF)addDots(svg,dN,-1,20,FRED); else if(anyN)addDots(svg,dN,-1,22);
   var dG='M '+g.xGR+' 272 L '+RX[3]+' 272 L '+RX[3]+' '+TY[3]+' L '+xGL+' '+TY[3]+' L '+xGL+' '+busTop;
   var gF=fF&&(ft==='LG'||ft==='NG')&&!g.egcOpen; svg.appendChild(el('path',{d:dG,stroke:gF?FRED:gCol,'stroke-width':(gF||gRed||pObj)?3:2.2,fill:'none'})); if(gF||gRed)addDots(svg,dG,-1,20,FRED); else if(pObj)addDots(svg,dG,-1,20,OBJ);
-  halo(940,142,'100 A 2P (slots 2/4) · 4-wire pool feeder · L1 · L2 · N · insulated Cu EGC (680.25)',{anchor:'middle',size:7.5,w:700,fill:'#5fd4ff'});
+  halo(940,102,'100 A 2P (slots 2/4) · 4-wire pool feeder · L1 · L2 · N · insulated Cu EGC (680.25)',{anchor:'middle',size:7.5,w:700,fill:'#5fd4ff'});
   // ---- main lugs (fed by the 100 A breaker) ----
-  [0,1].forEach(function(k){ var x=PC+(k?-12:12); svg.appendChild(el('rect',{x:x-5,y:busTop-4,width:10,height:8,rx:2,fill:COL.box,stroke:ph[k].c,'stroke-width':1.3})); });
+  [0,1].forEach(function(k){ var x=PC+(k===kT?12:-12); svg.appendChild(el('rect',{x:x-5,y:busTop-4,width:10,height:8,rx:2,fill:COL.box,stroke:ph[k].c,'stroke-width':1.3})); });
   halo(PC,busBot+40,'POOL PANEL · 100 A · 12-SPACE · MAIN LUGS',{anchor:'middle',size:9,w:700,fill:'#5fd4ff'});
   // ---- N & G bars both sides, tied underneath — kept SEPARATE (subpanel) ----
   [xNL,xNR].forEach(function(x){ svg.appendChild(el('line',{x1:x,y1:busTop,x2:x,y2:busBot-16,stroke:COL.neu,'stroke-width':2.6})); });
@@ -798,10 +814,10 @@ function drawPool(svg,P,g){
   svg.appendChild(txt(PC,poolBot+35,'ties pool metal together — NOT run to the panel, NOT a fault path',{anchor:'middle',size:9,fill:'#e8c9a6'}));
   // EGC OPEN / HIGH-R marker for the pool: on the faulted branch EGC, otherwise on the pool feeder EGC
   pREV.forEach(function(r){ revCross(svg,r[0],r[1],r[2],r[3],r[4]); }); pOVR.forEach(function(o){ egcMark(svg,o[0],o[1],o[2],true); }); pBADGE.forEach(function(b){ ckBadges(svg,b[0],b[1],b[2],b[3],b[4],b[5]); });
-  if(poolEgc!=='intact'){ if(pMark) egcMark(svg,pMark.x,pMark.y,poolEgc,true); else egcMark(svg,xGL-90,186,poolEgc,true); }
+  if(poolEgc!=='intact'){ if(pMark) egcMark(svg,pMark.x,pMark.y,poolEgc,true); else egcMark(svg,xGL-90,TY[3],poolEgc,true); }
   // probe circles on the pool feeder, just above the pool panel
   var py=busTop-22, PL=[];
-  [['P:L1',PC+12,ph[0].c,'L1'],['P:L2',PC-12,ph[1].c,'L2'],['P:N',xNL,COL.neu,'N'],['P:G',xGL,COL.egc,'G']].forEach(function(q){ var picked=probePick.indexOf(q[0])>=0, g2=el('g'); g2.style.cursor='pointer';
+  [['P:L1',kT===0?PC+12:PC-12,ph[0].c,'L1'],['P:L2',kT===1?PC+12:PC-12,ph[1].c,'L2'],['P:N',xNL,COL.neu,'N'],['P:G',xGL,COL.egc,'G']].forEach(function(q){ var picked=probePick.indexOf(q[0])>=0, g2=el('g'); g2.style.cursor='pointer';
     g2.addEventListener('click',function(e){e.stopPropagation();onProbe(q[0]);});
     g2.appendChild(el('circle',{cx:q[1],cy:py,r:11,fill:'transparent',stroke:'none'}));
     g2.appendChild(el('circle',{cx:q[1],cy:py,r:picked?9:7,fill:'#0b1020',stroke:picked?'#00d4ff':q[2],'stroke-width':picked?2.6:2}));
