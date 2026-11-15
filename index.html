@@ -59,7 +59,13 @@
   .scope{overflow-x:auto;overflow-y:hidden;padding:4px 10px 16px;-webkit-overflow-scrolling:touch;}
   svg{display:block;}
   .hint{font-size:10.5px;color:var(--txt2);padding:0 16px 14px;}
-  @media (max-width:760px){ .scope svg{width:980px;max-width:none;} }
+  @media (max-width:760px){
+    .scope svg{width:980px;max-width:none;}
+    .grp{flex-wrap:wrap;}                                   /* button groups wrap instead of running off the screen */
+    .grp > button{flex:1 1 auto;border-bottom:1px solid var(--border);padding:10px 9px;}
+    #readout{position:sticky;bottom:0;z-index:20;background:rgba(11,16,32,.96);border-top:1px solid var(--border);
+             padding:10px 14px calc(10px + env(safe-area-inset-bottom));margin:0;max-height:34vh;overflow-y:auto;font-size:11.5px;line-height:1.45;}
+  }
   #svg text{pointer-events:none}   /* labels never swallow taps meant for the box/wire under them */
 </style>
 </head>
@@ -273,7 +279,7 @@ function faultWhy(){
   if(noNeutralMsg) return '<b style="color:#ffd27a">NO NEUTRAL</b> — a corner-grounded delta is 3-wire. There is no neutral to fault; phase B is the grounded conductor. Try a Line–Ground or Line–Line fault.';
   if(faultZone==='service') return '<b style="color:#ff8a8a">LINE-SIDE SERVICE FAULT · '+FAULT_A+' A</b> — ahead of the service disconnect there\'s no overcurrent device in the building, so <b>nothing here trips</b>; only the utility transformer fuse can clear it. The fault current goes from the line-side conductor into the service enclosure, across the <b>MBJ</b>, and home on the <b>service neutral</b> to the transformer. The feeder EGC and the panel ground bars carry none of it, because they are downstream of the fault. This is why line-side conductors are kept short and in conduit.';
   if(faultZone==='feeder') return tripped?'<b style="color:#8fd6a3">CLEARED</b> — the <b>service disconnect</b> opened to clear the feeder fault ('+FAULT_A+' A).':'<b style="color:#ff8a8a">FEEDER FAULT · '+FAULT_A+' A</b> — on the feeder between the service disconnect and the panel. It\'s cleared by the <b>service disconnect</b> (the upstream OCPD), not the branch breakers.';
-  if(faultCkt==null) return 'Tap a breaker to switch a circuit on/off. Tap any <b>conductor</b> or piece of <b>equipment</b> to fault it — branch, feeder, or line-side service.';
+  if(faultCkt==null) return 'Tap a <b>breaker</b> to switch it on/off. Tap a <b>conductor</b> to fault it (branch, feeder, or line-side service). Tap a piece of <b>equipment</b> for its menu: fault it, break its EGC, or reverse its polarity.';
   var c=DEMO[SYS[MODE].demo][faultCkt]; var nm=c?c.n:('#'+faultCkt);
   if(poolOn&&MODE==='single'&&faultCkt===2) nm='the 100 A pool feeder ('+(poolFdrK?'L2':'L1')+')';
   if(tripped) return '<b style="color:#8fd6a3">CLEARED</b> — the breaker on <b>'+nm+'</b> tripped at '+FAULT_A+' A. Tap Reset or the breaker to restore.';
@@ -306,6 +312,7 @@ function render(){
   var W=poolActive?1560:1020,rows=21,rowH=25,svcH=150,top=svcH+70,rowTop=top,H=top+rows*rowH+56;
   if(poolActive){ demo=Object.assign({},demo); demo[26]=demo[2]; demo[28]=demo[4]; delete demo[4]; demo[2]={p:2,n:'Pool panel',pool:true}; }   // 100 A 2-pole pool feeder breaker
   svg.setAttribute('viewBox','0 0 '+W+' '+H);svg.setAttribute('width',W);svg.setAttribute('height',H);
+  svg.style.width=(window.matchMedia&&window.matchMedia('(max-width:760px)').matches)?Math.round(W*0.96)+'px':'';   // phone: keep text the same size when the pool panel widens the drawing
 
   var busC=510, busHalf=(N===3?36:28);   // 3-phase bars spread wider so the lanes read clearly
   var brkLin=busC-busHalf-14, brkLout=busC-busHalf-66, brkRin=busC+busHalf+14, brkRout=busC+busHalf+66;
