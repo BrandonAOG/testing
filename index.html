@@ -1,1534 +1,564 @@
-<!DOCTYPE html>
-<!--
-© 2026 Brandon Keilholz — All rights reserved.
-Created by Brandon Keilholz. Licensed for use by Always On Generators.
-This form, its code, layout, and content are proprietary.
-Unauthorized copying, reproduction, or distribution is prohibited and
-may result in liability for statutory damages of up to $150,000 per work
-for willful infringement under 17 U.S.C. § 504, plus attorney's fees.
--->
+<!doctype html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>AOG Box Fill Calculator — NEC 314.16</title>
-<script src="../sounds.js" defer></script>
-<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;500;600&display=swap" rel="stylesheet">
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>AOG · Electrical Theory</title>
 <link rel="manifest" href="../manifest.json">
-<link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
 <meta name="theme-color" content="#FBBF24">
-<meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="AOG Forms">
-
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600&display=swap" rel="stylesheet">
 <style>
-:root {
-  --bg: #f8f9fa;
-  --bg2: #ffffff;
-  --bg3: #f1f3f5;
-  --border: #dee2e6;
-  --text: #1F2937;
-  --text2: #4b5563;
-  --accent: #D97706;
-  --accent2: #B45309;
-  --cyan: #0891b2;
-  --success: #059669;
-  --danger: #DC2626;
-  --warn: #d97706;
-  --shadow: 0 2px 8px rgba(0,0,0,0.08);
-  --radius: 12px;
-  --header-bg: #1a1a2e;
-  --header-text: #D97706;
-}
-.dark {
-  --bg: #0A0E27;
-  --bg2: #0f1535;
-  --bg3: #141a3a;
-  --border: #1e2a4a;
-  --text: #E0F7FF;
-  --text2: #94a3b8;
-  --accent: #00FFC8;
-  --accent2: #06B6D4;
-  --cyan: #00FFC8;
-  --success: #10b981;
-  --danger: #ef4444;
-  --warn: #f59e0b;
-  --shadow: 0 2px 8px rgba(0,255,200,0.06);
-}
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body {
-  font-family: 'Exo 2', sans-serif;
-  background: var(--bg);
-  color: var(--text);
-  min-height: 100vh;
-  transition: background 0.3s, color 0.3s;
-}
-
-/* HEADER — spec-viewer style: pulsing logo left of company name + scanline flashes */
-.header {
-  text-align: center;
-  padding: 26px 16px 20px;
-  margin-bottom: 8px;
-  position: relative;
-}
-.header::before,.header::after{content:'';position:absolute;height:2px;width:80%;left:10%;background:linear-gradient(90deg,transparent,#FBBF24,#F97316,#00D4FF,transparent);}
-.header::before{top:0;animation:scanline 4s linear infinite;}
-.header::after{bottom:0;animation:scanline 4s linear infinite reverse;}
-@keyframes scanline{0%,100%{opacity:0;transform:scaleX(0)}50%{opacity:1;transform:scaleX(1)}}
-.logo-wrap{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:nowrap;margin-bottom:10px;}
-.logo-img{width:70px;height:70px;object-fit:contain;flex-shrink:0;filter:drop-shadow(0 0 12px rgba(251,191,36,.6));animation:logoPulse 3s ease-in-out infinite;}
-@media(min-width:480px){.logo-img{width:90px;height:90px}}
-@keyframes logoPulse{0%,100%{filter:drop-shadow(0 0 12px rgba(251,191,36,.6))}50%{filter:drop-shadow(0 0 22px rgba(251,191,36,.9)) drop-shadow(0 0 36px rgba(249,115,22,.6))}}
-.title-block{text-align:left;min-width:0;}
-.company-name{font-family:'Orbitron',monospace;font-size:clamp(1.05rem,4.5vw,1.4rem);font-weight:900;letter-spacing:2px;line-height:1.1;background:linear-gradient(135deg,#FBBF24 0%,#F97316 50%,#EA580C 100%);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:4px;}
-@media(min-width:480px){.company-name{font-size:1.8rem;letter-spacing:3px}}
-.tagline{font-family:'Share Tech Mono',monospace;font-size:.65rem;letter-spacing:4px;color:var(--cyan);text-transform:uppercase;}
-.tool-title{font-family:'Orbitron',monospace;font-size:.7rem;letter-spacing:5px;color:var(--text2);margin-top:8px;text-transform:uppercase;}
-.tool-title span{color:#F97316;}
-.header .nec-badge{margin-top:8px;display:inline-block;}
-.home-btn {
-  background: none; border: 1px solid #D97706;
-  color: #D97706; border-radius: 8px;
-  padding: 6px 10px; font-size: 11px;
-  font-family: 'Orbitron', sans-serif;
-  font-weight: 700; letter-spacing: 1px;
-  cursor: pointer; transition: all 0.2s;
-  text-decoration: none; display: inline-flex;
-  align-items: center; gap: 4px;
-}
-.home-btn:hover { background: #D97706; color: #000; }
-.theme-btn {
-  background: none; border: 1px solid #D97706;
-  color: #D97706; border-radius: 8px;
-  padding: 6px 10px; font-size: 14px; cursor: pointer;
-  transition: all 0.2s;
-}
-.theme-btn:hover { background: #D97706; color: #000; }
-.nec-badge {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 8px; background: #D97706;
-  color: #000; padding: 3px 7px;
-  border-radius: 4px; font-weight: 700;
-  letter-spacing: 1px;
-}
-
-/* MAIN */
-.main { padding: 16px; max-width: 900px; margin: 0 auto; }
-
-/* SECTION CARDS */
-.card {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 16px;
-  margin-bottom: 14px;
-  box-shadow: var(--shadow);
-  transition: background 0.3s, border 0.3s;
-}
-.card-title {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 11px; font-weight: 700;
-  color: var(--accent);
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  margin-bottom: 14px;
-  display: flex; align-items: center; gap: 8px;
-}
-.card-title::before {
-  content: ''; display: inline-block;
-  width: 3px; height: 14px;
-  background: var(--accent); border-radius: 2px;
-}
-
-/* FORM ELEMENTS */
-label {
-  font-size: 11px; font-weight: 600;
-  color: var(--text2);
-  text-transform: uppercase;
-  letter-spacing: 0.8px;
-  display: block; margin-bottom: 5px;
-}
-select, input[type="number"], input[type="text"] {
-  width: 100%;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  color: var(--text);
-  border-radius: 8px;
-  padding: 10px 12px;
-  font-size: 14px;
-  font-family: 'Exo 2', sans-serif;
-  outline: none;
-  transition: border 0.2s, box-shadow 0.2s;
-  -webkit-appearance: none;
-}
-select:focus, input:focus {
-  border-color: var(--accent);
-  box-shadow: 0 0 0 2px rgba(217,119,6,0.2);
-}
-.dark select:focus, .dark input:focus {
-  box-shadow: 0 0 0 2px rgba(0,255,200,0.15);
-}
-
-/* GRID LAYOUTS */
-.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
-@media(max-width:520px) {
-  .grid-2 { grid-template-columns: 1fr; }
-  .grid-3 { grid-template-columns: 1fr 1fr; }
-}
-
-/* WIRE ROWS */
-.wire-row {
-  display: grid;
-  grid-template-columns: 1fr 1fr auto;
-  gap: 8px;
-  align-items: end;
-  padding: 10px;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  margin-bottom: 8px;
-  transition: background 0.3s;
-}
-.wire-row:hover { border-color: var(--accent); }
-.remove-btn {
-  background: var(--danger);
-  color: white; border: none;
-  border-radius: 6px; width: 32px; height: 32px;
-  font-size: 16px; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
-  flex-shrink: 0; transition: opacity 0.2s;
-  align-self: flex-end; margin-bottom: 0;
-}
-.remove-btn:hover { opacity: 0.8; }
-.add-btn {
-  background: var(--accent);
-  color: #000; border: none;
-  border-radius: 8px; padding: 10px 16px;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 10px; font-weight: 700;
-  letter-spacing: 1px; cursor: pointer;
-  display: flex; align-items: center; gap: 6px;
-  transition: opacity 0.2s, transform 0.1s;
-  width: 100%; justify-content: center;
-  margin-top: 8px;
-}
-.add-btn:hover { opacity: 0.85; transform: translateY(-1px); }
-.add-btn:active { transform: translateY(0); }
-
-/* CALCULATE BUTTON */
-.calc-btn {
-  width: 100%;
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  color: #000; border: none;
-  border-radius: 10px; padding: 14px;
-  font-family: 'Orbitron', sans-serif;
-  font-size: 13px; font-weight: 700;
-  letter-spacing: 2px; cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: 0 4px 15px rgba(217,119,6,0.3);
-  margin-top: 4px;
-}
-.calc-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 6px 20px rgba(217,119,6,0.4);
-}
-.calc-btn:active { transform: translateY(0); }
-.dark .calc-btn {
-  background: linear-gradient(135deg, #00FFC8, #06B6D4);
-  box-shadow: 0 4px 15px rgba(0,255,200,0.25);
-}
-
-/* RESULTS */
-.result-card {
-  background: var(--bg2);
-  border: 2px solid var(--accent);
-  border-radius: var(--radius);
-  padding: 16px;
-  margin-bottom: 14px;
-  box-shadow: 0 0 20px rgba(217,119,6,0.1);
-}
-.dark .result-card {
-  box-shadow: 0 0 20px rgba(0,255,200,0.08);
-}
-.result-header {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 11px; color: var(--accent);
-  letter-spacing: 1.5px; margin-bottom: 14px;
-  text-transform: uppercase;
-  display: flex; align-items: center; gap: 8px;
-}
-
-/* CONDUIT TABLE */
-.conduit-table {
-  width: 100%; border-collapse: collapse;
-  font-size: 12px; font-family: 'Share Tech Mono', monospace;
-}
-.conduit-table th {
-  background: var(--bg3);
-  color: var(--accent);
-  font-family: 'Orbitron', sans-serif;
-  font-size: 9px; letter-spacing: 1px;
-  padding: 8px 10px; text-align: left;
-  border-bottom: 2px solid var(--border);
-  white-space: nowrap;
-}
-.conduit-table td {
-  padding: 8px 10px;
-  border-bottom: 1px solid var(--border);
-  color: var(--text);
-  vertical-align: middle;
-}
-.conduit-table tr:last-child td { border-bottom: none; }
-.conduit-table tr:hover td { background: var(--bg3); }
-
-/* STATUS PILLS */
-.status-pass {
-  background: var(--success);
-  color: white; padding: 3px 8px;
-  border-radius: 12px; font-size: 10px;
-  font-weight: 700; white-space: nowrap;
-}
-.status-fail {
-  background: var(--danger);
-  color: white; padding: 3px 8px;
-  border-radius: 12px; font-size: 10px;
-  font-weight: 700; white-space: nowrap;
-}
-.status-warn {
-  background: var(--warn);
-  color: #000; padding: 3px 8px;
-  border-radius: 12px; font-size: 10px;
-  font-weight: 700; white-space: nowrap;
-}
-.status-best {
-  background: linear-gradient(135deg, var(--accent), var(--accent2));
-  color: #000; padding: 3px 8px;
-  border-radius: 12px; font-size: 10px;
-  font-weight: 700; white-space: nowrap;
-}
-
-/* FILL BAR */
-.fill-bar-wrap {
-  background: var(--bg3);
-  border-radius: 6px; height: 10px;
-  overflow: hidden; min-width: 60px;
-}
-.fill-bar {
-  height: 100%; border-radius: 6px;
-  transition: width 0.6s ease;
-}
-.fill-green { background: var(--success); }
-.fill-yellow { background: var(--warn); }
-.fill-red { background: var(--danger); }
-
-/* JAM SECTION */
-.jam-box {
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 12px;
-  margin-top: 12px;
-}
-.jam-title {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 10px; color: var(--accent);
-  letter-spacing: 1px; margin-bottom: 8px;
-}
-.jam-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 8px;
-}
-.jam-item {
-  background: var(--bg2);
-  border: 1px solid var(--border);
-  border-radius: 6px; padding: 8px;
-  text-align: center;
-}
-.jam-size {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 13px; font-weight: 700;
-  color: var(--text);
-}
-.jam-ratio {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 11px; color: var(--text2);
-  margin: 2px 0;
-}
-.jam-status {
-  font-size: 10px; font-weight: 700;
-  margin-top: 4px;
-}
-.jam-ok  { color: var(--success); }
-.jam-risk { color: var(--warn); }
-.jam-high { color: var(--danger); }
-
-/* WIRE SUMMARY */
-.wire-summary {
-  display: flex; flex-wrap: wrap; gap: 6px;
-  margin-bottom: 12px;
-}
-.wire-chip {
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 4px 10px;
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 11px; color: var(--text);
-}
-
-/* RECOMMENDATION */
-.rec-box {
-  background: linear-gradient(135deg, rgba(217,119,6,0.1), rgba(180,83,9,0.05));
-  border: 1px solid var(--accent);
-  border-radius: 8px; padding: 12px;
-  margin-top: 12px;
-}
-.dark .rec-box {
-  background: linear-gradient(135deg, rgba(0,255,200,0.05), rgba(6,182,212,0.03));
-  border-color: var(--accent);
-}
-.rec-label {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 9px; color: var(--accent);
-  letter-spacing: 1.5px; margin-bottom: 6px;
-}
-.rec-size {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 20px; font-weight: 900;
-  color: var(--accent);
-}
-.rec-detail {
-  font-size: 12px; color: var(--text2);
-  margin-top: 4px; font-family: 'Share Tech Mono', monospace;
-}
-
-/* STATS ROW */
-.stats-row {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 8px; margin-bottom: 12px;
-}
-.stat-box {
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 8px; padding: 10px;
-  text-align: center;
-}
-.stat-val {
-  font-family: 'Orbitron', sans-serif;
-  font-size: 16px; font-weight: 700;
-  color: var(--accent);
-}
-.stat-lbl {
-  font-size: 9px; color: var(--text2);
-  text-transform: uppercase;
-  letter-spacing: 0.8px; margin-top: 2px;
-}
-
-/* NIPPLE/RACEWAY TOGGLE */
-.toggle-row {
-  display: flex; gap: 8px;
-  margin-bottom: 14px;
-}
-.toggle-opt {
-  flex: 1; padding: 10px;
-  border: 2px solid var(--border);
-  border-radius: 8px; text-align: center;
-  cursor: pointer; font-family: 'Orbitron', sans-serif;
-  font-size: 10px; font-weight: 700;
-  letter-spacing: 1px; color: var(--text2);
-  transition: all 0.2s;
-}
-.toggle-opt.active {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: rgba(217,119,6,0.08);
-}
-.dark .toggle-opt.active {
-  background: rgba(0,255,200,0.07);
-}
-
-/* OVERFLOW TABLE */
-.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
-
-/* EMPTY STATE */
-.empty-state {
-  text-align: center; padding: 40px 20px;
-  color: var(--text2);
-}
-.empty-icon { font-size: 48px; margin-bottom: 8px; }
-.empty-text {
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 12px; letter-spacing: 1px;
-}
-
-/* DIVIDER */
-.divider {
-  border: none; border-top: 1px solid var(--border);
-  margin: 12px 0;
-}
-
-/* INFO ROW */
-.info-row {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 11px; color: var(--text2);
-  margin-top: 6px;
-  font-family: 'Share Tech Mono', monospace;
-}
-.info-dot {
-  width: 6px; height: 6px;
-  border-radius: 50%; background: var(--accent);
-  flex-shrink: 0;
-}
-
-
-/* ===== QUICK REFERENCE TABLES MODAL ===== */
-.ref-btns { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
-.ref-btn {
-  flex: 1; min-width: 140px;
-  background: var(--bg3); color: var(--accent);
-  border: 1px solid var(--accent); border-radius: 8px;
-  padding: 10px; cursor: pointer;
-  font-family: 'Orbitron', sans-serif; font-size: 10px; font-weight: 700; letter-spacing: 1px;
-  text-decoration: none; text-align: center; transition: all 0.2s;
-  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-}
-.ref-btn:hover { background: var(--accent); color: #000; }
-.modal-bg {
-  position: fixed; inset: 0; z-index: 100000;
-  background: rgba(0,0,0,0.6); backdrop-filter: blur(2px);
-  display: none; align-items: flex-start; justify-content: center;
-  padding: max(16px, env(safe-area-inset-top, 16px)) 12px 16px;
-  overflow-y: auto;
-}
-.modal-bg.open { display: flex; }
-.modal {
-  background: var(--bg2); border: 2px solid var(--accent);
-  border-radius: var(--radius); width: 100%; max-width: 820px;
-  box-shadow: 0 10px 40px rgba(0,0,0,0.4);
-  margin: auto 0;
-}
-.modal-head {
-  display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  padding: 12px 14px; border-bottom: 1px solid var(--border);
-  position: sticky; top: 0; background: var(--bg2); border-radius: var(--radius) var(--radius) 0 0; z-index: 1;
-}
-.modal-title { font-family: 'Orbitron', sans-serif; font-size: 11px; font-weight: 700; color: var(--accent); letter-spacing: 1.5px; }
-.modal-close {
-  background: none; border: 1px solid var(--border); color: var(--text2);
-  border-radius: 6px; width: 32px; height: 32px; font-size: 18px; cursor: pointer; flex-shrink: 0;
-}
-.modal-close:hover { border-color: var(--danger); color: var(--danger); }
-.modal-tabs { display: flex; gap: 6px; padding: 10px 14px 0; flex-wrap: wrap; }
-.modal-tab {
-  flex: 1; min-width: 100px; padding: 8px; border: 2px solid var(--border); border-radius: 8px;
-  background: none; color: var(--text2); cursor: pointer;
-  font-family: 'Orbitron', sans-serif; font-size: 9px; font-weight: 700; letter-spacing: 1px;
-}
-.modal-tab.active { border-color: var(--accent); color: var(--accent); background: rgba(217,119,6,0.08); }
-.dark .modal-tab.active { background: rgba(0,255,200,0.07); }
-.modal-body { padding: 14px; }
-.modal-pane { display: none; }
-.modal-pane.active { display: block; }
-.modal .conduit-table td.grp {
-  background: var(--bg3); color: var(--accent);
-  font-family: 'Orbitron', sans-serif; font-size: 9px; letter-spacing: 1px;
-}
-.modal .conduit-table td.num, .modal .conduit-table th.num { text-align: center; }
-.rule-list { display: grid; gap: 8px; }
-.rule {
-  background: var(--bg3); border: 1px solid var(--border); border-left: 3px solid var(--accent);
-  border-radius: 8px; padding: 10px;
-}
-.rule-ref { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--accent); margin-bottom: 3px; }
-.rule-txt { font-size: 13px; color: var(--text); line-height: 1.45; }
-.rule-txt b { font-weight: 600; }
-.modal-foot { padding: 0 14px 14px; }
-body.modal-open { overflow: hidden; }
-@media print { .modal-bg, .ref-btns { display: none !important; } }
-
-
-/* ===== MOBILE TABLE TUNING ===== */
-.m-only { display: none; }
-@media (max-width: 520px) {
-  /* stop iOS auto-zoom on focus */
-  select, input[type="number"], input[type="text"] { font-size: 16px; }
-  .conduit-table { font-size: 11px; }
-  .conduit-table th { padding: 7px 5px; font-size: 8px; }
-  .conduit-table td { padding: 7px 5px; }
-  .hide-m { display: none; }
-  .m-only { display: inline; }
-  .wrap-m { white-space: normal !important; min-width: 96px; }
-  /* first column stays put if a table still needs to scroll */
-  .sticky-1 td:first-child, .sticky-1 th:first-child {
-    position: sticky; left: 0; z-index: 1; background: var(--bg2);
-    box-shadow: 1px 0 0 var(--border);
-  }
-  .sticky-1 thead th:first-child { background: var(--bg3); }
-  .sticky-1 tr.current-row td:first-child { background: linear-gradient(rgba(217,119,6,0.08), rgba(217,119,6,0.08)), var(--bg2); }
-  .dark .sticky-1 tr.current-row td:first-child { background: linear-gradient(rgba(0,255,200,0.06), rgba(0,255,200,0.06)), var(--bg2); }
-  .modal-bg { padding-left: 6px; padding-right: 6px; }
-  .modal-body { padding: 10px; }
-  .modal .conduit-table td.num, .modal .conduit-table th.num { padding: 7px 3px; }
-  .modal .conduit-table td.grp { position: static; box-shadow: none; }
-  .stats-row { gap: 6px; }
-  .stat-val { font-size: 14px; }
-}
-
-
-.check-detail {
-  margin-top: -9px;
-  padding: 12px 10px 10px;
-  background: var(--bg3);
-  border: 1px solid var(--accent);
-  border-top: 1px dashed var(--border);
-  border-radius: 0 0 8px 8px;
-}
-.check-row:has(input:checked) { border-color: var(--accent); }
-.check-row:has(+ .check-detail[style*="display: none"]), .check-row:has(+ .check-detail[style*="display:none"]) { border-radius: 8px; }
-.check-row:has(input:checked):has(+ .check-detail:not([style*="none"])) { border-radius: 8px 8px 0 0; border-bottom-color: transparent; }
-
-/* PRINT */
-@media print {
-  .header, .add-btn, .remove-btn, .calc-btn,
-  .theme-btn, .home-btn, .toggle-row { display: none !important; }
-  body { background: white; color: black; }
-  .card, .result-card { box-shadow: none; border: 1px solid #ccc; }
-}
-
-/* SCROLLBAR */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: var(--bg); }
-::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
-
-/* FOOTER */
-.footer {
-  text-align: center; padding: 20px;
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 10px; color: var(--text2);
-  letter-spacing: 1px;
-}
-
-
-/* ===== FIXED ACTION BAR ===== */
-.action-bar {
-  position: fixed !important;
-  top: 0 !important; left: 0 !important; right: 0 !important;
-  z-index: 99999;
-  width: 100%;
-  background: var(--header-bg, #1e293b);
-  padding: 4px 8px;
-  padding-top: max(4px, env(safe-area-inset-top, 4px));
-  display: flex; justify-content: flex-start; gap: 4px; flex-wrap: nowrap; align-items: center;
-  overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
-  
-  box-shadow: 0 4px 18px rgba(0,0,0,0.4);
-  border-bottom: 1px solid rgba(217,119,6,0.3);
-  box-sizing: border-box;
-}
-/* Center the buttons when they fit; auto-margins collapse safely when the
-   bar overflows and scrolls, so nothing gets clipped off the left edge. */
-.action-bar > :first-child { margin-left: auto; }
-.action-bar > :last-child { margin-right: auto; }
-.action-bar .ab-btn {
-  padding: 6px 8px; font-size: 10px; font-weight: bold; letter-spacing: 0.5px;
-  border: 1px solid rgba(217,119,6,0.4); background: rgba(217,119,6,0.07);
-  border-radius: 0; cursor: pointer; color: #D97706; text-transform: uppercase;
-  font-family: Arial, sans-serif; white-space: nowrap; flex: 1; min-width: 0;
-  text-align: center; text-decoration: none; display: inline-flex; align-items: center; justify-content: center;
-  clip-path: polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);
-  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
-  overflow: hidden; text-overflow: ellipsis; transition: all 0.15s ease;
-}
-.action-bar .ab-btn:hover { border-color: #D97706; box-shadow: 0 0 8px rgba(217,119,6,0.3); }
-.action-bar .theme-toggle-ab {
-  width: 36px; height: 36px; padding: 6px; flex-shrink: 0;
-  border: 1px solid rgba(217,119,6,0.4); background: rgba(217,119,6,0.07);
-  border-radius: 4px; cursor: pointer; display: flex; align-items: center; justify-content: center;
-  color: #D97706; font-size: 16px; transition: all 0.2s;
-  -webkit-tap-highlight-color: transparent; touch-action: manipulation;
-}
-.action-bar .theme-toggle-ab:hover { border-color: #D97706; box-shadow: 0 0 8px rgba(217,119,6,0.3); }
-@media (max-width: 480px) {
-  .action-bar { padding: 4px 4px; padding-top: max(4px, env(safe-area-inset-top, 4px)); gap: 3px; }
-}
-
-/* ===== BOX FILL ADDITIONS (same tokens as conduit fill) ===== */
-.wire-row.w4 { grid-template-columns: 1fr 0.7fr 1.6fr auto; }
-.wire-row.w3 { grid-template-columns: 1.6fr 1fr auto; }
-.wire-row.wd { grid-template-columns: 1.4fr 1fr 0.7fr auto; }
-@media(max-width:520px) {
-  .wire-row.w4, .wire-row.wd { grid-template-columns: 1fr 1fr; }
-  .wire-row.w4 .remove-btn, .wire-row.wd .remove-btn { grid-column: 2; justify-self: end; }
-  .wire-row.w4 .span-m, .wire-row.wd .span-m { grid-column: 1 / -1; }
-}
-.row-note {
-  grid-column: 1 / -1;
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 10px; color: var(--text2);
-  letter-spacing: .5px;
-}
-.row-note b { color: var(--accent); font-weight: 400; }
-
-.check-list { display: grid; gap: 8px; }
-.check-row {
-  display: flex; align-items: flex-start; gap: 10px;
-  padding: 10px; margin: 0;
-  background: var(--bg3);
-  border: 1px solid var(--border);
-  border-radius: 8px; cursor: pointer;
-  text-transform: none; letter-spacing: 0;
-  font-weight: 400; transition: border 0.2s;
-}
-.check-row:hover { border-color: var(--accent); }
-.check-row input { position: absolute; opacity: 0; pointer-events: none; }
-.check-box {
-  width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px;
-  border: 2px solid var(--border); border-radius: 4px;
-  display: flex; align-items: center; justify-content: center;
-  transition: all 0.2s; background: var(--bg2);
-}
-.check-row input:checked + .check-box { background: var(--accent); border-color: var(--accent); }
-.check-row input:checked + .check-box::after { content: '✓'; color: #000; font-size: 12px; font-weight: 900; }
-.check-row input:focus-visible + .check-box { box-shadow: 0 0 0 2px rgba(217,119,6,0.3); }
-.check-text { font-size: 13px; color: var(--text); line-height: 1.4; }
-.check-text b { font-weight: 600; }
-.check-text em {
-  font-style: normal; font-family: 'Share Tech Mono', monospace;
-  font-size: 10px; color: var(--text2); letter-spacing: .5px;
-}
-
-.total-row td {
-  font-family: 'Orbitron', sans-serif !important;
-  font-weight: 700; font-size: 11px;
-  color: var(--accent) !important;
-  border-top: 2px solid var(--border);
-  background: var(--bg3);
-}
-.ref-tag { color: var(--text2); }
-
-.warn-box {
-  display: flex; gap: 8px; align-items: flex-start;
-  background: var(--bg3);
-  border: 1px solid var(--warn);
-  border-left: 3px solid var(--warn);
-  border-radius: 8px; padding: 10px; margin-bottom: 10px;
-  font-family: 'Share Tech Mono', monospace;
-  font-size: 11px; color: var(--text);
-}
-.warn-box.err { border-color: var(--danger); }
-.rec-box.fail { border-color: var(--danger); background: linear-gradient(135deg, rgba(220,38,38,0.10), rgba(220,38,38,0.03)); }
-.rec-box.fail .rec-size, .rec-box.fail .rec-label { color: var(--danger); }
-.rec-box.pass .rec-size { color: var(--success); }
-.current-row td { background: rgba(217,119,6,0.08); }
-.dark .current-row td { background: rgba(0,255,200,0.06); }
+  :root{ --bg:#0b1020; --panel:#0e1526; --stroke:#2b3a5e; --txt:#cdd8f0; --txt2:#8a97b4; --accent:#00FFC8; --cyan:#00D4FF; --bg3:#141a3a; --border:#1e2a4a; --danger:#ef4444; }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;background:var(--bg);color:var(--txt);font-family:'Exo 2',ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Arial;}
+  /* ===== AOG page chrome ===== */
+  .action-bar{position:sticky;top:0;z-index:30;width:100%;background:#1a1a2e;padding:4px 8px;padding-top:max(4px,env(safe-area-inset-top,4px));display:flex;justify-content:flex-start;gap:4px;flex-wrap:nowrap;align-items:center;border-bottom:1px solid rgba(217,119,6,.3);box-shadow:0 4px 18px rgba(0,0,0,.4);box-sizing:border-box;}
+  .action-bar > :first-child{margin-left:auto;} .action-bar > :last-child{margin-right:auto;}
+  .ab-btn{padding:8px 10px;font-size:11px;font-weight:bold;letter-spacing:.5px;border:1px solid rgba(217,119,6,.4);background:rgba(217,119,6,.07);cursor:pointer;color:#D97706;text-transform:uppercase;font-family:Arial,sans-serif;white-space:nowrap;flex:1;min-width:0;max-width:300px;text-align:center;text-decoration:none;display:inline-flex;align-items:center;justify-content:center;clip-path:polygon(6px 0%,100% 0%,calc(100% - 6px) 100%,0% 100%);transition:all .15s ease;}
+  .ab-btn:hover{border-color:#D97706;box-shadow:0 0 8px rgba(217,119,6,.3);}
+  .theme-toggle-ab{width:36px;height:36px;padding:6px;flex-shrink:0;border:1px solid rgba(217,119,6,.4);background:rgba(217,119,6,.07);border-radius:4px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:#D97706;font-size:16px;transition:all .2s;}
+  .theme-toggle-ab:hover{border-color:#D97706;box-shadow:0 0 8px rgba(217,119,6,.3);}
+  .header{text-align:center;padding:22px 16px 16px;position:relative;}
+  .header::before,.header::after{content:'';position:absolute;height:2px;width:80%;left:10%;background:linear-gradient(90deg,transparent,#FBBF24,#F97316,#00D4FF,transparent);}
+  .header::before{top:0;}.header::after{bottom:0;}
+  .company-name{font-family:'Orbitron',monospace;font-size:clamp(1.4rem,6vw,2rem);font-weight:900;letter-spacing:2px;line-height:1.05;background:linear-gradient(135deg,#FBBF24,#F97316 55%,#EA580C);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;}
+  .tagline{font-family:'Share Tech Mono',monospace;font-size:.62rem;letter-spacing:4px;color:var(--cyan);text-transform:uppercase;margin-top:4px;}
+  .tool-title{font-family:'Orbitron',monospace;font-size:.68rem;letter-spacing:4px;color:var(--txt2);margin-top:10px;text-transform:uppercase;}
+  .tool-title span{color:#F97316;}
+  .nec-badge{font-family:'Share Tech Mono',monospace;font-size:8px;background:#D97706;color:#000;padding:3px 8px;border-radius:4px;font-weight:700;letter-spacing:1px;display:inline-block;margin-top:9px;}
+  /* ===== CODE reference modal ===== */
+  .modal-bg{display:none;position:fixed;inset:0;background:rgba(4,8,20,.72);z-index:50;padding:20px;overflow:auto;}
+  .modal-bg.open{display:block;}
+  .modal{max-width:620px;margin:20px auto;background:var(--panel);border:1px solid var(--stroke);border-radius:14px;overflow:hidden;}
+  .modal-head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--stroke);}
+  .modal-title{font-family:'Orbitron',monospace;font-size:13px;font-weight:700;color:#FBBF24;letter-spacing:1px;}
+  .modal-close{background:transparent;border:0;color:var(--txt2);font-size:24px;cursor:pointer;line-height:1;}
+  .modal-tabs{display:flex;flex-wrap:wrap;gap:0;border-bottom:1px solid var(--stroke);}
+  .modal-tab{flex:1;background:transparent;border:0;border-right:1px solid var(--stroke);color:var(--txt2);font:inherit;font-size:10px;letter-spacing:.5px;padding:9px 6px;cursor:pointer;font-family:'Share Tech Mono',monospace;}
+  .modal-tab.active{background:#16233f;color:#eaf1ff;}
+  .modal-body{padding:14px 16px;max-height:70vh;overflow:auto;}
+  .modal-pane{display:none;}.modal-pane.active{display:block;}
+  .rule{margin-bottom:12px;}
+  .rule-ref{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:var(--cyan);margin-bottom:3px;}
+  .rule-txt{font-size:12.5px;line-height:1.5;color:var(--txt);}
+  body.modal-open{overflow:hidden;}
+  h1{font-size:16px;margin:0;font-weight:700;letter-spacing:.2px;}
+  .sub{font-size:11.5px;color:var(--txt2);margin-top:2px;}
+  .bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;padding:8px 16px 10px;}
+  .grp{display:flex;align-items:stretch;gap:0;border:1px solid var(--border);border-radius:8px;overflow:hidden;}
+  .grp > button{background:var(--bg3);border:0;border-right:1px solid var(--border);color:var(--txt2);font-family:'Orbitron',sans-serif;font-size:9.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:9px 11px;cursor:pointer;transition:all .15s;}
+  .grp > button:last-child{border-right:0;}
+  .grp > button:hover{color:var(--txt);}
+  .grp > button.on{background:var(--accent);color:#001a16;}
+  .toggle{background:var(--bg3);border:1px solid var(--border);border-radius:8px;color:var(--txt);font-family:'Orbitron',sans-serif;font-size:9.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:9px 12px;cursor:pointer;transition:all .15s;}
+  .toggle:hover{border-color:var(--accent);}
+  .toggle.on{background:var(--accent);color:#001a16;border-color:var(--accent);}
+  #resetBtn{border-color:var(--danger);color:var(--danger);}
+  #resetBtn:hover{background:var(--danger);color:#fff;}
+  .lbl{font-family:'Orbitron',sans-serif;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--txt2);margin-right:2px;}
+  .scope{overflow-x:auto;overflow-y:hidden;padding:4px 10px 16px;-webkit-overflow-scrolling:touch;}
+  svg{display:block;}
+  .hint{font-size:10.5px;color:var(--txt2);padding:0 16px 14px;}
+  @media (max-width:760px){ .scope svg{width:980px;max-width:none;} }
 </style>
-<script src="../update-banner.js"></script>
 </head>
 <body>
-<div class="action-bar" id="action-bar">
+<div class="action-bar">
   <a class="ab-btn" href="../">🏠 HOME</a>
-  <button class="ab-btn" onclick="openRef('a')">📋 TABLES</button>
+  <button class="ab-btn" onclick="openRef('flow')">📋 CODE</button>
   <button class="theme-toggle-ab" id="themeBtn" onclick="toggleTheme()" title="Toggle light/dark mode">🌙</button>
 </div>
-
-<!-- HEADER -->
 <div class="header">
-  <div class="logo-wrap">
-    <img src="../logo.png" alt="Always On Generators Logo" class="logo-img" onerror="this.style.display='none'">
-    <div class="title-block">
-      <div class="company-name">Always On<br>Generators</div>
-      <div class="tagline">// Power When You Need It //</div>
-    </div>
-  </div>
-  <div class="tool-title">Box <span>Fill</span> Calculator &mdash; NEC 314.16, Tables 314.16(A) &amp; (B)(1)</div>
-  <span class="nec-badge">NEC 2023</span>
+  <div class="company-name">Always On Generators</div>
+  <div class="tagline">// Power When You Need It //</div>
+  <div class="tool-title">Electrical <span>Theory</span> &mdash; Current Flow &amp; Fault Paths</div>
+  <span class="nec-badge">NEC 2023 · ART 250</span>
 </div>
-
-<!-- MAIN -->
-<div class="main" id="main">
-
-  <!-- BOX -->
-  <div class="card">
-    <div class="card-title">Box Selection</div>
-
-    <div class="toggle-row">
-      <div class="toggle-opt active" id="tog-std" onclick="setBoxMode('std')">
-        📦 STANDARD METAL<br><span style="font-size:8px;font-weight:400;letter-spacing:0">Table 314.16(A)</span>
-      </div>
-      <div class="toggle-opt" id="tog-custom" onclick="setBoxMode('custom')">
-        🏷️ MARKED VOLUME<br><span style="font-size:8px;font-weight:400;letter-spacing:0">314.16(A)(2) — NM / listed</span>
-      </div>
-    </div>
-
-    <div id="stdBoxWrap" class="grid-2">
-      <div>
-        <label>Box (Trade Size)</label>
-        <select id="boxSelect" onchange="calculate(true)"></select>
-      </div>
-      <div>
-        <label>Ganged Boxes (Qty)</label>
-        <input type="number" id="gangQty" min="1" max="10" value="1" oninput="calculate(true)">
-      </div>
-    </div>
-
-    <div id="customBoxWrap" class="grid-2" style="display:none;">
-      <div>
-        <label>Box Description</label>
-        <input type="text" id="customName" placeholder="e.g. 2-gang PVC old-work" oninput="calculate(true)">
-      </div>
-      <div>
-        <label>Marked Volume (in³)</label>
-        <input type="number" id="customVol" min="0" step="0.1" placeholder="e.g. 32.0" oninput="calculate(true)">
-      </div>
-    </div>
-
-    <div class="grid-2" style="margin-top:12px;">
-      <div>
-        <label>Barriers in Box (Qty)</label>
-        <input type="number" id="barQty" min="0" max="10" value="0" oninput="calculate(true)">
-      </div>
-      <div>
-        <label>Barrier Type (unmarked)</label>
-        <select id="barType" onchange="calculate(true)">
-          <option value="0.5">Metal — 0.5 in³ each</option>
-          <option value="1.0">Nonmetallic — 1.0 in³ each</option>
-          <option value="0">Marked with volume — enter as negative add-on</option>
-        </select>
-      </div>
-    </div>
-    <div class="info-row"><div class="info-dot"></div><span>314.16(A): barrier volume is deducted. Each space must be calculated separately — run this once per space.</span></div>
-
-    <hr class="divider">
-    <label style="margin-bottom:8px;">Added Volume — Plaster Rings, Extension Rings, Domed Covers (marked in³)</label>
-    <div id="addonList"></div>
-    <button class="add-btn" onclick="addAddon()">＋ ADD RING / COVER VOLUME</button>
-
-    <div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;">
-      <div class="stat-box" style="flex:1;min-width:120px;">
-        <div class="stat-val" id="bi-box">—</div>
-        <div class="stat-lbl">Box Volume (in³)</div>
-      </div>
-      <div class="stat-box" style="flex:1;min-width:120px;">
-        <div class="stat-val" id="bi-addon">—</div>
-        <div class="stat-lbl">Added − Barriers (in³)</div>
-      </div>
-      <div class="stat-box" style="flex:1;min-width:120px;">
-        <div class="stat-val" id="bi-total">—</div>
-        <div class="stat-lbl">Total Available (in³)</div>
-      </div>
-    </div>
+<header style="padding-top:4px">
+  <div class="sub" id="sub">Interactive one-line — tap a breaker to switch a circuit on/off</div>
+</header>
+<div class="bar">
+  <span class="lbl">System</span>
+  <div class="grp" id="sysGrp">
+    <button data-sys="single" class="on">120/240 V 1Ø</button>
+    <button data-sys="v208">208Y/120 V</button>
+    <button data-sys="v480">480Y/277 V</button>
+    <button data-sys="highleg">High-leg Δ</button>
   </div>
-
-  <!-- CONDUCTORS -->
-  <div class="card">
-    <div class="card-title">Conductors — 314.16(B)(1)</div>
-    <div class="info-row" style="margin:-6px 0 10px;"><div class="info-dot"></div>
-      <span>Count ungrounded &amp; grounded (neutral) conductors here. Grounds go in the EGC section below.</span>
-    </div>
-    <div id="wireList"></div>
-    <button class="add-btn" onclick="addWire()">＋ ADD CONDUCTOR GROUP</button>
+  <span class="lbl">Panel</span>
+  <div class="grp" id="mainGrp">
+    <button data-mlo="0" class="on">Main breaker</button>
+    <button data-mlo="1">Main lugs</button>
   </div>
-
-  <!-- DEVICES -->
-  <div class="card">
-    <div class="card-title">Devices / Yokes — 314.16(B)(4)</div>
-    <div class="info-row" style="margin:-6px 0 10px;"><div class="info-dot"></div>
-      <span>Each yoke/strap = 2× allowance of largest conductor on that device. Wider than 2" = 2× per gang.</span>
-    </div>
-    <div id="deviceList"></div>
-    <button class="add-btn" onclick="addDevice()">＋ ADD DEVICE / YOKE</button>
-  </div>
-
-  <!-- OTHER ALLOWANCES -->
-  <div class="card">
-    <div class="card-title">Other Allowances</div>
-    <div class="check-list">
-      <label class="check-row">
-        <input type="checkbox" id="chkClamp" onchange="calculate(true)">
-        <span class="check-box"></span>
-        <span class="check-text"><b>Internal cable clamps</b> — one or more present<br><em>314.16(B)(2) · 1× largest conductor in box · connectors clamping outside the box = no allowance</em></span>
-      </label>
-      <label class="check-row">
-        <input type="checkbox" id="chkStud" onchange="calculate(true)">
-        <span class="check-box"></span>
-        <span class="check-text"><b>Luminaire stud(s)</b> — one or more present<br><em>314.16(B)(3) · 1× largest conductor in box</em></span>
-      </label>
-      <label class="check-row">
-        <input type="checkbox" id="chkHickey" onchange="calculate(true)">
-        <span class="check-box"></span>
-        <span class="check-text"><b>Hickey(s)</b> — one or more present<br><em>314.16(B)(3) · 1× largest conductor in box</em></span>
-      </label>
-      <label class="check-row">
-        <input type="checkbox" id="chkEgc" onchange="toggleEgc()">
-        <span class="check-box"></span>
-        <span class="check-text"><b>Equipment grounding conductors</b> — one or more enter box<br><em>314.16(B)(5) · up to 4 = 1× largest EGC · each additional = ¼×</em></span>
-      </label>
-      <div id="egcWrap" class="check-detail" style="display:none;">
-        <div class="grid-2">
-          <div>
-            <label>Largest EGC Entering Box</label>
-            <select id="egcSize" onchange="calculate(true)"></select>
-          </div>
-          <div>
-            <label>EGCs Entering Box (Qty)</label>
-            <input type="number" id="egcQty" min="1" max="99" value="1" oninput="calculate(true)">
-          </div>
-        </div>
-        <div class="info-row"><div class="info-dot"></div>
-          <span>Up to 4 EGCs = 1 allowance. Each EGC beyond 4 adds ¼ allowance — 314.16(B)(5).</span>
-        </div>
-      </div>
-      <label class="check-row">
-        <input type="checkbox" id="chkTb" onchange="toggleTb()">
-        <span class="check-box"></span>
-        <span class="check-text"><b>Terminal block(s)</b> — present in box<br><em>314.16(B)(6) · 1× largest conductor terminated, per assembly</em></span>
-      </label>
-      <div id="tbWrap" class="check-detail" style="display:none;">
-        <div class="grid-2">
-          <div>
-            <label>Terminal Block Assemblies (Qty)</label>
-            <input type="number" id="tbQty" min="1" max="20" value="1" oninput="calculate(true)">
-          </div>
-          <div>
-            <label>Largest Conductor Terminated</label>
-            <select id="tbSize" onchange="calculate(true)"></select>
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- CALCULATE -->
-  <button class="calc-btn" onclick="calculate()">⚡ CALCULATE BOX FILL</button>
-
-  <!-- RESULTS -->
-  <div id="results" style="display:none;margin-top:14px;">
-
-    <div class="result-card">
-      <div class="result-header">📊 Fill Summary</div>
-      <div class="stats-row">
-        <div class="stat-box">
-          <div class="stat-val" id="r-req">—</div>
-          <div class="stat-lbl">Required Volume (in³)</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-val" id="r-pct">—</div>
-          <div class="stat-lbl">Fill %</div>
-        </div>
-        <div class="stat-box">
-          <div class="stat-val" id="r-avail">—</div>
-          <div class="stat-lbl">Available Volume (in³)</div>
-        </div>
-      </div>
-
-      <div id="r-chips" class="wire-summary"></div>
-
-      <div style="margin-bottom:12px;">
-        <div style="display:flex;justify-content:space-between;margin-bottom:4px;">
-          <span style="font-size:11px;color:var(--text2);font-family:'Share Tech Mono',monospace;">VOLUME UTILIZATION</span>
-          <span id="r-fill-label" style="font-size:11px;font-weight:700;font-family:'Share Tech Mono',monospace;"></span>
-        </div>
-        <div class="fill-bar-wrap" style="height:14px;">
-          <div id="r-fill-bar" class="fill-bar" style="width:0%;"></div>
-        </div>
-      </div>
-
-      <div id="r-warnings"></div>
-
-      <div class="rec-box">
-        <div class="rec-label">◆ RESULT</div>
-        <div class="rec-size" id="r-verdict">—</div>
-        <div class="rec-detail" id="r-verdict-detail">—</div>
-      </div>
-    </div>
-
-    <!-- BREAKDOWN -->
-    <div class="result-card">
-      <div class="result-header">🧮 Volume Allowance Breakdown — Table 314.16(B)(1)</div>
-      <div class="table-wrap">
-        <table class="conduit-table sticky-1">
-          <thead>
-            <tr><th>ITEM</th><th class="hide-m">NEC REF</th><th>SIZE</th><th>COUNT</th><th>in³ EACH</th><th>VOLUME</th></tr>
-          </thead>
-          <tbody id="breakdownTbody"></tbody>
-          <tfoot>
-            <tr class="total-row"><td class="hide-m">TOTAL REQUIRED</td><td colspan="2"><span class="hide-m"></span><span class="m-only">TOTAL</span></td><td id="bd-count">—</td><td></td><td id="bd-vol">—</td></tr>
-          </tfoot>
-        </table>
-      </div>
-    </div>
-
-    <!-- ALL BOXES -->
-    <div class="result-card">
-      <div class="result-header">📋 Standard Metal Boxes — Table 314.16(A)</div>
-      <div class="info-row" style="margin-bottom:10px;"><div class="info-dot"></div>
-        <span>Single box, same contents, plus any ring/cover volume entered above.</span>
-      </div>
-      <div class="table-wrap">
-        <table class="conduit-table sticky-1">
-          <thead>
-            <tr><th>BOX</th><th class="hide-m">BOX in³</th><th>AVAIL.</th><th class="hide-m">REQUIRED</th><th>FILL %</th><th class="hide-m">VISUAL</th><th>STATUS</th></tr>
-          </thead>
-          <tbody id="allBoxesTbody"></tbody>
-        </table>
-      </div>
-    </div>
-  </div>
-
-  <!-- REFERENCE -->
-  <div class="card">
-    <div class="card-title">NEC 314.16 Reference</div>
-    <div class="ref-btns">
-      <button class="ref-btn" onclick="openRef('a')">📦 Table 314.16(A)</button>
-      <button class="ref-btn" onclick="openRef('b')">🔢 Table 314.16(B)(1)</button>
-      <button class="ref-btn" onclick="openRef('r')">📖 Code Summary — 314.16</button>
-    </div>
-    <div class="table-wrap" style="margin-bottom:12px;">
-      <table class="conduit-table">
-        <thead><tr><th class="wrap-m" style="min-width:64px;">AWG</th><th>18</th><th>16</th><th>14</th><th>12</th><th>10</th><th>8</th><th>6</th></tr></thead>
-        <tbody><tr><td class="wrap-m" style="min-width:64px;">in³ each</td><td>1.50</td><td>1.75</td><td>2.00</td><td>2.25</td><td>2.50</td><td>3.00</td><td>5.00</td></tr></tbody>
-      </table>
-    </div>
-    <div style="display:grid;gap:6px;">
-      <div class="info-row"><div class="info-dot"></div>(B)(1) Each conductor from outside the box, terminated or spliced inside = 1</div>
-      <div class="info-row"><div class="info-dot"></div>(B)(1) Each conductor passing through unspliced = 1</div>
-      <div class="info-row"><div class="info-dot"></div>(B)(1) Unbroken loop ≥ 2× the 300.14 free length (12") = 2</div>
-      <div class="info-row"><div class="info-dot"></div>(B)(1) Pigtails &amp; jumpers wholly inside the box = 0</div>
-      <div class="info-row"><div class="info-dot"></div>(B)(1) Ex: EGC &amp; ≤4 fixture wires smaller than 14 AWG from a domed luminaire canopy may be omitted</div>
-      <div class="info-row"><div class="info-dot"></div>(B)(2) Internal cable clamps (one or more) = 1 × largest conductor</div>
-      <div class="info-row"><div class="info-dot"></div>(B)(3) Luminaire studs / hickeys = 1 × largest conductor, each type</div>
-      <div class="info-row"><div class="info-dot"></div>(B)(4) Each yoke or strap = 2 × largest conductor on that device</div>
-      <div class="info-row"><div class="info-dot"></div>(B)(5) Up to 4 EGCs = 1 × largest EGC; each additional EGC = ¼ × largest EGC</div>
-      <div class="info-row"><div class="info-dot"></div>(B)(6) Each terminal block assembly = 1 × largest conductor terminated to it</div>
-      <div class="info-row"><div class="info-dot"></div>(A) Unmarked barriers: 0.5 in³ metal, 1.0 in³ nonmetallic — calculate each space separately</div>
-      <div class="info-row"><div class="info-dot"></div>(A)(2) Marked ring, extension &amp; cover volumes add to box volume</div>
-      <div class="info-row"><div class="info-dot"></div>314.16 covers 6 AWG &amp; smaller — 4 AWG &amp; larger: size per 314.28</div>
-    </div>
-  </div>
+  <button class="toggle on" id="detailBtn">Show neutral / ground</button>
 </div>
+<div class="bar">
+  <span class="lbl">Fault</span>
+  <div class="grp" id="ftGrp">
+    <button data-ft="LG" class="on">Line–Ground</button>
+    <button data-ft="LL">Line–Line</button>
+    <button data-ft="LN">Line–Neutral</button>
+    <button data-ft="NG">Neutral–Ground</button>
+  </div>
+  <span class="lbl">EGC</span>
+  <div class="grp" id="egcGrp">
+    <button data-egc="intact" class="on">Intact</button>
+    <button data-egc="loose">Loose</button>
+    <button data-egc="broken">Broken</button>
+  </div>
+  <button class="toggle" id="bondBtn">Illegal N–G bond</button>
+  <button class="toggle on" id="ocpdBtn">Breaker trips: ON</button>
+  <button class="toggle" id="resetBtn" style="border-color:#8a3030;color:#ff8a8a;">Reset</button>
+</div>
+<div class="scope"><svg id="svg" xmlns="http://www.w3.org/2000/svg"></svg></div>
+<div class="hint" id="readout">Tap a breaker to switch a circuit on/off. Tap a piece of <b>equipment</b> to apply the selected fault and watch the ground-fault path clear it.</div>
 
+<script>
+/* ---------------- state ---------------- */
+var MODE='single', MLO=false, DETAIL=true, offCkts={};
+var faultCkt=null, faultType='LG', egcPath='intact', downstreamBond=false, ocpdOn=true, tripped=false, FAULT_A=0, tripSec=Infinity, tripTimer=null;
+var svcOff=false, lcMainOff=false;   // service disconnect open / load-center main breaker open
+var probePick=[];                    // up to 2 probe nodes selected for a voltage reading
+function cP(m,deg){var r=deg*Math.PI/180;return {re:m*Math.cos(r),im:m*Math.sin(r)};}
+function cSub(a,b){return {re:a.re-b.re,im:a.im-b.im};}
+function cMag(a){return Math.hypot(a.re,a.im);}
+function nodeVph(id){
+  if(id==='N'||id==='EGC') return {re:0,im:0};
+  if(svcOff||lcMainOff) return {re:0,im:0};           // de-energized bus
+  var sys=SYS[MODE];
+  if(MODE==='highleg'){ if(id==='A')return cP(120,0); if(id==='C')return cP(120,180); if(id==='B')return cP(208,90); }
+  var idx=-1; sys.ph.forEach(function(a,i){ if(a[0]===id)idx=i; }); if(idx<0)return {re:0,im:0};
+  var ang=(sys.ph.length===2?idx*180:idx*-120);
+  return cP(sys.vln,ang);
+}
+function voltBetween(a,b){ return Math.round(cMag(cSub(nodeVph(a),nodeVph(b)))); }
+function nodeLabel(id){ return id==='N'?'Neutral':(id==='EGC'?'Ground (EGC)':'Phase '+id); }
+function onProbe(id){ var i=probePick.indexOf(id); if(i>=0)probePick.splice(i,1); else { probePick.push(id); if(probePick.length>2)probePick.shift(); } render(); }
+function probeText(){ var a=probePick[0],b=probePick[1],v=voltBetween(a,b);
+  var pk=Math.round(v*Math.SQRT2), pp=Math.round(v*2*Math.SQRT2);
+  var hot=function(x){return x!=='N'&&x!=='EGC';};
+  var desc;
+  if((svcOff||lcMainOff)&&(hot(a)||hot(b))&&!((a==='N'&&b==='EGC')||(a==='EGC'&&b==='N'))) desc='Bus is de-energized.';
+  else if((a==='N'&&b==='EGC')||(a==='EGC'&&b==='N')) desc='Neutral-to-ground — bonded at the service (MBJ).';
+  else if(hot(a)&&hot(b)) desc='Phase-to-phase (line-to-line) voltage.';
+  else if(a==='N'||b==='N') desc='Phase-to-neutral voltage.';
+  else desc='Phase-to-ground voltage.';
+  return '<span style="font-size:22px;font-weight:800;color:#00d4ff;letter-spacing:.3px">'+v+' V</span> <span style="color:var(--txt2);font-size:11px">RMS</span>'+
+    '&nbsp;&nbsp;·&nbsp;&nbsp;<b>'+nodeLabel(a)+' → '+nodeLabel(b)+'</b>'+
+    '<br><span style="color:var(--txt2)">'+pk+' V peak&nbsp;&nbsp;·&nbsp;&nbsp;'+pp+' V peak-to-peak&nbsp;&nbsp;·&nbsp;&nbsp;'+desc+'&nbsp;&nbsp;·&nbsp;&nbsp;tap a probe again to clear</span>';
+}
+var TCC_RATING=20;
+function tccMin(m){ return 38.75/(Math.pow(m,1.35)-1); }
+function tccMax(m){ return 409.5/(Math.pow(m,1.90)-1); }
+function tripSeconds(If){ var m=If/TCC_RATING; if(m>=10)return 0.02; if(m>1.1)return Math.sqrt(tccMin(m)*tccMax(m)); return Infinity; }
+var WIRE={ black:'#565e6e', red:'#e2473f', blue:'#4b8dff', brown:'#9a5f38', purple:'#a65cff', yellow:'#e6c62e', orange:'#ff8c2a', white:'#c9ced8', green:'#46c36b' };
+var COL={ neu:WIRE.white, egc:WIRE.green, dot:'#ffffff', box:'#16233f', boxOff:'#101830', can:'#0e1526', canStroke:'#2b3a5e', txt:'#cdd8f0', txt2:'#8a97b4', idle:'#5a6b8a', equip:'#16233f', equipStroke:'#9fb0d6', off:'#8a3030' };
+var SYS={
+  single:{ ph:[['L1',WIRE.black],['L2',WIRE.red]], title:'120/240 V · 1Ø · 3-wire (split-phase)', demo:'single', wires:'L1 black · L2 red · N white · EGC green', vln:120, vll:240 },
+  v208:  { ph:[['A',WIRE.black],['B',WIRE.red],['C',WIRE.blue]], title:'208Y/120 V · 3Ø · 4-wire', demo:'three', wires:'A black · B red · C blue · N white · EGC green', vln:120, vll:208 },
+  v480:  { ph:[['A',WIRE.brown],['B',WIRE.purple],['C',WIRE.yellow]], title:'480Y/277 V · 3Ø · 4-wire', demo:'three', wires:'A brown · B purple · C yellow · N gray · EGC green', vln:277, vll:480 },
+  highleg:{ ph:[['A',WIRE.black],['B',WIRE.orange],['C',WIRE.blue]], title:'120/240 V · 3Ø · high-leg delta', demo:'highleg', wires:'B phase = HIGH LEG → orange (NEC 110.15)', vln:120, vll:240 }
+};
+var DEMO={
+  single:{
+    1:{p:1,n:'Lighting — living',nt:1}, 2:{p:1,n:'Recept — bed 1/2',nt:1},
+    3:{p:1,n:'Kitchen SA-1',nt:1}, 4:{p:1,n:'Kitchen SA-2',nt:1},
+    5:{p:2,n:'Range',nt:1}, 6:{p:1,n:'Dishwasher',nt:1},
+    8:{p:1,n:'Disposal',nt:1}, 9:{p:2,n:'Dryer',nt:1},
+    10:{p:1,n:'Microwave',nt:1}, 12:{p:1,n:'Bath GFCI',nt:1},
+    13:{p:2,n:'A/C condenser'}, 14:{p:1,n:'Furnace',nt:1},
+    16:{p:1,n:'Washer',nt:1}, 17:{p:1,n:'Office',nt:1},
+    19:{p:2,n:'Water heater'}, 20:{p:1,n:'Freezer',nt:1}, 21:{p:2,n:'EV charger'}
+  },
+  // high-leg delta: 120 V single-pole circuits ONLY on A and C. B (high leg, 208 V to N) is used only by
+  // 2-pole 240 V (no neutral) and 3-pole loads — never a 120 V circuit.
+  highleg:{
+    1:{p:3,n:'RTU-1'}, 2:{p:1,n:'Lighting A',nt:1}, 4:{p:2,n:'A/C condenser 240 V'},
+    7:{p:3,n:'RTU-2'}, 8:{p:1,n:'Recept A',nt:1}, 10:{p:2,n:'Pump 240 V'},
+    13:{p:3,n:'Elevator'}, 14:{p:1,n:'Office A',nt:1}, 18:{p:1,n:'Lighting C',nt:1},
+    19:{p:2,n:'Water heater 240 V'}, 20:{p:1,n:'Exterior A',nt:1}, 24:{p:1,n:'Recept C',nt:1},
+    25:{p:3,n:'AHU-1'}, 26:{p:1,n:'IT closet A',nt:1}
+  },
+  three:{
+    1:{p:3,n:'RTU-1'}, 2:{p:1,n:'Lighting A',nt:1}, 4:{p:1,n:'Lighting B',nt:1}, 6:{p:1,n:'Lighting C',nt:1},
+    7:{p:3,n:'RTU-2'}, 8:{p:1,n:'Recept A',nt:1}, 10:{p:1,n:'Recept B',nt:1}, 12:{p:1,n:'Recept C',nt:1},
+    13:{p:3,n:'Elevator'}, 14:{p:1,n:'Exterior A',nt:1}, 19:{p:2,n:'Water heater'},
+    20:{p:1,n:'Office A',nt:1}, 25:{p:3,n:'AHU-1'}, 26:{p:1,n:'IT closet A',nt:1}
+  }
+};
+/* ---------------- svg helpers ---------------- */
+var SVGNS='http://www.w3.org/2000/svg', dotPool=[], anim=null;
+function el(t,a){var e=document.createElementNS(SVGNS,t);for(var k in a)e.setAttribute(k,a[k]);return e;}
+function txt(x,y,s,o){o=o||{};var e=el('text',{x:x,y:y,'font-size':o.size||10,fill:o.fill||COL.txt,'text-anchor':o.anchor||'start','font-weight':o.w||400});e.textContent=s;return e;}
+function addDots(svg,d,dir,sp,col){var mp=el('path',{d:d,fill:'none',stroke:'none'});svg.appendChild(mp);var len=mp.getTotalLength();var n=Math.max(2,Math.round(len/(sp||22)));for(var i=0;i<n;i++){var c=el('circle',{r:2.5,fill:col||COL.dot,opacity:0.95});svg.appendChild(c);dotPool.push({c:c,mp:mp,len:len,off:(i/n)*len,dir:dir,speed:42});}}
+function frame(now){var dt=(now-(frame._t||now))/1000;frame._t=now;if(dt>0.1)dt=0.1;dotPool.forEach(function(dp){dp.off=(dp.off+dp.dir*dp.speed*dt+dp.len)%dp.len;var pt=dp.mp.getPointAtLength(dp.off);dp.c.setAttribute('cx',pt.x);dp.c.setAttribute('cy',pt.y);});anim=requestAnimationFrame(frame);}
+function startAnim(){if(!anim){frame._t=0;anim=requestAnimationFrame(frame);}}
+function tri(t){var f=t-Math.floor(t);return f<0.5?(-1+4*f):(3-4*f);}
+function isOn(num){ return !offCkts[MODE+':'+num]; }
+function toggleCkt(num){ if(faultCkt===num){clearFault();return;} var k=MODE+':'+num; if(offCkts[k])delete offCkts[k]; else offCkts[k]=1; render(); }
+var faultZone='branch', faultPhase=null;   // 'branch' | 'feeder' | 'service'
+function faultActive(){ return (faultCkt!=null||faultZone!=='branch') && !tripped; }
+function faultFeeder(ph){ if(svcOff)return; clearActiveFaultState(); faultZone='feeder'; faultPhase=ph; var sys=SYS[MODE]; FAULT_A=Math.max(1,Math.round(sys.vln/0.08)); tripSec=ocpdOn?0.02:Infinity;
+  if(tripTimer){clearTimeout(tripTimer);tripTimer=null;}
+  if(ocpdOn){ tripTimer=setTimeout(function(){ svcOff=true; faultZone='branch'; faultPhase=null; render(); }, 900); }  // the SERVICE DISCONNECT clears a feeder fault
+  render(); }
+function faultService(ph){ if(svcOff)return; clearActiveFaultState(); faultZone='service'; faultPhase=ph; var sys=SYS[MODE]; FAULT_A=Math.max(1,Math.round(sys.vln/0.05)); tripSec=Infinity; render(); }  // line side = unprotected
+/* ---------------- fault model (ported from Electrical Theory) ---------------- */
+function applyFault(num){
+  var sys=SYS[MODE];
+  if(tripTimer){clearTimeout(tripTimer);tripTimer=null;}
+  if(faultCkt!=null) delete offCkts[MODE+':'+faultCkt];   // re-arm the previously faulted circuit
+  delete offCkts[MODE+':'+num];                            // faulting energizes the circuit
+  faultCkt=num; faultZone='branch'; faultPhase=null; tripped=false; FAULT_A=0; tripSec=Infinity;
+  var V,Z;
+  if(faultType==='NG'){ FAULT_A=Math.max(1,Math.round((sys.vln/120)*8)); tripSec=Infinity; render(); return; }  // objectionable current, no OCPD trip
+  if(faultType==='LL'){ V=sys.vll; Z=0.18; }
+  else if(faultType==='LN'){ V=sys.vln; Z=0.22; }
+  else { V=sys.vln; Z=(egcPath==='broken')?(downstreamBond?2.0:45):(egcPath==='loose'?1.5:0.35); }  // LG
+  FAULT_A=Math.max(1,Math.round(V/Z));
+  tripSec = ocpdOn ? tripSeconds(FAULT_A) : Infinity;
+  if(tripTimer){clearTimeout(tripTimer);tripTimer=null;}
+  if(isFinite(tripSec)){ tripTimer=setTimeout(function(){ tripped=true; offCkts[MODE+':'+num]=1; render(); }, Math.min(2200, 400+tripSec*120)); }
+  render();
+}
+function clearFault(){ if(tripTimer){clearTimeout(tripTimer);tripTimer=null;} if(faultCkt!=null){delete offCkts[MODE+':'+faultCkt];} faultCkt=null; faultZone='branch'; faultPhase=null; tripped=false; FAULT_A=0; tripSec=Infinity; render(); }
+function clearActiveFaultState(){ if(tripTimer){clearTimeout(tripTimer);tripTimer=null;} if(faultCkt!=null){delete offCkts[MODE+':'+faultCkt];} faultCkt=null; faultZone='branch'; faultPhase=null; tripped=false; FAULT_A=0; tripSec=Infinity; }
+function toggleSvc(){ svcOff=!svcOff; if(svcOff)clearActiveFaultState(); render(); }
+function toggleLcMain(){ lcMainOff=!lcMainOff; if(lcMainOff)clearActiveFaultState(); render(); }
+function faultWhy(){
+  if(faultZone==='service') return '<b style="color:#ff8a8a">LINE-SIDE SERVICE FAULT · '+FAULT_A+' A</b> — ahead of the service disconnect there\'s no overcurrent device in the building, so <b>nothing here trips</b>; only the utility transformer fuse can clear it. This is why line-side conductors are kept short and in conduit.';
+  if(faultZone==='feeder') return tripped?'<b style="color:#8fd6a3">CLEARED</b> — the <b>service disconnect</b> opened to clear the feeder fault ('+FAULT_A+' A).':'<b style="color:#ff8a8a">FEEDER FAULT · '+FAULT_A+' A</b> — on the feeder between the service disconnect and the panel. It\'s cleared by the <b>service disconnect</b> (the upstream OCPD), not the branch breakers.';
+  if(faultCkt==null) return 'Tap a breaker to switch a circuit on/off. Tap any <b>conductor</b> or piece of <b>equipment</b> to fault it — branch, feeder, or line-side service.';
+  var c=DEMO[SYS[MODE].demo][faultCkt]; var nm=c?c.n:('#'+faultCkt);
+  if(tripped) return '<b style="color:#8fd6a3">CLEARED</b> — the breaker on <b>'+nm+'</b> tripped at '+FAULT_A+' A. Tap Reset or the breaker to restore.';
+  if(faultType==='NG') return '<b style="color:#ff8a8a">NEUTRAL–GROUND FAULT</b> on '+nm+' — not an overcurrent. ~'+FAULT_A+' A of objectionable current rides the neutral AND the grounding system. No breaker trip (250.6).';
+  if(faultType==='LL') return '<b style="color:#ff8a8a">LINE–LINE FAULT</b> on '+nm+' — bolted short across '+SYS[MODE].vll+' V ≈ <b>'+FAULT_A+' A</b>, clears in ~'+(tripSec<0.05?'1 cycle':Math.round(tripSec)+' s')+'.';
+  if(faultType==='LN') return '<b style="color:#ff8a8a">LINE–NEUTRAL FAULT</b> on '+nm+' — short across '+SYS[MODE].vln+' V ≈ <b>'+FAULT_A+' A</b>, returns on the neutral, clears in ~'+(tripSec<0.05?'1 cycle':Math.round(tripSec)+' s')+'.';
+  // LG
+  if(egcPath==='broken'&&!downstreamBond) return '<b style="color:#ff8a8a">GROUND FAULT · EGC OPEN</b> on '+nm+' — the only path home is high-resistance earth, so just ~'+FAULT_A+' A flows. <b>The breaker never trips and the frame stays live</b> (shock/fire hazard).';
+  if(egcPath==='broken'&&downstreamBond) return '<b style="color:#ff8a8a">GROUND FAULT · EGC OPEN + illegal bond</b> on '+nm+' — current sneaks back through the illegal N–G bond (~'+FAULT_A+' A). Trip is slow/uncertain and the bond carries objectionable current the rest of the time.';
+  if(egcPath==='loose') return '<b style="color:#ffd27a">GROUND FAULT · HIGH-R EGC</b> on '+nm+' — a loose/undersized EGC drops the fault to ~'+FAULT_A+' A, so the breaker takes ~'+(isFinite(tripSec)?Math.round(tripSec)+' s':'minutes')+' to trip. Metal is live the whole time.';
+  return '<b style="color:#8fd6a3">GROUND FAULT</b> on '+nm+' — a good low-Z EGC carries <b>'+FAULT_A+' A</b> back to the MBJ → magnetic trip in ~1 cycle. That\'s the EGC\'s whole job (250.4(A)(5)).';
+}
 
-<!-- QUICK REFERENCE MODAL -->
+/* ---------------- render ---------------- */
+function render(){
+  var svg=document.getElementById('svg');
+  while(svg.firstChild)svg.removeChild(svg.firstChild);
+  if(anim){cancelAnimationFrame(anim);anim=null;}dotPool=[];
+  var sys=SYS[MODE], phases=sys.ph.map(function(a){return {id:a[0],c:a[1]};}), N=phases.length, demo=DEMO[sys.demo];
+  var FRED='#ff3b30', fA=faultActive(), fGnd=fA&&(faultType==='LG'||faultType==='NG'), fNeu=fA&&(faultType==='LN'||faultType==='NG');
+  var feederLive=!svcOff, busLive=!svcOff&&!lcMainOff, DEAD='#3a4b6b';
+  var OBJ='#f5c542', bondActive=downstreamBond&&busLive&&!fGnd;   // illegal N-G bond: objectionable current rides the grounding system
+  document.getElementById('sub').textContent=sys.title+' · '+sys.wires;
+
+  var W=1020,rows=21,rowH=25,svcH=150,top=svcH+70,rowTop=top,H=top+rows*rowH+56;
+  svg.setAttribute('viewBox','0 0 '+W+' '+H);svg.setAttribute('width',W);svg.setAttribute('height',H);
+
+  var busC=W/2, busHalf=(N===3?36:28);   // 3-phase bars spread wider so the lanes read clearly
+  var brkLin=busC-busHalf-14, brkLout=busC-busHalf-66, brkRin=busC+busHalf+14, brkRout=busC+busHalf+66;
+  var xNL=brkLout-12, xGL=brkLout-28, xNR=brkRout+12, xGR=brkRout+28;
+  var eqLx1=xGL-78, eqLx0=eqLx1-122, eqRx0=xGR+78, eqRx1=eqRx0+122;
+  var busTopZ=top-6, busBotZ=top+rows*rowH+2;
+  function barXat(p,y){ return busC + (p-(N-1)/2)*22 + 6*tri((y-busTopZ)/(2*rowH) + p/N); }   // each phase bar zigzags in its OWN lane (L1|L2 or A|B|C) — bars never cross
+  // per-phase flow direction from the phase angle, so phases read as phase-correct (A opposite B, etc.)
+  function dirPh(i){ var a=(N===2?i*180:i*-120); return (Math.cos(a*Math.PI/180)>=0)?1:-1; }
+  function barPath(p){ var d='M '+barXat(p,busTopZ).toFixed(1)+' '+busTopZ; for(var y=busTopZ+4;y<=busBotZ;y+=4){ d+=' L '+barXat(p,y).toFixed(1)+' '+y; } return d; }
+
+  // ===== LOAD CENTER enclosure (separate from the service) =====
+  svg.appendChild(el('rect',{x:brkLout-14,y:top-40,width:(brkRout+14)-(brkLout-14),height:H-(top-40)-30,rx:10,fill:COL.can,stroke:COL.canStroke,'stroke-width':1.5}));
+  svg.appendChild(txt(busC,top-46,'LOAD CENTER (PANELBOARD)',{anchor:'middle',size:9,fill:COL.txt2}));
+
+  var tyH=phases.map(function(p,i){return 52+i*14;}), tyN=52+N*14+6, tyG=tyN+14, mainY=top-30, hotLandY=(MLO?busTopZ:mainY);
+  var swX0=316, swX1=348;                 // service-disconnect switch span
+  var sdX0=272, sdX1=404;                 // service enclosure
+  // ===== utility transformer =====
+  svg.appendChild(el('rect',{x:34,y:40,width:86,height:tyG-40+16,rx:8,fill:COL.box,stroke:'#6f80a8','stroke-width':1.3}));
+  svg.appendChild(txt(77,34,'UTILITY XFMR',{anchor:'middle',size:9,fill:COL.txt2}));
+  (function(){ var parts=sys.title.split(' · '), vV=parts[0], vT=(parts.slice(1).join(' ')).replace(/\s*\(.*\)/,'');
+    var xb=40, yb=tyG+16;
+    svg.appendChild(txt(77,xb+14,vV,{anchor:'middle',size:8.5,fill:COL.txt}));
+    var d='M 77 '+(xb+22); for(var k=0;k<4;k++) d+=' a 4.5 4.5 0 0 1 0 9';
+    svg.appendChild(el('path',{d:d,fill:'none',stroke:'#aeb6c9','stroke-width':1.6}));
+    svg.appendChild(txt(77,yb-6,vT,{anchor:'middle',size:(vT.length>12?6.5:8),fill:COL.txt2}));
+  })();
+  // ===== round meter =====
+  var mcx=184, mcy=(tyH[0]+tyN)/2, mr=(tyN-tyH[0])/2+11;   // meter big enough that the neutral lands inside its enclosure too
+  svg.appendChild(el('circle',{cx:mcx,cy:mcy,r:mr,fill:'#0f1830',stroke:'#8795ad','stroke-width':1.6}));
+  svg.appendChild(el('circle',{cx:mcx,cy:mcy,r:mr-4,fill:'none',stroke:'#3a4b6b','stroke-width':1}));
+  svg.appendChild(el('line',{x1:mcx,y1:mcy,x2:mcx+7,y2:mcy-6,stroke:'#aeb6c9','stroke-width':1.4}));   // meter dial hand
+  svg.appendChild(txt(mcx,mcy+mr+10,'METER',{anchor:'middle',size:8,fill:COL.txt2}));
+  if(MODE==='highleg'){ ['A','B','C'].forEach(function(L,r){ var c=(r===2)?WIRE.orange:(r===1?WIRE.blue:WIRE.black); svg.appendChild(txt(mcx-mr-4,tyH[r]+3,L,{anchor:'end',size:7,w:700,fill:c})); }); svg.appendChild(txt(mcx,mcy+mr+19,'high leg on C in meter',{anchor:'middle',size:6.5,fill:WIRE.orange})); }
+  // ===== SERVICE DISCONNECT enclosure (its own enclosure, clickable) =====
+  var sdEnc=el('g'); sdEnc.style.cursor='pointer'; sdEnc.addEventListener('click',function(e){e.stopPropagation();toggleSvc();});
+  sdEnc.appendChild(el('rect',{x:sdX0,y:36,width:sdX1-sdX0,height:tyG-36+34,rx:8,fill:'#101a30',stroke:svcOff?COL.off:'#9fb0d6','stroke-width':1.4,'stroke-dasharray':'5 4'}));
+  sdEnc.appendChild(el('rect',{x:sdX0,y:36,width:sdX1-sdX0,height:tyG-36+34,rx:8,fill:'transparent'}));
+  svg.appendChild(sdEnc);
+  svg.appendChild(txt((sdX0+sdX1)/2,30,'SERVICE DISCONNECT · tap to open/close',{anchor:'middle',size:7.5,fill:COL.txt2}));
+  svg.appendChild(txt((sdX0+sdX1)/2,tyG+30,(svcOff?'OPEN':'CLOSED')+' · '+N+'-pole',{anchor:'middle',size:8,w:700,fill:svcOff?'#ff8a8a':'#8fd6a3'}));
+
+  // ===== feeder hots: utility -> meter -> [disconnect switch] -> feeder -> panel =====
+  // ===== service disconnect drawn as a MAIN BREAKER (multi-pole, handle tie) =====
+  (function(){ var bx0=swX0-5, bx1=swX1+5, by0=tyH[0]-9, by1=tyH[N-1]+9, cx=(bx0+bx1)/2;
+    var bg=el('g'); bg.style.cursor='pointer'; bg.addEventListener('click',function(e){e.stopPropagation();toggleSvc();});
+    bg.appendChild(el('rect',{x:bx0,y:by0,width:bx1-bx0,height:by1-by0,rx:3,fill:svcOff?'#2a1620':'#16233f',stroke:svcOff?COL.off:'#9fb0d6','stroke-width':1.3}));
+    bg.appendChild(el('rect',{x:bx1-8,y:by0+3,width:5,height:(by1-by0)-6,rx:2.5,fill:svcOff?COL.off:'#f5c542',opacity:0.9}));   // handle tie
+    svg.appendChild(bg);
+    svg.appendChild(txt(bx1+4,by0+6,(MODE==='single'?'200 A':'400 A')+' '+N+'P',{anchor:'start',size:7,fill:COL.txt2}));
+    svg.appendChild(txt(bx1+4,by0+15,svcOff?'OFF':'ON',{anchor:'start',size:7,w:700,fill:svcOff?'#ff8a8a':'#f5c542'}));
+  })();
+  phases.forEach(function(p,i){var y=tyH[i];var dx=busC+(i-(N-1)/2)*16;
+    // line side (utility -> meter -> switch-in): live from the utility
+    var svcF=(faultZone==='service'&&faultPhase===p.id&&!tripped), fdrF=(faultZone==='feeder'&&faultPhase===p.id&&!tripped);
+    // high-leg delta: in the METER ONLY the high leg sits on C (ANSI C12 meter wiring — on B it would destroy the meter electronics);
+    // it rolls back to B right after the meter, so it lands on B at the disconnect and the panel (NEC 408.3(E)(1)).
+    var yM=(MODE==='highleg')?tyH[[0,2,1][i]]:y, xr=mcx+mr+6;
+    var dL=(yM===y)?('M 120 '+y+' L '+swX0+' '+y):('M 120 '+yM+' L '+xr+' '+yM+' L '+(xr+12)+' '+y+' L '+swX0+' '+y); svg.appendChild(el('path',{d:dL,stroke:svcF?FRED:p.c,'stroke-width':svcF?3.2:2.6,fill:'none'})); addDots(svg,dL,svcF?1:dirPh(i),24,svcF?FRED:null);
+    var hl=el('path',{d:dL,stroke:'transparent','stroke-width':13,fill:'none'}); hl.style.cursor='pointer'; (function(pid){hl.addEventListener('click',function(e){e.stopPropagation();faultService(pid);});})(p.id); svg.appendChild(hl);
+    // service disconnect BREAKER pole: closed = contact through; open = contacts parted (gap)
+    if(svcOff){ svg.appendChild(el('line',{x1:swX0,y1:y,x2:swX0+7,y2:y,stroke:p.c,'stroke-width':2.6})); svg.appendChild(el('line',{x1:swX1-7,y1:y,x2:swX1,y2:y,stroke:DEAD,'stroke-width':2.6})); svg.appendChild(el('line',{x1:swX0+11,y1:y-3,x2:swX1-11,y2:y+3,stroke:COL.off,'stroke-width':1.6})); }
+    else { svg.appendChild(el('line',{x1:swX0,y1:y,x2:swX1,y2:y,stroke:p.c,'stroke-width':2.6})); }
+    // feeder side (switch-out -> panel): live only if the disconnect is closed
+    var dF='M '+swX1+' '+y+' L '+dx+' '+y+' L '+dx+' '+hotLandY; svg.appendChild(el('path',{d:dF,stroke:fdrF?FRED:(feederLive?p.c:DEAD),'stroke-width':fdrF?3.2:2.6,fill:'none'})); if(fdrF)addDots(svg,dF,1,20,FRED); else if(feederLive)addDots(svg,dF,dirPh(i),24);
+    var hf=el('path',{d:dF,stroke:'transparent','stroke-width':13,fill:'none'}); hf.style.cursor='pointer'; (function(pid){hf.addEventListener('click',function(e){e.stopPropagation();faultFeeder(pid);});})(p.id); svg.appendChild(hf);
+  });
+  if(DETAIL){
+    var dN='M 120 '+tyN+' L '+xNR+' '+tyN+' L '+xNR+' '+busTopZ;svg.appendChild(el('path',{d:dN,stroke:fNeu?FRED:(feederLive?COL.neu:DEAD),'stroke-width':fNeu?3:2.2,fill:'none'}));if(feederLive)addDots(svg,dN,-1,24,fNeu?FRED:null);
+    var cy=tyG+4, nX=sdX0+22, gX=sdX0+62;
+    var dG='M '+(gX+9)+' '+cy+' L '+xGR+' '+cy+' L '+xGR+' '+busTopZ;svg.appendChild(el('path',{d:dG,stroke:fGnd?FRED:(bondActive?OBJ:COL.egc),'stroke-width':(fGnd||bondActive)?3:2.2,fill:'none'}));if(fGnd&&egcPath!=='broken')addDots(svg,dG,-1,22,FRED);else if(bondActive)addDots(svg,dG,-1,22,OBJ);
+    // neutral drops into the N terminal; MBJ (250.28) ties N terminal to G terminal — the only N-G bond
+    svg.appendChild(el('line',{x1:nX,y1:tyN,x2:nX,y2:cy-7,stroke:COL.neu,'stroke-width':2.2}));
+    svg.appendChild(el('line',{x1:nX+9,y1:cy,x2:gX-9,y2:cy,stroke:fGnd?FRED:COL.egc,'stroke-width':3,'stroke-dasharray':'3 3'}));
+    svg.appendChild(el('rect',{x:nX-9,y:cy-7,width:18,height:14,rx:2,fill:'#e6eaf2',stroke:'#aeb6c9','stroke-width':1}));svg.appendChild(txt(nX,cy+4,'N',{anchor:'middle',size:9,w:700,fill:'#0b1020'}));
+    svg.appendChild(el('rect',{x:gX-9,y:cy-7,width:18,height:14,rx:2,fill:'#1f7a45',stroke:COL.egc,'stroke-width':1}));svg.appendChild(txt(gX,cy+4,'G',{anchor:'middle',size:9,w:700,fill:'#fff'}));
+    svg.appendChild(txt((nX+gX)/2,cy-9,'MBJ',{anchor:'middle',size:7,fill:fGnd?'#ff8a8a':COL.egc}));
+    svg.appendChild(txt((nX+gX)/2,cy+16,'NEC 250.28',{anchor:'middle',size:7,fill:COL.txt2}));
+    // GEC: from the neutral (N terminal, line side, inside the service enclosure) to the electrode — 250.24(A)(1)
+    var rodX=150,rodY=tyG+66;
+    svg.appendChild(el('path',{d:'M '+nX+' '+(cy+7)+' L '+nX+' '+(tyG+44)+' L '+(rodX+10)+' '+(tyG+44)+' Q '+rodX+' '+(tyG+44)+' '+rodX+' '+(tyG+54)+' L '+rodX+' '+rodY,stroke:COL.egc,'stroke-width':2.6,fill:'none'}));
+    [0,4,8].forEach(function(dd,i2){var w=12-i2*4;svg.appendChild(el('line',{x1:rodX-w/2,y1:rodY+dd,x2:rodX+w/2,y2:rodY+dd,stroke:COL.egc,'stroke-width':2}));});
+    svg.appendChild(txt(rodX+14,tyG+40,'GEC · 250.24(A)(1)',{anchor:'start',size:7,fill:COL.egc}));
+    svg.appendChild(txt(rodX,rodY+21,'ROD/UFER',{anchor:'middle',size:7.5,fill:COL.txt2}));
+    svg.appendChild(txt(rodX,rodY+30,'NEC 250.52(A)',{anchor:'middle',size:7,fill:COL.txt2}));
+  }
+  // ===== MAIN breaker (clickable) or lugs =====
+  if(!MLO){
+    var mg=el('g'); mg.style.cursor='pointer'; mg.addEventListener('click',function(e){e.stopPropagation();toggleLcMain();});
+    mg.appendChild(el('rect',{x:busC-busHalf-12,y:mainY,width:2*busHalf+24,height:24,rx:5,fill:lcMainOff?'#2a1620':COL.box,stroke:lcMainOff?COL.off:'#6f80a8','stroke-width':1.3}));
+    mg.appendChild(txt(busC,mainY+16,lcMainOff?'MAIN · OFF':'MAIN',{anchor:'middle',size:9,w:700,fill:lcMainOff?'#ff8a8a':COL.txt}));
+    svg.appendChild(mg);
+  } else {
+    phases.forEach(function(p,i){var dx=busC+(i-(N-1)/2)*16;svg.appendChild(el('rect',{x:dx-5,y:busTopZ-3,width:10,height:8,rx:2,fill:COL.box,stroke:p.c,'stroke-width':1.3}));});
+    svg.appendChild(txt(busC,mainY+14,'MAIN LUGS (MLO)',{anchor:'middle',size:8.5,w:700,fill:COL.txt2}));
+  }
+  svg.appendChild(txt(busC,22,'42-CIRCUIT PANELBOARD · '+sys.title,{anchor:'middle',size:12.5,w:700}));
+  if(!busLive){ svg.appendChild(txt(busC,busBotZ+14,(svcOff?'SERVICE OPEN — whole panel de-energized':'MAIN OPEN — bus dead, feeder live'),{anchor:'middle',size:8.5,w:700,fill:'#ff8a8a'})); }
+
+  // N/G buses
+  if(DETAIL){
+    [xNL,xNR].forEach(function(x){svg.appendChild(el('line',{x1:x,y1:busTopZ,x2:x,y2:busBotZ-16,stroke:fNeu?FRED:COL.neu,'stroke-width':2.6}));});
+    var gCol=(fGnd&&egcPath!=='broken')?FRED:(bondActive?OBJ:COL.egc);
+    [xGL,xGR].forEach(function(x){svg.appendChild(el('line',{x1:x,y1:busTopZ,x2:x,y2:busBotZ-4,stroke:gCol,'stroke-width':bondActive?3:2.6}));if(bondActive)addDots(svg,'M '+x+' '+busTopZ+' L '+x+' '+(busBotZ-4),-1,22,OBJ);});
+    svg.appendChild(el('path',{d:'M '+xNL+' '+(busBotZ-16)+' L '+xNR+' '+(busBotZ-16),stroke:fNeu?FRED:COL.neu,'stroke-width':2.2,fill:'none'}));if(busLive||fNeu)addDots(svg,'M '+xNL+' '+(busBotZ-16)+' L '+xNR+' '+(busBotZ-16),1,24,fNeu?FRED:null);
+    svg.appendChild(el('path',{d:'M '+xGL+' '+(busBotZ-4)+' L '+xGR+' '+(busBotZ-4),stroke:gCol,'stroke-width':bondActive?3:2.2,fill:'none'}));if(bondActive)addDots(svg,'M '+xGL+' '+(busBotZ-4)+' L '+xGR+' '+(busBotZ-4),1,22,OBJ);
+    // illegal N-G bond jumper (objectionable current: neutral bus -> ground bus)
+    if(downstreamBond){ var jy=busBotZ-10; svg.appendChild(el('path',{d:'M '+xNR+' '+jy+' L '+xGR+' '+jy,stroke:'#ff6b6b','stroke-width':2.4,'stroke-dasharray':'4 3',fill:'none'})); if(bondActive)addDots(svg,'M '+xNR+' '+jy+' L '+xGR+' '+jy,1,14,OBJ); svg.appendChild(txt((xNR+xGR)/2,jy-4,'illegal N-G bond',{anchor:'middle',size:6.5,fill:'#ff8a8a'})); }
+    svg.appendChild(txt(xNL,busTopZ-4,'N',{anchor:'middle',size:7.5,fill:'#d7dbe3'}));svg.appendChild(txt(xGL,busTopZ-4,'G',{anchor:'middle',size:7.5,fill:'#8fd6a3'}));
+    svg.appendChild(txt(xNR,busTopZ-4,'N',{anchor:'middle',size:7.5,fill:'#d7dbe3'}));svg.appendChild(txt(xGR,busTopZ-4,'G',{anchor:'middle',size:7.5,fill:'#8fd6a3'}));
+  }
+  // zig-zag hot bus (dead when the service or main is open)
+  phases.forEach(function(p,i){var d=barPath(i);svg.appendChild(el('path',{d:d,stroke:busLive?p.c:DEAD,'stroke-width':3.2,fill:'none',opacity:0.95}));if(busLive)addDots(svg,d,dirPh(i),26);});
+
+  // legend
+  var lx=W-40-phases.length*42,ly=H-14;phases.forEach(function(p,i){svg.appendChild(el('rect',{x:lx+i*42,y:ly-9,width:11,height:11,rx:2,fill:p.c}));svg.appendChild(txt(lx+i*42+15,ly,p.id,{size:9}));});
+
+  var occ={};
+  function drawSlot(num,side,rowIdx){
+    if(occ[num])return;
+    var isL=(side==='L'),info=demo[num],poles=info?info.p:1, on=info&&isOn(num);
+    var fault=fA&&num===faultCkt;
+    var rowY=rowTop+rowIdx*rowH+rowH/2,bodyY=rowY-rowH/2+3,bodyH=rowH*poles-6;
+    var bIn=isL?brkLin:brkRin,bOut=isL?brkLout:brkRout,bx=Math.min(bIn,bOut),bw=Math.abs(bIn-bOut);
+    // breaker body (clickable if it's a real circuit)
+    var bodyFill=info?(on?COL.box:'#2a1620'):COL.boxOff, bodyStroke=fault?FRED:(info?(on?'#9fb0d6':COL.off):'#2b3a5e');
+    var body=el('rect',{x:bx,y:bodyY,width:bw,height:bodyH,rx:3,fill:bodyFill,stroke:bodyStroke,'stroke-width':1});
+    if(info){ body.style.cursor='pointer'; (function(nn){ body.addEventListener('click',function(e){e.stopPropagation();toggleCkt(nn);}); })(num); }
+    svg.appendChild(body);
+    for(var k=0;k<poles;k++){
+      var pk=(rowIdx+k)%N,sy=rowTop+(rowIdx+k)*rowH+rowH/2,nnum=num+k*2;occ[nnum]=true;
+      var bxAt=barXat(pk,sy), pc=phases[pk].c, hotRed=fault&&(faultType==='LG'||faultType==='LN'||(faultType==='LL'&&k===0));
+      // stab: from the breaker to ITS phase bar — hop over any other phase bar it crosses (no connection)
+      (function(){ var dir=(bxAt>bIn)?1:-1, xs=[]; for(var q=0;q<N;q++){ if(q===pk)continue; var xq=barXat(q,sy); if((xq-bIn)*dir>3 && (bxAt-xq)*dir>3) xs.push(xq); }
+        xs.sort(function(a,b){return (a-b)*dir;}); var d='M '+bIn+' '+sy, r=4;
+        xs.forEach(function(xq){ d+=' L '+(xq-dir*r)+' '+sy+' A '+r+' '+r+' 0 0 '+(dir>0?1:0)+' '+(xq+dir*r)+' '+sy; });
+        d+=' L '+bxAt+' '+sy;
+        svg.appendChild(el('path',{d:d,fill:'none',stroke:hotRed?FRED:(busLive?pc:DEAD),'stroke-width':hotRed?2.8:2,opacity:on?1:0.4}));
+      })();
+      svg.appendChild(el('circle',{cx:bxAt,cy:sy,r:2.2,fill:busLive?pc:DEAD}));
+      if(on&&busLive)addDots(svg,'M '+bxAt+' '+sy+' L '+bIn+' '+sy,hotRed?1:dirPh(pk),15,hotRed?FRED:null);
+      var chipX=isL?(bIn-13):(bIn+2);
+      svg.appendChild(el('rect',{x:chipX,y:sy-6.5,width:11,height:13,rx:2,fill:info?pc:'#2b3a5e',opacity:info?1:0.7}));
+      svg.appendChild(txt(chipX+5.5,sy+3.5,nnum,{anchor:'middle',size:7.5,w:700,fill:'#fff'}));
+      // phase badge (A/B/C or L1/L2) in the phase color, on the bus side of the breaker
+      (function(){ var lab=phases[pk].id, bw=(lab.length>1?15:11), bxx=isL?(bIn+3):(bIn-3-bw), lightTxt=(pc===WIRE.yellow||pc===WIRE.orange);
+        svg.appendChild(el('rect',{x:bxx,y:sy-13,width:bw,height:10,rx:2,fill:pc,opacity:info?1:0.55}));
+        svg.appendChild(txt(bxx+bw/2,sy-5.2,lab,{anchor:'middle',size:7,w:700,fill:lightTxt?'#0b1020':'#fff'})); })();
+    }
+    if(poles>1)svg.appendChild(el('rect',{x:isL?(bx+3):(bx+bw-9),y:bodyY+3,width:6,height:bodyH-6,rx:3,fill:on?'#f5c542':COL.off,opacity:0.85}));
+    if(!info){ if(MODE==='highleg' && (rowIdx%N)===1){ svg.appendChild(txt(isL?(bx+5):(bx+bw-5),rowY+3,'208V-N',{anchor:isL?'start':'end',size:6.5,w:700,fill:WIRE.orange})); } return; }
+    var eqX0=isL?eqLx0:eqRx0,eqX1=isL?eqLx1:eqRx1,eqEdge=isL?eqX1:eqX0,nbar=isL?xNL:xNR,gbar=isL?xGL:xGR;
+    var topY=rowTop+rowIdx*rowH+rowH/2,botY=rowTop+(rowIdx+poles-1)*rowH+rowH/2,usesN=!!info.nt;
+    for(var h=0;h<poles;h++){var hy=rowTop+(rowIdx+h)*rowH+rowH/2,hc=phases[(rowIdx+h)%N].c, hr=fault&&(faultType==='LG'||faultType==='LN'||(faultType==='LL'&&h===0));
+      var hd='M '+bOut+' '+hy+' L '+eqEdge+' '+hy;
+      svg.appendChild(el('path',{d:hd,stroke:hr?FRED:(busLive?hc:DEAD),'stroke-width':hr?2.8:1.9,fill:'none',opacity:on?1:0.35}));
+      if(on&&busLive)addDots(svg,hd,hr?1:dirPh((rowIdx+h)%N),15,hr?FRED:null);
+      // click the conductor itself to fault this circuit (hit-area on top of the dots)
+      var hit=el('path',{d:hd,stroke:'transparent','stroke-width':14,fill:'none'}); hit.style.cursor='pointer'; (function(nn){hit.addEventListener('click',function(e){e.stopPropagation();applyFault(nn);});})(num); svg.appendChild(hit);}
+    var gy=botY+(usesN?19:9);
+    // return conductors (neutral / EGC) — turn red and animate when they carry this circuit's fault
+    var nRed=fault&&(faultType==='LN'||faultType==='NG'), gRed=fault&&(faultType==='LG'||faultType==='NG')&&egcPath!=='broken', llRed=fault&&faultType==='LL';
+    if(DETAIL){
+      if(usesN){var ny=botY+9;var nc=nRed?FRED:(busLive?COL.neu:DEAD);svg.appendChild(el('path',{d:'M '+eqEdge+' '+ny+' L '+nbar+' '+ny,stroke:nc,'stroke-width':nRed?2.6:1.5,fill:'none',opacity:on?1:0.35}));if((on&&busLive)||nRed)addDots(svg,'M '+eqEdge+' '+ny+' L '+nbar+' '+ny,1,18,nRed?FRED:null);}
+      var gc=gRed?FRED:(bondActive?OBJ:COL.egc);svg.appendChild(el('path',{d:'M '+eqEdge+' '+gy+' L '+gbar+' '+gy,stroke:gc,'stroke-width':(gRed||bondActive)?2.4:1.4,fill:'none',opacity:0.95}));if(gRed)addDots(svg,'M '+eqEdge+' '+gy+' L '+gbar+' '+gy,1,16,FRED);else if(bondActive&&on)addDots(svg,'M '+gbar+' '+gy+' L '+eqEdge+' '+gy,1,16,OBJ);
+    }
+    // 2-pole LL fault: the other hot pole carries the return
+    if(llRed&&poles>1){var h2=rowTop+(rowIdx+1)*rowH+rowH/2;addDots(svg,'M '+eqEdge+' '+h2+' L '+bOut+' '+h2,1,15,FRED);}
+    var ebY=topY-rowH/2+4,ebH=(DETAIL?(gy+4):(botY+rowH/2-4))-ebY;
+    var eqbox=el('rect',{x:eqX0,y:ebY,width:(eqX1-eqX0),height:ebH,rx:4,fill:fault?'#3a1620':COL.equip,stroke:fault?FRED:(on?COL.equipStroke:'#3a4b6b'),'stroke-width':fault?1.8:1.1,opacity:on?1:0.55});
+    eqbox.style.cursor='pointer';(function(nn){eqbox.addEventListener('click',function(e){e.stopPropagation();applyFault(nn);});})(num);
+    svg.appendChild(eqbox);
+    svg.appendChild(txt((eqX0+eqX1)/2,(topY+botY)/2+1,info.n,{anchor:'middle',size:8.5,fill:on?COL.txt:COL.idle}));
+    var tag=(poles===1?(usesN?'120 V':'1P'):(poles===2?'2P':'3Ø'))+(fault?' · FAULT':(on?'':' · OFF'));
+    svg.appendChild(txt((eqX0+eqX1)/2,(topY+botY)/2+12,tag,{anchor:'middle',size:7,fill:fault?'#ff8a8a':(on?COL.txt2:'#ff8a8a')}));
+    if(fault){svg.appendChild(el('circle',{cx:eqEdge,cy:(topY),r:6,fill:'none',stroke:FRED,'stroke-width':2,opacity:0.9}));svg.appendChild(el('path',{d:'M '+(eqEdge-4)+' '+(topY-4)+' L '+(eqEdge+4)+' '+(topY+4)+' M '+(eqEdge+4)+' '+(topY-4)+' L '+(eqEdge-4)+' '+(topY+4),stroke:FRED,'stroke-width':2}));}
+  }
+  for(var r=0;r<rows;r++){drawSlot(2*r+1,'L',r);drawSlot(2*r+2,'R',r);}
+  // EGC open / high-R marker on the ground riser during a ground fault with a degraded EGC
+  if(fA&&(faultType==='LG')&&egcPath!=='intact'&&DETAIL){
+    var mx=xGR, my=(busTopZ+busBotZ)/2;
+    if(egcPath==='broken'){ svg.appendChild(el('rect',{x:mx-12,y:my-8,width:24,height:16,fill:COL.can}));svg.appendChild(el('path',{d:'M '+(mx-7)+' '+(my-5)+' L '+(mx+7)+' '+(my+5)+' M '+(mx+7)+' '+(my-5)+' L '+(mx-7)+' '+(my+5),stroke:FRED,'stroke-width':2.5}));svg.appendChild(txt(mx,my-12,'EGC OPEN',{anchor:'middle',size:8,fill:'#ff8a8a'})); }
+    else { svg.appendChild(el('rect',{x:mx-14,y:my-8,width:28,height:16,fill:COL.can}));svg.appendChild(el('path',{d:'M '+(mx-12)+' '+my+' l 3 -6 l 4 12 l 4 -12 l 4 12 l 3 -6',fill:'none',stroke:'#f5c542','stroke-width':2}));svg.appendChild(txt(mx,my-12,'HIGH-R',{anchor:'middle',size:8,fill:'#f5c542'})); }
+  }
+  // ===== voltage probe nodes on the feeder (tap two to read voltage between them) =====
+  var pny=top-72;
+  function probeDot(id,cx,col){ var picked=probePick.indexOf(id)>=0;
+    var g2=el('g'); g2.style.cursor='pointer'; (function(nn){g2.addEventListener('click',function(e){e.stopPropagation();onProbe(nn);});})(id);
+    g2.appendChild(el('circle',{cx:cx,cy:pny,r:picked?7:5,fill:'#0b1020',stroke:picked?'#00d4ff':col,'stroke-width':picked?2.6:2}));
+    if(picked)g2.appendChild(el('circle',{cx:cx,cy:pny,r:2,fill:'#00d4ff'}));
+    g2.appendChild(txt(cx,pny-9,id,{anchor:'middle',size:7,fill:col}));
+    svg.appendChild(g2);
+  }
+  phases.forEach(function(p,i){ probeDot(p.id, busC+(i-(N-1)/2)*16, p.c); });
+  if(DETAIL){ probeDot('N', xNR, COL.neu); probeDot('EGC', xGR, COL.egc); }
+  svg.appendChild(txt(busC, pny+16, '▲ probe: tap any two to read voltage', {anchor:'middle',size:7,fill:COL.txt2}));
+
+  var ro=document.getElementById('readout'); if(ro){ ro.innerHTML = (probePick.length===2)?probeText() : faultWhy(); }
+  startAnim();
+}
+
+/* ---------------- controls ---------------- */
+function bindGrp(id,attr,fn){ var g=document.getElementById(id); g.addEventListener('click',function(e){ var b=e.target.closest('button'); if(!b)return; [].forEach.call(g.children,function(c){c.classList.remove('on');}); b.classList.add('on'); fn(b.getAttribute(attr)); }); }
+bindGrp('sysGrp','data-sys',function(v){ MODE=v; probePick=[]; clearFault(); });
+bindGrp('mainGrp','data-mlo',function(v){ MLO=(v==='1'); render(); });
+bindGrp('ftGrp','data-ft',function(v){ faultType=v; if(faultCkt!=null)applyFault(faultCkt); else render(); });
+bindGrp('egcGrp','data-egc',function(v){ egcPath=v; if(faultCkt!=null)applyFault(faultCkt); else render(); });
+document.getElementById('detailBtn').addEventListener('click',function(){ DETAIL=!DETAIL; this.classList.toggle('on',DETAIL); this.textContent=DETAIL?'Show neutral / ground':'Hots only'; render(); });
+document.getElementById('bondBtn').addEventListener('click',function(){ downstreamBond=!downstreamBond; this.classList.toggle('on',downstreamBond); if(faultCkt!=null)applyFault(faultCkt); else render(); });
+document.getElementById('ocpdBtn').addEventListener('click',function(){ ocpdOn=!ocpdOn; this.classList.toggle('on',ocpdOn); this.textContent='Breaker trips: '+(ocpdOn?'ON':'OFF'); if(faultCkt!=null)applyFault(faultCkt); else render(); });
+document.getElementById('resetBtn').addEventListener('click',function(){ probePick=[]; svcOff=false; lcMainOff=false; clearFault(); });
+
+/* ===== page chrome: theme + CODE reference modal ===== */
+function $(id){return document.getElementById(id);}
+function toggleTheme(){ var l=document.body.classList.toggle('light'); var b=$('themeBtn'); if(b)b.textContent=l?'☀️':'🌙'; }
+var REF={
+ flow:[
+  ['Current only flows in a closed loop','Electricity needs a complete path back to its source. Hot out, through the load, neutral back. Break the loop anywhere and current stops — which is why the grounding wire normally carries nothing.'],
+  ['Conventional vs electron flow','Conventional current flows + to − (how the trade and the code think); electron flow is the opposite. Both describe the same thing.'],
+  ['The neutral is a current-carrying conductor','On single-phase it carries the imbalance between the legs; on a wye it carries the phasor sum. A balanced load leaves little on the neutral — but it is never "just a ground."'],
+ ],
+ bond:[
+  ['250.28 — Main bonding jumper (MBJ)','The single, intentional neutral-to-ground bond, made at the service and ONLY there. That connection gives fault current its path home.'],
+  ['250.24(B) — No load-side bond','The grounded (neutral) conductor shall not be reconnected to ground on the load side of the service disconnect. That is the rule the illegal-bond demo breaks.'],
+  ['250.142(B) — Neutral downstream','On the load side you may not use the neutral for equipment grounding — doing so puts normal neutral current onto the EGC and the metal (shock/fire).'],
+  ['250.30 — Separately derived systems','A generator is separately derived ONLY if the transfer switch switches the neutral (4-pole ATS) — then it needs its own system bonding jumper at the source. A solid, unswitched neutral (3-pole ATS) is NOT separately derived; the bond stays at the service. — Informational Note No. 1.'],
+  ['Ground rod ≠ fault clearing','The electrode stabilizes voltage and handles surges; earth is far too high-impedance to trip a breaker. Faults clear through the EGC back to the bond, not the dirt.'],
+ ],
+ fault:[
+  ['The ground-fault loop','Hot touches metal → equipment frame → EGC → MBJ → neutral → source. Low impedance = high current = fast trip.'],
+  ['250.4(A)(5) — Effective ground-fault path','The EGC must be low-impedance and able to carry fault current so the breaker opens fast. That is the whole reason it exists.'],
+  ['Line-side vs load-side','A fault on the load side is cleared by the breaker/main. A fault ahead of the service disconnect (line side) has no OCPD in the building — only the utility can clear it.'],
+  ['Open ground','Lose the EGC and a ground fault won\'t trip — the metal stays energized and dangerous.'],
+ ],
+ sys:[
+  ['120/240 V single-phase','Two 120 V legs 180° apart. L-N = 120, L-L = 240. Neutral carries the imbalance.'],
+  ['208Y/120 V wye','Three phases 120° apart, 120 V to neutral, 208 V phase-to-phase. Balanced 3Ø ≈ 0 A neutral.'],
+  ['480Y/277 V wye','277 V to neutral, 480 V phase-to-phase. Industrial.'],
+  ['240/120 V high-leg delta','Center-tap gives 120 V on two legs; the third (wild/high leg) is 208 V to neutral — mark it orange (110.15).'],
+ ],
+ tcc:[
+  ['Inverse-time breaker','A thermal-magnetic breaker trips faster the higher the current. Small overloads take time (thermal); a big fault hits the magnetic element and trips almost instantly.'],
+  ['Unlatching band','It clears somewhere between a min and max. On a 20 A breaker: ~40 A clears in 25–150 s, ~100 A in 5–20 s.'],
+  ['Why the EGC matters','A good EGC lets a ground fault draw hundreds of amps → magnetic region → instant trip. A loose/broken EGC drops the current into the slow part of the curve — or below it, where it never trips.'],
+  ['Marker','The ⨯ on the curve is the active fault — its current and trip time. Change the EGC PATH and watch it slide.'],
+ ]
+};
+function buildRef(){ for(var k in REF){ var e=$('rl-'+k); if(e) e.innerHTML=REF[k].map(function(r){return '<div class="rule"><div class="rule-ref">'+r[0]+'</div><div class="rule-txt">'+r[1]+'</div></div>';}).join(''); } drawTCC(); }
+function drawTCC(){
+  var host=$('tccHost'); if(!host)return;
+  var W=360,H=270,L=44,T=18,PW=288,PH=206,R=L+PW,B=T+PH;
+  var Amin=20,Amax=400,Tmin=0.01,Tmax=1000,LG=Math.log10;
+  function X(a){a=Math.max(Amin,Math.min(Amax,a));return L+(LG(a)-LG(Amin))/(LG(Amax)-LG(Amin))*PW;}
+  function Yt(t){t=Math.max(Tmin,Math.min(Tmax,t));return T+(LG(Tmax)-LG(t))/(LG(Tmax)-LG(Tmin))*PH;}
+  var p=['<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;font-family:monospace">'];
+  p.push('<rect x="'+L+'" y="'+T+'" width="'+PW+'" height="'+PH+'" fill="#0a1222" stroke="#2a3b5e"/>');
+  [20,40,100,200,400].forEach(function(a){var x=X(a);p.push('<line x1="'+x+'" y1="'+T+'" x2="'+x+'" y2="'+B+'" stroke="#1b2740"/><text x="'+x+'" y="'+(B+12)+'" fill="#8a97b4" font-size="8" text-anchor="middle">'+a+'A</text><text x="'+x+'" y="'+(B+21)+'" fill="#55637f" font-size="7" text-anchor="middle">'+(a/20)+'×</text>');});
+  [0.01,0.1,1,10,100,1000].forEach(function(t){var y=Yt(t);p.push('<line x1="'+L+'" y1="'+y+'" x2="'+R+'" y2="'+y+'" stroke="#1b2740"/><text x="'+(L-4)+'" y="'+(y+3)+'" fill="#8a97b4" font-size="8" text-anchor="end">'+t+'s</text>');});
+  p.push('<text x="'+(L+PW/2)+'" y="'+(B+32)+'" fill="#9aa6c2" font-size="8.5" text-anchor="middle">FAULT CURRENT · 20 A breaker</text>');
+  var mn=[],mx=[];for(var m=1.02;m<=10.0001;m*=1.04){mn.push([X(20*m),Yt(tccMin(m))]);mx.push([X(20*m),Yt(tccMax(m))]);}
+  mn.push([X(200),Yt(tccMin(10))]);mx.push([X(200),Yt(tccMax(10))]);
+  function poly(pts){return pts.map(function(q,i){return (i?'L':'M')+q[0].toFixed(1)+' '+q[1].toFixed(1);}).join(' ');}
+  var band=poly(mx)+' '+mn.slice().reverse().map(function(q){return 'L'+q[0].toFixed(1)+' '+q[1].toFixed(1);}).join(' ')+' Z';
+  p.push('<path d="'+band+'" fill="rgba(245,197,66,.13)"/>');
+  var yImx=Yt(0.03),yImn=Yt(0.013),xi=X(200),xr=X(400);
+  p.push('<path d="M'+xi+' '+yImx+' L'+xr+' '+yImx+' L'+xr+' '+yImn+' L'+xi+' '+yImn+' Z" fill="rgba(245,197,66,.13)"/>');
+  p.push('<path d="'+poly(mx.concat([[xi,yImx],[xr,yImx]]))+'" fill="none" stroke="#5aa9e6" stroke-width="2"/>');
+  p.push('<path d="'+poly(mn.concat([[xi,yImn],[xr,yImn]]))+'" fill="none" stroke="#ff6b5a" stroke-width="2"/>');
+  p.push('<line x1="'+xi+'" y1="'+T+'" x2="'+xi+'" y2="'+B+'" stroke="#f5c542" stroke-dasharray="3 3" stroke-width="1.1"/><text x="'+(xi-3)+'" y="'+(T+10)+'" fill="#f5c542" font-size="7" text-anchor="end">instantaneous ~10×</text>');
+  [[40,25],[40,150],[100,5],[100,20]].forEach(function(q){p.push('<circle cx="'+X(q[0])+'" cy="'+Yt(q[1])+'" r="2.6" fill="#cdd8f0"/>');});
+  p.push('<text x="'+(L+6)+'" y="'+(B-33)+'" fill="#9fb0d6" font-size="7.5">40 A (2×) → 25–150 s</text><text x="'+(L+6)+'" y="'+(B-21)+'" fill="#9fb0d6" font-size="7.5">100 A (5×) → 5–20 s</text>');
+  if(faultActive() && faultZone!=='service' && !svcOff && !lcMainOff){
+    var If=FAULT_A||1,t=tripSec,x=X(Math.max(Amin,Math.min(Amax,If)));
+    if(!isFinite(t)){ p.push('<line x1="'+x+'" y1="'+T+'" x2="'+x+'" y2="'+B+'" stroke="#ff3b30" stroke-width="1.5"/><text x="'+x+'" y="'+(T+10)+'" fill="#ff3b30" font-size="8" text-anchor="middle">'+If+'A · WON\'T TRIP</text>'); }
+    else { var y=Yt(t); p.push('<line x1="'+(x-6)+'" y1="'+(y-6)+'" x2="'+(x+6)+'" y2="'+(y+6)+'" stroke="#ff3b30" stroke-width="2"/><line x1="'+(x+6)+'" y1="'+(y-6)+'" x2="'+(x-6)+'" y2="'+(y+6)+'" stroke="#ff3b30" stroke-width="2"/><circle cx="'+x+'" cy="'+y+'" r="9" fill="none" stroke="#ff3b30" stroke-width="1.5"/><text x="'+x+'" y="'+(y<T+20?y+16:y-12)+'" fill="#ff3b30" font-size="8.5" text-anchor="middle">'+If+' A · '+(t>=1?Math.round(t)+' s':(t*1000<50?'instant':t.toFixed(2)+' s'))+'</text>'); }
+  } else { p.push('<text x="'+(L+PW/2)+'" y="'+(T+PH/2)+'" fill="#55637f" font-size="8.5" text-anchor="middle">fault a load to see where it lands</text>'); }
+  p.push('</svg>'); host.innerHTML=p.join('');
+}
+function refTab(t){ document.querySelectorAll('.modal-tab').forEach(function(x){x.classList.toggle('active',x.dataset.tab===t);}); document.querySelectorAll('.modal-pane').forEach(function(x){x.classList.toggle('active',x.id==='pane-'+t);}); }
+function openRef(t){ buildRef(); refTab(t||'flow'); $('refModal').classList.add('open'); document.body.classList.add('modal-open'); }
+function closeRef(){ $('refModal').classList.remove('open'); document.body.classList.remove('modal-open'); }
+render();
+</script>
 <div class="modal-bg" id="refModal" onclick="if(event.target===this)closeRef()">
-  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="refTitle">
+  <div class="modal">
     <div class="modal-head">
-      <div class="modal-title" id="refTitle">📋 NEC 2023 — 314.16 Quick Reference</div>
+      <div class="modal-title">📋 Theory &amp; Code Reference</div>
       <button class="modal-close" onclick="closeRef()" aria-label="Close">×</button>
     </div>
     <div class="modal-tabs">
-      <button class="modal-tab" data-tab="a" onclick="refTab('a')">TABLE 314.16(A)</button>
-      <button class="modal-tab" data-tab="b" onclick="refTab('b')">TABLE 314.16(B)(1)</button>
-      <button class="modal-tab" data-tab="r" onclick="refTab('r')">CODE SUMMARY</button>
+      <button class="modal-tab active" data-tab="flow" onclick="refTab('flow')">FLOW</button>
+      <button class="modal-tab" data-tab="bond" onclick="refTab('bond')">BONDING</button>
+      <button class="modal-tab" data-tab="fault" onclick="refTab('fault')">FAULTS</button>
+      <button class="modal-tab" data-tab="tcc" onclick="refTab('tcc')">TRIP CURVE</button>
+      <button class="modal-tab" data-tab="sys" onclick="refTab('sys')">SYSTEMS</button>
     </div>
     <div class="modal-body">
-      <div class="modal-pane" id="pane-a">
-        <div class="info-row" style="margin:0 0 10px;"><div class="info-dot"></div>
-          <span>Metal Boxes — min. volume &amp; max. conductors of one size, with no other allowances (clamps, devices, EGCs, etc.)</span>
-        </div>
-        <div class="table-wrap">
-          <table class="conduit-table sticky-1">
-            <thead><tr><th>BOX TRADE SIZE</th><th class="num">in³</th><th class="num">#18</th><th class="num">#16</th><th class="num">#14</th><th class="num">#12</th><th class="num">#10</th><th class="num">#8</th><th class="num">#6</th></tr></thead>
-            <tbody id="refTableA"></tbody>
-          </table>
-        </div>
-        <div class="info-row" style="margin-top:10px;"><div class="info-dot"></div><span>◀ marks the box currently selected in the calculator.</span></div>
-      </div>
-      <div class="modal-pane" id="pane-b">
-        <div class="info-row" style="margin:0 0 10px;"><div class="info-dot"></div>
-          <span>Volume Allowance Required per Conductor</span>
-        </div>
-        <div class="table-wrap">
-          <table class="conduit-table">
-            <thead><tr><th>CONDUCTOR (AWG)</th><th class="num">cm³</th><th class="num">in³</th></tr></thead>
-            <tbody>
-              <tr><td>18</td><td class="num">24.6</td><td class="num">1.50</td></tr>
-              <tr><td>16</td><td class="num">28.7</td><td class="num">1.75</td></tr>
-              <tr><td>14</td><td class="num">32.8</td><td class="num">2.00</td></tr>
-              <tr><td>12</td><td class="num">36.9</td><td class="num">2.25</td></tr>
-              <tr><td>10</td><td class="num">41.0</td><td class="num">2.50</td></tr>
-              <tr><td>8</td><td class="num">49.2</td><td class="num">3.00</td></tr>
-              <tr><td>6</td><td class="num">81.9</td><td class="num">5.00</td></tr>
-            </tbody>
-          </table>
-        </div>
-        <div class="info-row" style="margin-top:10px;"><div class="info-dot"></div><span>4 AWG &amp; larger: box must also comply with 314.28.</span></div>
-      </div>
-      <div class="modal-pane" id="pane-r">
-        <div class="info-row" style="margin:0 0 10px;"><div class="info-dot"></div>
-          <span>Plain-language summary of NEC 2023 314.16 — not the official code text. Verify with the adopted code &amp; AHJ.</span>
-        </div>
-        <div class="rule-list">
-          <div class="rule"><div class="rule-ref">314.16 — GENERAL REQUIREMENT</div><div class="rule-txt">Boxes and conduit bodies must be an approved size with free space for every conductor inside. The box volume from <b>(A)</b> can <b>never be less</b> than the fill total from <b>(B)</b>. Conduit bodies are sized by <b>(C)</b>.</div></div>
-          <div class="rule"><div class="rule-ref">314.16 — WHAT IT DOESN'T COVER</div><div class="rule-txt">Does not apply to terminal housings that come with <b>motors or generators</b> (see 430.12). Boxes with <b>4 AWG or larger</b> conductors must <b>also</b> meet 314.28. Outlet and device boxes must <b>also</b> meet the depth rules in 314.24.</div></div>
-          <div class="rule"><div class="rule-ref">314.16(A) — BOX VOLUME</div><div class="rule-txt">Volume = all assembled sections <b>plus</b> plaster rings, domed covers, extension rings, etc. — but only if they're <b>marked</b> with their volume or made from boxes listed in Table 314.16(A).<br><b>Barriers:</b> the volume is split between the spaces they create. An unmarked barrier uses <b>0.5 in³ if metal</b>, <b>1.0 in³ if nonmetallic</b>.</div></div>
-          <div class="rule"><div class="rule-ref">314.16(A)(1) — STANDARD BOXES</div><div class="rule-txt">Standard boxes that aren't marked with a volume use the volume in <b>Table 314.16(A)</b>.</div></div>
-          <div class="rule"><div class="rule-ref">314.16(A)(2) — OTHER BOXES</div><div class="rule-txt">Boxes of <b>100 in³ or less</b> that aren't in the table, and <b>all nonmetallic boxes</b>, must be durably and legibly <b>marked</b> with their volume by the manufacturer. A table box that's actually larger than the table volume may be marked with its larger volume.</div></div>
-          <div class="rule"><div class="rule-ref">314.16(B) — FILL CALCULATION</div><div class="rule-txt"><b>Add together</b> every allowance from (B)(1) through (B)(6) that applies. <b>No allowance</b> for small fittings like locknuts and bushings. With a barrier, figure each space <b>separately</b>.</div></div>
-          <div class="rule"><div class="rule-ref">314.16(B)(1) — CONDUCTOR FILL</div><div class="rule-txt">
-            • Comes from <b>outside</b> the box and is <b>spliced or terminated</b> inside → <b>1</b><br>
-            • <b>Passes through</b> with no splice or termination → <b>1</b><br>
-            • Unbroken <b>loop or coil</b> at least <b>twice</b> the 300.14 free-conductor length (≥12") → <b>2</b><br>
-            • Conductor with <b>no part leaving</b> the box (pigtail, internal jumper) → <b>0</b><br>
-            Use Table 314.16(B)(1) for the volume of each.<br>
-            <i>Exception:</i> EGCs, and/or <b>up to four</b> fixture wires <b>smaller than 14 AWG</b>, may be left out when they come into the box from a <b>domed luminaire or similar canopy</b> and terminate in that box.</div></div>
-          <div class="rule"><div class="rule-ref">314.16(B)(2) — CLAMP FILL</div><div class="rule-txt">One or more <b>internal</b> cable clamps (factory or field supplied) → <b>one</b> allowance based on the <b>largest conductor present in the box</b>. A cable connector whose clamp is <b>outside</b> the box → no allowance.</div></div>
-          <div class="rule"><div class="rule-ref">314.16(B)(3) — SUPPORT FITTINGS FILL</div><div class="rule-txt">One or more <b>luminaire studs</b> or <b>hickeys</b> → <b>one</b> allowance <b>for each type</b> of fitting, based on the largest conductor present in the box. (Stud + hickey = 2 allowances.)</div></div>
-          <div class="rule"><div class="rule-ref">314.16(B)(4) — DEVICE OR EQUIPMENT FILL</div><div class="rule-txt">Each <b>yoke or strap</b> holding one or more devices → <b>double</b> allowance, based on the largest conductor <b>connected to the device(s) on that yoke</b>. A device or utilization equipment <b>wider than a single 2" device box</b> → double allowance <b>for each gang</b> needed to mount it.</div></div>
-          <div class="rule"><div class="rule-ref">314.16(B)(5) — EQUIPMENT GROUNDING CONDUCTOR FILL</div><div class="rule-txt"><b>Up to four</b> EGCs entering the box → <b>one</b> allowance based on the largest EGC entering. <b>Each additional</b> EGC beyond four → <b>¼</b> allowance, based on the largest EGC entering.<br><i>Example:</i> 6 × #12 EGCs = 1 + ¼ + ¼ = 1.5 × 2.25 = <b>3.375 in³</b>.</div></div>
-          <div class="rule"><div class="rule-ref">314.16(B)(6) — TERMINAL BLOCK FILL</div><div class="rule-txt">Each <b>terminal block assembly</b> → <b>one</b> allowance based on the largest conductor(s) terminated to that assembly.</div></div>
-          <div class="rule"><div class="rule-ref">314.16(C)(1) — CONDUIT BODIES, GENERAL</div><div class="rule-txt">Conduit bodies with <b>6 AWG or smaller</b> (other than short-radius bodies) need a cross-section <b>at least twice</b> that of the largest conduit/tubing they can attach to. Max conductors = what <b>Chapter 9, Table 1</b> allows for that conduit.</div></div>
-          <div class="rule"><div class="rule-ref">314.16(C)(2) — CONDUIT BODIES WITH SPLICES / DEVICES</div><div class="rule-txt">Only conduit bodies <b>marked with their volume</b> may contain splices, taps, or devices. Max conductors are figured using <b>314.16(B)</b>. The body must be rigidly and securely <b>supported</b>.</div></div>
-          <div class="rule"><div class="rule-ref">314.16(C)(3) — SHORT-RADIUS CONDUIT BODIES</div><div class="rule-txt">Capped elbows, service-entrance elbows, etc. (6 AWG or smaller) are only for pulling — <b>no splices, taps, or devices</b>. Must be an approved size with free space for all conductors.</div></div>
-        </div>
-      </div>
+      <div class="modal-pane active" id="pane-flow"><div id="rl-flow"></div></div>
+      <div class="modal-pane" id="pane-bond"><div id="rl-bond"></div></div>
+      <div class="modal-pane" id="pane-fault"><div id="rl-fault"></div></div>
+      <div class="modal-pane" id="pane-tcc"><div id="tccHost"></div><div id="rl-tcc" style="margin-top:12px"></div></div>
+      <div class="modal-pane" id="pane-sys"><div id="rl-sys"></div></div>
     </div>
   </div>
 </div>
-
-<div class="footer">
-  AOG FIELD OPERATIONS HUB — BOX FILL CALCULATOR<br>
-  NEC 2023 ARTICLE 314.16 — TABLES 314.16(A) &amp; (B) — BUILT BY BRANDON @BrandonAOG
-</div>
-
-<script>
-// ============================================================
-// NEC 2023 — 314.16 BOX FILL
-// Table 314.16(B) — volume allowance per conductor (in³)
-// ============================================================
-const SIZES = ['18','16','14','12','10','8','6'];
-const ALLOW = { '18':1.50, '16':1.75, '14':2.00, '12':2.25, '10':2.50, '8':3.00, '6':5.00 };
-
-// Table 314.16(A) — metal boxes, minimum volume (in³)
-const BOXES = [
-  { g:'Round / Octagonal', id:'oct-114',  name:'4" × 1-1/4" Round/Oct',        vol:12.5 },
-  { g:'Round / Octagonal', id:'oct-112',  name:'4" × 1-1/2" Round/Oct',        vol:15.5 },
-  { g:'Round / Octagonal', id:'oct-218',  name:'4" × 2-1/8" Round/Oct',        vol:21.5 },
-  { g:'Square',            id:'sq4-114',  name:'4" × 1-1/4" Square',           vol:18.0 },
-  { g:'Square',            id:'sq4-112',  name:'4" × 1-1/2" Square',           vol:21.0 },
-  { g:'Square',            id:'sq4-218',  name:'4" × 2-1/8" Square',           vol:30.3 },
-  { g:'Square',            id:'sq411-114',name:'4-11/16" × 1-1/4" Square',     vol:25.5 },
-  { g:'Square',            id:'sq411-112',name:'4-11/16" × 1-1/2" Square',     vol:29.5 },
-  { g:'Square',            id:'sq411-218',name:'4-11/16" × 2-1/8" Square',     vol:42.0 },
-  { g:'Device',            id:'dev-112',  name:'3" × 2" × 1-1/2" Device',      vol:7.5  },
-  { g:'Device',            id:'dev-2',    name:'3" × 2" × 2" Device',          vol:10.0 },
-  { g:'Device',            id:'dev-214',  name:'3" × 2" × 2-1/4" Device',      vol:10.5 },
-  { g:'Device',            id:'dev-212',  name:'3" × 2" × 2-1/2" Device',      vol:12.5 },
-  { g:'Device',            id:'dev-234',  name:'3" × 2" × 2-3/4" Device',      vol:14.0 },
-  { g:'Device',            id:'dev-312',  name:'3" × 2" × 3-1/2" Device',      vol:18.0 },
-  { g:'Device',            id:'hs-112',   name:'4" × 2-1/8" × 1-1/2" Device',  vol:10.3 },
-  { g:'Device',            id:'hs-178',   name:'4" × 2-1/8" × 1-7/8" Device',  vol:13.0 },
-  { g:'Device',            id:'hs-218',   name:'4" × 2-1/8" × 2-1/8" Device',  vol:14.5 },
-  { g:'Masonry Box / Gang',id:'mas-212',  name:'3-3/4" × 2" × 2-1/2" Masonry', vol:14.0 },
-  { g:'Masonry Box / Gang',id:'mas-312',  name:'3-3/4" × 2" × 3-1/2" Masonry', vol:21.0 },
-  { g:'FS / FD Boxes',     id:'fs-1',     name:'FS — 1-3/4" deep, single cover/gang',   vol:13.5 },
-  { g:'FS / FD Boxes',     id:'fd-1',     name:'FD — 2-3/8" deep, single cover/gang',   vol:18.0 },
-  { g:'FS / FD Boxes',     id:'fs-m',     name:'FS — 1-3/4" deep, multiple cover/gang', vol:18.0 },
-  { g:'FS / FD Boxes',     id:'fd-m',     name:'FD — 2-3/8" deep, multiple cover/gang', vol:24.0 },
-];
-
-const WIRE_TYPES = {
-  term:    { label:'Terminated / spliced in box', mult:1 },
-  pass:    { label:'Pass-through, unspliced',     mult:1 },
-  loop:    { label:'Unbroken loop ≥ 12" (counts 2)', mult:2 },
-  inside:  { label:'Pigtail / jumper — inside box only', mult:0 },
-  fixture: { label:'Fixture wire from domed canopy (≤4, <14 AWG exempt)', mult:0 },
-};
-const DEVICE_TYPES = ['Receptacle','Switch','GFCI / AFCI','Combo device','Dimmer / timer','Other equipment'];
-
-let boxMode = 'std';
-let darkMode = false;
-let wireCounter = 0, deviceCounter = 0, addonCounter = 0;
-
-// ── THEME ──────────────────────────────────────────────────
-function toggleTheme() {
-  darkMode = !darkMode;
-  document.body.classList.toggle('dark', darkMode);
-  document.getElementById('themeBtn').textContent = darkMode ? '☀️' : '🌙';
-  try { localStorage.setItem('aog-theme', darkMode ? 'dark' : 'light'); } catch (e) {}
-}
-(function initTheme() {
-  let saved = null;
-  try { saved = localStorage.getItem('aog-theme'); } catch (e) {}
-  const prefer = window.matchMedia('(prefers-color-scheme: dark)').matches;
-  if (saved === 'dark' || (!saved && prefer)) {
-    darkMode = true;
-    document.body.classList.add('dark');
-    document.getElementById('themeBtn').textContent = '☀️';
-  }
-})();
-
-// ── HELPERS ────────────────────────────────────────────────
-const $ = id => document.getElementById(id);
-const fmt = n => (Math.round(n * 100) / 100).toFixed(2);
-const sizeLabel = s => s + ' AWG';
-const sizeIdx = s => SIZES.indexOf(s);
-function sizeOptions(selected) {
-  return SIZES.map(s => `<option value="${s}"${s === selected ? ' selected' : ''}>${s} AWG — ${fmt(ALLOW[s])} in³</option>`).join('');
-}
-function largerSize(a, b) { if (!a) return b; if (!b) return a; return sizeIdx(a) >= sizeIdx(b) ? a : b; }
-
-// ── BOX MODE ───────────────────────────────────────────────
-function setBoxMode(mode) {
-  if (mode !== boxMode && window.AOGSound) AOGSound.play(mode === 'std' ? 'clunk' : 'tink');
-  boxMode = mode;
-  $('tog-std').classList.toggle('active', mode === 'std');
-  $('tog-custom').classList.toggle('active', mode === 'custom');
-  $('stdBoxWrap').style.display = mode === 'std' ? '' : 'none';
-  $('customBoxWrap').style.display = mode === 'custom' ? '' : 'none';
-  calculate(true);
-}
-function buildBoxSelect() {
-  let html = '', grp = null;
-  BOXES.forEach(b => {
-    if (b.g !== grp) { if (grp) html += '</optgroup>'; html += `<optgroup label="${b.g}">`; grp = b.g; }
-    html += `<option value="${b.id}"${b.id === 'sq4-218' ? ' selected' : ''}>${b.name} — ${b.vol.toFixed(1)} in³</option>`;
-  });
-  $('boxSelect').innerHTML = html + '</optgroup>';
-  $('egcSize').innerHTML = sizeOptions('12');
-  $('tbSize').innerHTML = sizeOptions('12');
-}
-
-// ── ROWS: ADD-ON VOLUME ────────────────────────────────────
-function addAddon(name, vol) {
-  const id = ++addonCounter;
-  const row = document.createElement('div');
-  row.className = 'wire-row w3'; row.id = 'addon-' + id;
-  row.innerHTML = `
-    <div><label>Ring / Cover</label><input type="text" class="ad-name" placeholder="e.g. 4&quot; sq. raised ring" value="${name || ''}" oninput="calculate(true)"></div>
-    <div><label>Marked in³</label><input type="number" class="ad-vol" min="0" step="0.1" value="${vol || ''}" placeholder="0.0" oninput="calculate(true)"></div>
-    <button class="remove-btn" onclick="removeRow('addon-${id}')" title="Remove">×</button>`;
-  $('addonList').appendChild(row);
-  calculate(true);
-}
-
-// ── ROWS: CONDUCTORS ───────────────────────────────────────
-function addWire(size, qty, type) {
-  const id = ++wireCounter;
-  const row = document.createElement('div');
-  row.className = 'wire-row w4'; row.id = 'wire-' + id;
-  const typeOpts = Object.entries(WIRE_TYPES).map(([k, v]) =>
-    `<option value="${k}"${k === (type || 'term') ? ' selected' : ''}>${v.label}</option>`).join('');
-  row.innerHTML = `
-    <div><label>Size</label><select class="w-size" onchange="calculate(true)">${sizeOptions(size || '12')}</select></div>
-    <div><label>Qty</label><input type="number" class="w-qty" min="0" max="99" value="${qty != null ? qty : ''}" placeholder="0" oninput="calculate(true)"></div>
-    <div class="span-m"><label>How It's Counted</label><select class="w-type" onchange="calculate(true)">${typeOpts}</select></div>
-    <button class="remove-btn" onclick="removeRow('wire-${id}')" title="Remove">×</button>`;
-  $('wireList').appendChild(row);
-  if (window.AOGSound && size === undefined) AOGSound.play('tink');
-  calculate(true);
-}
-
-// ── ROWS: DEVICES ──────────────────────────────────────────
-function addDevice(type, size, gangs) {
-  const id = ++deviceCounter;
-  const row = document.createElement('div');
-  row.className = 'wire-row wd'; row.id = 'dev-' + id;
-  const typeOpts = DEVICE_TYPES.map(t => `<option${t === (type || 'Receptacle') ? ' selected' : ''}>${t}</option>`).join('');
-  row.innerHTML = `
-    <div class="span-m"><label>Device on Yoke</label><select class="d-type" onchange="calculate(true)">${typeOpts}</select></div>
-    <div><label>Largest Conductor on It</label><select class="d-size" onchange="calculate(true)">${sizeOptions(size || '12')}</select></div>
-    <div><label>Gangs Wide</label><input type="number" class="d-gangs" min="1" max="6" value="${gangs || 1}" oninput="calculate(true)"></div>
-    <button class="remove-btn" onclick="removeRow('dev-${id}')" title="Remove">×</button>`;
-  $('deviceList').appendChild(row);
-  calculate(true);
-}
-
-function removeRow(id) {
-  const el = $(id); if (el) el.remove();
-  if (window.AOGSound) AOGSound.play('tink');
-  calculate(true);
-}
-
-function toggleTb() {
-  $('tbWrap').style.display = $('chkTb').checked ? '' : 'none';
-  calculate(true);
-}
-function toggleEgc() {
-  $('egcWrap').style.display = $('chkEgc').checked ? '' : 'none';
-  calculate(true);
-}
-
-// ── GATHER ─────────────────────────────────────────────────
-function readState() {
-  const wires = [...document.querySelectorAll('#wireList .wire-row')].map(r => ({
-    size: r.querySelector('.w-size').value,
-    qty: Math.max(0, parseInt(r.querySelector('.w-qty').value, 10) || 0),
-    type: r.querySelector('.w-type').value,
-  }));
-  const devices = [...document.querySelectorAll('#deviceList .wire-row')].map(r => ({
-    type: r.querySelector('.d-type').value,
-    size: r.querySelector('.d-size').value,
-    gangs: Math.max(1, parseInt(r.querySelector('.d-gangs').value, 10) || 1),
-  }));
-  const addons = [...document.querySelectorAll('#addonList .wire-row')].map(r => ({
-    name: r.querySelector('.ad-name').value.trim() || 'Ring / cover',
-    vol: parseFloat(r.querySelector('.ad-vol').value) || 0,
-  }));
-  let boxVol = 0, boxName = '';
-  if (boxMode === 'std') {
-    const b = BOXES.find(x => x.id === $('boxSelect').value);
-    const g = Math.max(1, parseInt($('gangQty').value, 10) || 1);
-    boxVol = b.vol * g;
-    boxName = (g > 1 ? g + '× ' : '') + b.name;
-  } else {
-    boxVol = Math.max(0, parseFloat($('customVol').value) || 0);
-    boxName = $('customName').value.trim() || 'Marked-volume box';
-  }
-  const barrierVol = (Math.max(0, parseInt($('barQty').value, 10) || 0)) * parseFloat($('barType').value);
-  const addonVol = addons.reduce((s, a) => s + a.vol, 0) - barrierVol;
-  return {
-    wires, devices, addons, boxVol, boxName, addonVol,
-    clamp: $('chkClamp').checked, stud: $('chkStud').checked, hickey: $('chkHickey').checked,
-    egc: $('chkEgc').checked ? $('egcSize').value : null,
-    egcQty: Math.max(1, parseInt($('egcQty').value, 10) || 1),
-    tb: $('chkTb').checked ? { qty: Math.max(1, parseInt($('tbQty').value, 10) || 1), size: $('tbSize').value } : null,
-    barrierVol,
-  };
-}
-
-// ── CORE 314.16(B) CALC ────────────────────────────────────
-function computeRequired(st) {
-  const lines = [];
-  const warnings = [];
-  let largest = null;
-
-  // (B)(1) conductors — group by size + rule
-  let fixtureUsed = 0;
-  st.wires.forEach(w => {
-    if (!w.qty) return;
-    largest = largerSize(largest, w.size);
-    const t = WIRE_TYPES[w.type];
-    let count = w.qty * t.mult;
-    let fxNote = null;
-    if (w.type === 'fixture') {
-      // Exception to 314.16(B)(1): not over four fixture wires smaller than 14 AWG
-      if (sizeIdx(w.size) >= sizeIdx('14')) { count = w.qty; fxNote = 'not exempt (14 AWG+) — counted'; }
-      else {
-        const exempt = Math.min(w.qty, Math.max(0, 4 - fixtureUsed));
-        fixtureUsed += exempt;
-        count = w.qty - exempt;
-        fxNote = count ? `${exempt} exempt, ${count} over the 4-wire limit — counted` : `${exempt} exempt`;
-      }
-    }
-    lines.push({
-      item: t.label, ref: '314.16(B)(1)', size: w.size,
-      count, each: ALLOW[w.size], vol: count * ALLOW[w.size],
-      note: w.type === 'loop' ? `${w.qty} loop${w.qty > 1 ? 's' : ''} × 2` : fxNote,
-    });
-  });
-  if (st.egc) largest = largerSize(largest, st.egc);
-  if (st.tb) largest = largerSize(largest, st.tb.size);
-  st.devices.forEach(d => { largest = largerSize(largest, d.size); });
-
-  // Fixture-wire exception check
-  const fixtures = st.wires.filter(w => w.type === 'fixture' && w.qty);
-  const fixtureQty = fixtures.reduce((s, w) => s + w.qty, 0);
-  if (fixtureQty > 4) warnings.push({ err: true, msg: `314.16(B)(1) Ex. only exempts up to four fixture wires — ${fixtureQty} entered. Extras have been counted.` });
-  if (fixtures.some(w => sizeIdx(w.size) >= sizeIdx('14'))) warnings.push({ err: true, msg: 'Fixture-wire exemption applies only to wires smaller than 14 AWG — 14 AWG+ fixture wires have been counted.' });
-
-  // (B)(2) clamps
-  if (st.clamp && largest) lines.push({ item: 'Internal cable clamps (one or more)', ref: '314.16(B)(2)', size: largest, count: 1, each: ALLOW[largest], vol: ALLOW[largest] });
-  // (B)(3) support fittings
-  if (st.stud && largest) lines.push({ item: 'Luminaire stud(s)', ref: '314.16(B)(3)', size: largest, count: 1, each: ALLOW[largest], vol: ALLOW[largest] });
-  if (st.hickey && largest) lines.push({ item: 'Hickey(s)', ref: '314.16(B)(3)', size: largest, count: 1, each: ALLOW[largest], vol: ALLOW[largest] });
-  // (B)(4) devices
-  st.devices.forEach(d => {
-    const count = 2 * d.gangs;
-    lines.push({ item: `${d.type} — yoke${d.gangs > 1 ? ` (${d.gangs} gangs wide)` : ''}`, ref: '314.16(B)(4)', size: d.size, count, each: ALLOW[d.size], vol: count * ALLOW[d.size] });
-  });
-  // (B)(5) EGC
-  if (st.egc) {
-    const extra = Math.max(0, st.egcQty - 4);
-    const cnt = 1 + extra * 0.25;
-    lines.push({ item: 'Equipment grounding conductors', ref: '314.16(B)(5)', size: st.egc, count: cnt, each: ALLOW[st.egc], vol: cnt * ALLOW[st.egc],
-      note: extra ? `${st.egcQty} EGCs: first 4 = 1, +${extra} × ¼` : `${st.egcQty} EGC${st.egcQty > 1 ? 's' : ''} (≤4) = 1 allowance` });
-  }
-  // (B)(6) terminal blocks
-  if (st.tb) lines.push({ item: 'Terminal block assemblies', ref: '314.16(B)(6)', size: st.tb.size, count: st.tb.qty, each: ALLOW[st.tb.size], vol: st.tb.qty * ALLOW[st.tb.size] });
-
-  if ((st.clamp || st.stud || st.hickey) && !largest) warnings.push({ err: false, msg: 'Clamp / stud / hickey allowances are based on the largest conductor — add conductors to count them.' });
-  if (st.devices.length) {
-    const maxCond = st.wires.filter(w => w.qty && WIRE_TYPES[w.type].mult > 0).reduce((m, w) => largerSize(m, w.size), null);
-    st.devices.forEach(d => { if (maxCond && sizeIdx(d.size) > sizeIdx(maxCond)) warnings.push({ err: false, msg: `${d.type} lists ${d.size} AWG but no counted conductor that large is entered — verify device conductor size.` }); });
-  }
-
-  const total = lines.reduce((s, l) => s + l.vol, 0);
-  const count = lines.reduce((s, l) => s + l.count, 0);
-  return { lines, total, count, largest, warnings };
-}
-
-// ── RENDER ─────────────────────────────────────────────────
-function fillClass(p) { return p <= 80 ? 'fill-green' : p <= 100 ? 'fill-yellow' : 'fill-red'; }
-function fillColor(p) { return p <= 80 ? 'var(--success)' : p <= 100 ? 'var(--warn)' : 'var(--danger)'; }
-
-function calculate(auto) {
-  const st = readState();
-  const avail = st.boxVol + st.addonVol;
-  $('bi-box').textContent = st.boxVol ? fmt(st.boxVol) : '—';
-  $('bi-addon').textContent = fmt(st.addonVol);
-  $('bi-total').textContent = avail ? fmt(avail) : '—';
-
-  const res = $('results');
-  if (auto && res.style.display === 'none') return;
-  if (!auto && window.AOGSound) AOGSound.play('clunk');
-
-  const r = computeRequired(st);
-  const pct = avail > 0 ? (r.total / avail) * 100 : 0;
-  const pass = avail > 0 && r.total <= avail + 1e-9;
-
-  res.style.display = 'block';
-  $('r-req').textContent = fmt(r.total);
-  $('r-avail').textContent = avail ? fmt(avail) : '—';
-  $('r-pct').textContent = avail ? pct.toFixed(1) + '%' : '—';
-
-  const bar = $('r-fill-bar');
-  bar.className = 'fill-bar ' + fillClass(pct);
-  bar.style.width = Math.min(pct, 100) + '%';
-  const lbl = $('r-fill-label');
-  lbl.textContent = avail ? `${fmt(r.total)} / ${fmt(avail)} in³` : 'NO BOX VOLUME';
-  lbl.style.color = fillColor(pct);
-
-  // chips
-  const chips = [];
-  st.wires.filter(w => w.qty).forEach(w => chips.push(`${w.qty}× #${w.size} ${w.type === 'term' ? '' : '· ' + WIRE_TYPES[w.type].label.split(' ')[0].replace(',', '').toLowerCase()}`));
-  st.devices.forEach(d => chips.push(`${d.type}${d.gangs > 1 ? ' ×' + d.gangs + 'g' : ''}`));
-  if (st.egc) chips.push(`${st.egcQty}× EGC #${st.egc}`);
-  if (st.clamp) chips.push('Int. clamps');
-  if (st.stud) chips.push('Lum. stud');
-  if (st.hickey) chips.push('Hickey');
-  if (st.tb) chips.push(`${st.tb.qty}× Term. block`);
-  if (st.barrierVol) chips.push(`Barriers −${fmt(st.barrierVol)} in³`);
-  $('r-chips').innerHTML = chips.map(c => `<span class="wire-chip">${c}</span>`).join('');
-
-  // warnings
-  const w = r.warnings.slice();
-  if (!avail) w.unshift({ err: true, msg: boxMode === 'custom' ? 'Enter the volume marked on the box (314.16(A)(2)).' : 'Select a box.' });
-  if (!r.lines.length) w.unshift({ err: false, msg: 'Nothing to count yet — add conductors, devices or allowances.' });
-  $('r-warnings').innerHTML = w.map(x => `<div class="warn-box${x.err ? ' err' : ''}">⚠️ <span>${x.msg}</span></div>`).join('');
-
-  // verdict
-  const rec = document.querySelector('#results .rec-box');
-  rec.classList.toggle('pass', pass);
-  rec.classList.toggle('fail', !pass && avail > 0);
-  if (!avail) {
-    $('r-verdict').textContent = '—';
-    $('r-verdict-detail').textContent = 'Box volume required.';
-  } else if (pass) {
-    $('r-verdict').textContent = '✔ BOX FILL OK';
-    $('r-verdict-detail').innerHTML = `${st.boxName}${st.addonVol ? ' + ' + fmt(st.addonVol) + ' in³ added' : ''}<br>${fmt(avail - r.total)} in³ spare · ${+r.count.toFixed(2)} conductor equivalents`;
-  } else {
-    const best = BOXES.filter(b => b.vol + st.addonVol + 1e-9 >= r.total).sort((a, b) => a.vol - b.vol)[0];
-    $('r-verdict').textContent = '✖ OVERFILLED';
-    $('r-verdict-detail').innerHTML = `Short ${fmt(r.total - avail)} in³ in ${st.boxName}.<br>` +
-      (best ? `Smallest single standard box that fits: <b style="color:var(--accent)">${best.name}</b> (${best.vol.toFixed(1)} in³)` : 'No single standard metal box fits — add a ring/extension, gang boxes, or use a larger marked box. Check 314.28 for pull/junction box sizing.');
-  }
-
-  // breakdown
-  $('breakdownTbody').innerHTML = r.lines.length ? r.lines.map(l => `
-    <tr>
-      <td class="wrap-m">${l.item}<span class="m-only ref-tag"><br>${l.ref}</span>${l.note ? `<br><span class="ref-tag">${l.note}</span>` : ''}</td>
-      <td class="ref-tag hide-m">${l.ref}</td>
-      <td>#${l.size}</td>
-      <td>${+l.count.toFixed(2)}</td>
-      <td>${fmt(l.each)}</td>
-      <td>${fmt(l.vol)}</td>
-    </tr>`).join('') : `<tr><td colspan="6" style="text-align:center;color:var(--text2);">No items counted</td></tr>`;
-  $('bd-count').textContent = +r.count.toFixed(2);
-  $('bd-vol').textContent = fmt(r.total) + ' in³';
-
-  // all boxes
-  const fits = BOXES.filter(b => b.vol + st.addonVol + 1e-9 >= r.total);
-  const smallest = fits.length ? Math.min(...fits.map(b => b.vol)) : null;
-  const curId = boxMode === 'std' && (parseInt($('gangQty').value, 10) || 1) === 1 ? $('boxSelect').value : null;
-  $('allBoxesTbody').innerHTML = BOXES.slice().sort((a, b) => a.vol - b.vol).map(b => {
-    const av = b.vol + st.addonVol;
-    const p = av ? (r.total / av) * 100 : 0;
-    const ok = r.total <= av + 1e-9;
-    const status = ok ? (b.vol === smallest ? '<span class="status-best">SMALLEST FIT</span>' : '<span class="status-pass">PASS</span>') : '<span class="status-fail">FAIL</span>';
-    return `<tr class="${b.id === curId ? 'current-row' : ''}">
-      <td class="wrap-m" style="white-space:nowrap;">${b.name}${b.id === curId ? ' ◀' : ''}</td>
-      <td class="hide-m">${b.vol.toFixed(1)}</td>
-      <td>${fmt(av)}</td>
-      <td class="hide-m">${fmt(r.total)}</td>
-      <td style="color:${fillColor(p)};font-weight:700;">${p.toFixed(1)}%</td>
-      <td class="hide-m"><div class="fill-bar-wrap"><div class="fill-bar ${fillClass(p)}" style="width:${Math.min(p, 100)}%;"></div></div></td>
-      <td>${status}</td>
-    </tr>`;
-  }).join('');
-
-  if (!auto) res.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-// ── QUICK REFERENCE MODAL ──────────────────────────────────
-function buildRefTableA() {
-  const curId = boxMode === 'std' ? $('boxSelect').value : null;
-  let html = '', grp = null;
-  BOXES.forEach(b => {
-    if (b.g !== grp) { html += `<tr><td class="grp" colspan="9">${b.g.toUpperCase()}</td></tr>`; grp = b.g; }
-    const cells = SIZES.map(sz => `<td class="num">${Math.floor(b.vol / ALLOW[sz] + 1e-9)}</td>`).join('');
-    html += `<tr class="${b.id === curId ? 'current-row' : ''}"><td class="wrap-m" style="white-space:nowrap;">${b.name}${b.id === curId ? ' ◀' : ''}</td><td class="num">${b.vol.toFixed(1)}</td>${cells}</tr>`;
-  });
-  $('refTableA').innerHTML = html;
-}
-function refTab(t) {
-  document.querySelectorAll('.modal-tab').forEach(x => x.classList.toggle('active', x.dataset.tab === t));
-  document.querySelectorAll('.modal-pane').forEach(x => x.classList.toggle('active', x.id === 'pane-' + t));
-}
-function openRef(t) {
-  buildRefTableA();
-  refTab(t || 'a');
-  $('refModal').classList.add('open');
-  document.body.classList.add('modal-open');
-  if (window.AOGSound) AOGSound.play('tink');
-}
-function closeRef() {
-  $('refModal').classList.remove('open');
-  document.body.classList.remove('modal-open');
-}
-document.addEventListener('keydown', e => { if (e.key === 'Escape') closeRef(); });
-
-// ── INIT ───────────────────────────────────────────────────
-buildBoxSelect();
-addWire('12', '', 'term');
-calculate(true);
-</script>
-<!-- SERVICE WORKER — single registration pointing to ../sw.js -->
-<script>
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', function() {
-    navigator.serviceWorker.register('../sw.js', { scope: '../' })
-      .then(function(reg) {
-        console.log('[SW] Registered, scope:', reg.scope);
-        reg.addEventListener('updatefound', function() {
-          var nw = reg.installing;
-          nw.addEventListener('statechange', function() {
-            if (nw.state === 'installed' && navigator.serviceWorker.controller) {
-              console.log('[AOG SW] Update available — reload to apply.');
-            }
-          });
-        });
-      })
-      .catch(function(err) {
-        console.warn('[SW] Registration failed:', err);
-      });
-  });
-}
-</script>
-
-<script>
-function adjustTopPadding() {
-  var bar = document.getElementById('action-bar');
-  var header = document.querySelector('.header');
-  var main = document.getElementById('main');
-  if (bar && header) header.style.marginTop = bar.offsetHeight + 'px';
-}
-window.addEventListener('resize', adjustTopPadding);
-window.addEventListener('load', adjustTopPadding);
-setTimeout(adjustTopPadding, 100);
-</script>
 </body>
 </html>
